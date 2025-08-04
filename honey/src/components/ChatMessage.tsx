@@ -1,5 +1,5 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
+// import { Card } from "@/components/ui/card";
 
 export interface ChatMessageProps {
   message?: string;
@@ -8,16 +8,16 @@ export interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, type }) => {
   const isBot = type === "bot";
-  
+
   return (
     <div className={`flex ${isBot ? "justify-start" : "justify-end"} mb-4`}>
-      <Card
-        className={`max-w-[80%] p-4 ${
-          isBot ? "bg-white" : "bg-orange-500 text-white"
+      <div
+        className={`w-[100px] p-4 ${
+          isBot ? "bg-white" : "bg-orange-100 text-white"
         }`}
       >
         {message}
-      </Card>
+      </div>
     </div>
   );
 };

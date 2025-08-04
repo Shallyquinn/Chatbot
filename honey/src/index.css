@@ -1,13 +1,10 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* ... */
 * {
   box-sizing: border-box;
   margin: auto;
-  padding: 5;
+  padding: 5px;
 }
 
 html {
@@ -20,13 +17,11 @@ html {
     scroll-behavior: smooth;
   }
   body {
-    font-family: 'Poppins', sans-serif;
+    font-family: "Poppins", sans-serif;
   }
 
-
-    /* CSS Variables and Dark Mode */
+  /* CSS Variables and Dark Mode */
   :root {
-
     --background: 0 0% 100%;
 
     --foreground: 224 71.4% 4.1%;
@@ -75,11 +70,10 @@ html {
 
     --chart-5: 27 87% 67%;
 
-    --radius: 0.5rem
+    --radius: 0.5rem;
   }
-  
-  .dark {
 
+  .dark {
     --background: 224 71.4% 4.1%;
 
     --foreground: 210 20% 98%;
@@ -126,48 +120,6 @@ html {
 
     --chart-4: 280 65% 60%;
 
-    --chart-5: 340 75% 55%
+    --chart-5: 340 75% 55%;
   }
-
-
-/* Define a custom utility for border color */
-/* @layer utilities { */
-  .border {
-    border-color: hsl(var(--border));
-  }
-
-
-/* Apply custom utilities */
-/* 
-  * {
-    @apply border;
-  } */
-
-}
-
-.options-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.option-button {
-  padding: 8px 16px;
-  border: 1px solid #376B7E;
-  border-radius: 20px;
-  background: white;
-  color: #376B7E;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.option-button:hover {
-  background: #376B7E;
-  color: white;
-}
-
-.pagination-bar {
-  width: 100%;
-  display: flex;
 }

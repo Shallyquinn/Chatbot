@@ -1,0 +1,60 @@
+// Pregnancy prevention widgets
+    {
+      widgetName: "contraceptionOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={["Emergency", "Prevent in future"]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleContraceptionTypeSelection(option)
+          }
+        />
+      ),
+    },
+    {
+      widgetName: "emergencyProductOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={["Postpill", "Postinor-2"]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleContraceptionProductSelection(option)
+          }
+        />
+      ),
+    },
+    {
+      widgetName: "durationOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={[
+            "Up to 1 year",
+            "1-2 years",
+            "3-4 years",
+            "5-10 years",
+            "Permanently",
+          ]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handlePreventionDurationSelection(option)
+          }
+        />
+      ),
+    },
+    {
+      widgetName: "methodOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={[
+            "Daily pills",
+            "Injectables",
+            "Implants",
+            "Emergency pills",
+          ]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleMethodOptionsSelection(option)
+          }
+        />
+      ),
+    },

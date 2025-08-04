@@ -1,23 +1,42 @@
-import React from 'react';
-import { createChatBotMessage } from 'react-chatbot-kit';
-import OptionButtons, { OptionButtonsProps } from '../components/OptionButtons';
-import ChatMessage from '../components/ChatMessage';
+import React from "react";
+import { createChatBotMessage } from "react-chatbot-kit";
+// import ChatbotConfig from "react-chatbot-kit";
+import OptionButtons from "../components/OptionButtons";
+import ChatMessage from "../components/ChatMessage";
 import { ActionProviderInterface } from "../chatbot/ActionProvider";
-import { ChatbotState } from './types';
-import AudioWidget from '../components/AudioWidget';
-import ImageWidget from '../components/ImageWidget';
-import VideoLinkWidget from '../components/VideoLinkWidget';
+import { ChatbotState } from "./types";
+import {
+  fpmChangeStopWidgets,
+  FPMWidgetProps,
+} from "./sections/changeFPM/fpmWidgetsConfig";
+import BotAvatar from "../components/botAvatar/index";
+import { mediaWidgets } from "../components/mediaWidgetsConfig";
+import StateSearchWidget from "../components/StateSearchWidget";
+import LGASearchWidget from "../components/LGASearchWidget";
+import { getAllStates } from "../data/nigerianStates";
+import {
+  getPregnantWidgets,
+  GetPregnantWidgetProps,
+} from "./sections/getPregnant/getPregnantConfig";
+import { preventPregnancyWidgets, PreventPregnancyWidgetProps } from "./sections/preventPregnancy/preventPregnancyWidgetsConfig";
 
 // Define prop types for your custom message components
 export interface MessageBoxProps {
   message?: string; // Marked optional since the chatbot system may supply it
+  state: ChatbotState;
   type: "bot" | "user";
   // Allow additional properties
-
 }
 
-export interface WidgetProps extends OptionButtonsProps {
+// Add this interface for avatar props
+export interface AvatarProps {
+  style?: React.CSSProperties;
+  className?: string;
+}
+export interface WidgetProps {
   actionProvider: ActionProviderInterface;
+  setState: (state: React.SetStateAction<ChatbotState>) => void;
+  state: ChatbotState;
 }
 
 export interface MediaWidgetProps {
@@ -31,99 +50,165 @@ const initialState: ChatbotState = {
   currentStep: "language",
 };
 
-const botName = 'Honey';
+const botName = "Honey";
 
 const config = {
   initialMessages: [
     createChatBotMessage(`Hello, my name is ${botName}.`, {
       delay: 500,
     }),
-    createChatBotMessage('Please choose the language you want to chat with.', {
+    createChatBotMessage("Please choose the language you want to chat with.", {
       delay: 1000,
-      widget: 'languageOptions',
+      widget: "languageOptions",
     }),
+    // createChatBotMessage(`Hello. What's your name?`, {
+    //   delay: 1000,
+    //   widget: "inputName"
+    // }),
   ],
   botName: botName,
   // Add initial state
-  initialState,
+  state: initialState,
   customComponents: {
     // Custom message components
-    botMessageBox: (props: MessageBoxProps) => <ChatMessage {...props} type="bot" />,
-    userMessageBox: (props: MessageBoxProps) => <ChatMessage {...props} type="user" />,
+    botAvatar: () => <BotAvatar />,
+    userAvatar: () => <></>,
+    botMessageBox: (props: MessageBoxProps) => (
+      <ChatMessage {...props} type="bot" />
+    ),
+    userMessageBox: (props: MessageBoxProps) => (
+      <ChatMessage {...props} type="user" />
+    ),
   },
+  // customComponents: {
+  //   botAvatar: (props: AvatarProps) => <BotAvatar {...props} />,
+  //   userAvatar: (props: AvatarProps) => <BotAvatar {...props} />,
+  //   botChatMessage: (props: MessageBoxProps) => <ChatMessage {...props} />,
+  //   userChatMessage: (props: MessageBoxProps) => <ChatMessage {...props} />,
+  // },
   customStyles: {
     // Override default styles
     botMessageBox: {
-        backgroundColor: '#FFA500',
-        // color: 'white',
+      // backgroundColor: '#F5F5F5',
+      backgroundColor: "#e0e0e0",
+      // color: 'white',
     },
     chatButton: {
-        backgroundColor: '#FFA500',
+      backgroundColor: "#FFA500",
     },
   },
+
   widgets: [
+    // Basic chatbot widgets
     {
-      widgetName: 'languageOptions',
-      widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={['English', 'Hausa', 'Yoruba']}
-          actionProvider={props.actionProvider}
-          // Add a handler prop
-          handleClick={(option: string) => props.actionProvider?.handleLanguageSelection(option)}
-         />
-      ),
-    },
-    {
-      widgetName: 'genderOptions',
+      widgetName: "languageOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          // {...props}
-          options={['Male 👨', 'Female 👩', 'Prefer not to say']}
+          options={["English", "Hausa", "Yoruba"]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleGenderSelection(option)}
+          handleClick={(option: string) =>
+            props.actionProvider?.handleLanguageSelection(option)
+          }
         />
       ),
     },
-
     {
-      widgetName: "locationOptions",
+      widgetName: "genderOptions",
       widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={["Gbako", "Ifo", "Abak", "Ibeno", "Ika", "None of the above"]}
+        <OptionButtons
+          options={["Male 👨", "Female 👩", "Prefer not to say"]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleLocationConfirmation(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleGenderSelection(option)
+          }
+        />
+      ),
+    },
+    // {
+    //   widgetName: "locationOptions",
+    //   widgetFunc: (props: WidgetProps) => (
+    //     <OptionButtons
+    //       options={[...popularLGAs.slice(0, 10), "Other LGA"]}
+    //       actionProvider={props.actionProvider}
+    //       handleClick={(option: string) => props.actionProvider.handleLocationConfirmation(option)}
+    //     />
+    //   ),
+    // },
+
+    // New State Selection Widget with Search
+    {
+      widgetName: "stateSelection",
+      widgetFunc: (props: WidgetProps) => (
+        <StateSearchWidget
+          states={getAllStates()}
+          actionProvider={props.actionProvider}
+          onStateSelect={(state: string) =>
+            props.actionProvider.handleStateSelection(state)
+          }
+        />
+      ),
+    },
+    // New LGA Selection Widget with Search (filtered by selected state)
+    {
+      widgetName: "lgaSelection",
+      widgetFunc: (props: WidgetProps) => (
+        <LGASearchWidget
+          selectedState={props.state.selectedState || ""}
+          actionProvider={props.actionProvider}
+          onLGASelect={(lga: string) =>
+            props.actionProvider.handleLGASelection(lga)
+          }
+        />
+      ),
+    },
+    // Keep the old location options as fallback
+    {
+      widgetName: "locationConfirmation",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={["Yes, that's correct", "Change Location"]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleLocationConfirmation(option)
+          }
         />
       ),
     },
     {
       widgetName: "ageOptions",
       widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={["< 25", "26-35", "36-45", "46-55", "55 and older"]} 
+        <OptionButtons
+          options={["< 25", "26-35", "36-45", "46-55", "55 and older"]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleAgeSelection(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleAgeSelection(option)
+          }
         />
       ),
     },
     {
       widgetName: "maritalOptions",
       widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={["Single", "In a relationship", "Married", "Prefer not to say"]} 
+        <OptionButtons
+          options={[
+            "Single",
+            "In a relationship",
+            "Married",
+            "Prefer not to say",
+          ]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleMaritalStatusSelection(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleMaritalStatusSelection(option)
+          }
         />
       ),
     },
+
+    // Main FPM options
     {
       widgetName: "fpmOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          // {...props}
           options={[
             "How to get pregnant",
             "How to prevent pregnancy",
@@ -132,62 +217,24 @@ const config = {
             "Ask a general question",
           ]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handlePlanningMethodSelection(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handlePlanningMethodSelection(option)
+          }
         />
       ),
     },
-    {
-      widgetName: "contraceptionOptions",
-      widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={["Emergency", "Prevent in future"]} 
-          actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleContraceptionTypeSelection(option)}
-        />
-      ),
-    },
-    {
-      widgetName: "emergencyProductOptions",
-      widgetFunc: (props: WidgetProps) => (
-        <OptionButtons 
-          // {...props} 
-          options={["Postpill", "Postinor-2"]} 
-          actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleContraceptionProductSelection(option)}
-        />
-      ),
-    },
-    {
-      widgetName: "durationOptions",
-      widgetFunc: (props: WidgetProps) => (
-        <OptionButtons
-          // {...props}
-          options={["Up to 1 year", "1-2 years", "3-4 years", "5-10 years", "Permanently"]}
-          actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handlePreventionDurationSelection(option)}
-        />
-      ),
-    },
-    {
-      widgetName: "methodOptions",
-      widgetFunc: (props: WidgetProps) => (
-        <OptionButtons
-          // {...props}
-          options={["Daily pills", "Injectables", "Implants", "Emergency pills"]}
-          actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleMethodOptionsSelection(option)}
-        />
-      ),
-    },
-    // New widgets for sex life improvement path
+
+
+    // Sex life improvement widgets
     {
       widgetName: "sexEnhancementOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={["Gels and Lubricants", "Hard Erection"]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleSexEnhancementOptions(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleSexEnhancementOptions(option)
+          }
         />
       ),
     },
@@ -197,7 +244,9 @@ const config = {
         <OptionButtons
           options={["Fiesta Intim Gel", "KY Jelly"]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleLubricantOptions(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleLubricantOptions(option)
+          }
         />
       ),
     },
@@ -205,61 +254,82 @@ const config = {
       widgetName: "nextActionOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Chat with AI /Human", "Learn other methods", "Back to main menu"]}
+          options={[
+            "Chat with AI /Human",
+            "Learn other methods",
+            "Back to main menu",
+          ]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => props.actionProvider.handleNextAction(option)}
+          handleClick={(option: string) =>
+            props.actionProvider.handleNextAction(option)
+          }
+        />
+      ),
+    },
+
+    // =============================================================================
+    // GENERAL QUESTION WIDGETS
+    // =============================================================================
+    {
+      widgetName: "agentTypeOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={["AI Agent", "Human Agent"]}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleAgentTypeSelection(option)
+          }
         />
       ),
     },
     {
-      widgetName: "penegraAudio",
-      widgetFunc: (props: MediaWidgetProps) => (
-        <AudioWidget 
-          src="AUD-20250212-WA0006.mp3" 
+      widgetName: "moreHelpOptions",
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={["Yes", "No"]}
           actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleMoreHelpOptions(option)
+          }
         />
       ),
     },
-    {
-      widgetName: "lubricantAudio",
-      widgetFunc: (props: MediaWidgetProps) => (
-        <AudioWidget 
-          src="AUD-20250212-WA0007.mp3" 
-          actionProvider={props.actionProvider}
-        />
-      ),
-    },
-    {
-      widgetName: "kyJellyImage",
-      widgetFunc: (props: MediaWidgetProps) => (
-        <ImageWidget 
-          src="IMG-20250212-WA0008.jpg" 
-          alt="KY Jelly Product Image"
-          actionProvider={props.actionProvider}
-        />
-      ),
-    },
-    {
-      widgetName: "fiestaGelImage",
-      widgetFunc: (props: MediaWidgetProps) => (
-        <ImageWidget 
-          src="IMG-20250212-WA0009.jpg" 
-          alt="Fiesta Intim Gel Product Image"
-          actionProvider={props.actionProvider}
-        />
-      ),
-    },
-    {
-      widgetName: "fiestaGelVideo",
-      widgetFunc: (props: MediaWidgetProps) => (
-        <VideoLinkWidget 
-          url="https://www.youtube.com/watch?v=VtrXlRVaP-c&list=PL0mGkrTWmp4sWe4izabrqUhEVSuQAb-Hd&index=7&pp=iAQB" 
-          text="Watch Video Tutorial"
-          actionProvider={props.actionProvider}
-        />
-      ),
-    },
+
+    // =============================================================================
+    // MEDIA WIDGETS - Imported from mediaWidgetsConfig.tsx
+    // =============================================================================
+    ...mediaWidgets.map((widget) => ({
+      widgetName: widget.widgetName,
+      widgetFunc: (props: WidgetProps) =>
+        widget.widgetFunc(props as MediaWidgetProps),
+    })),
+
     // ... other widgets remain the same
+    // =============================================================================
+    // FPM CHANGE/STOP WIDGETS - Imported from fpmWidgetsConfig.tsx
+    // =============================================================================
+    ...fpmChangeStopWidgets.map((widget) => ({
+      widgetName: widget.widgetName,
+      widgetFunc: (props: WidgetProps) =>
+        widget.widgetFunc(props as FPMWidgetProps),
+    })),
+    // =============================================================================
+    // GET PREGNANT WIDGETS - Imported from getPregnantConfig.tsx
+    // =============================================================================
+    ...getPregnantWidgets.map((widget) => ({
+      widgetName: widget.widgetName,
+      widgetFunc: (props: WidgetProps) =>
+        widget.widgetFunc(props as GetPregnantWidgetProps),
+    })),
+
+    // =============================================================================
+    // PREVENT PREGNANCY WIDGETS - Imported from preventPregnancyWidgetsConfig.tsx
+    // =============================================================================
+    ...preventPregnancyWidgets.map((widget) => ({
+      widgetName: widget.widgetName,
+      widgetFunc: (props: WidgetProps) =>
+        widget.widgetFunc(props as PreventPregnancyWidgetProps),
+    })),
   ],
 };
 
