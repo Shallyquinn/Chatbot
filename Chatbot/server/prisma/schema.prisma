@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  user_id             String   @id @default(uuid()) @db.Uuid
+  user_session_id     String   @unique @db.VarChar(255)
+
+  // Demographics
+  selected_language        String?  @db.VarChar(20)
+  selected_gender          String?  @db.VarChar(30)
+  selected_state           String?  @db.VarChar(100)
+  selected_lga             String?  @db.VarChar(100)
+  selected_age_group       String?  @db.VarChar(20)
+  selected_marital_status  String?  @db.VarChar(30)
+
+  // Session state
+  current_step        String?  @db.VarChar(50)
+  current_fpm_method  String?  @db.VarChar(100)
+  current_concern_type String? @db.VarChar(100)
+  user_intention      String?  @db.VarChar(100)
+
+  // Timestamps
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+  last_active_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  chat_sessions          ChatSession[]
+  conversations          Conversation[]
+  user_responses         UserResponse[]
+  fpm_interactions       FpmInteraction[]
+  user_clinic_referrals  UserClinicReferral[]
+  conversation_analytics ConversationAnalytics[]
+}
+
+model ChatSession {
+  session_id   String   @id @default(uuid()) @db.Uuid
+  user_id      String?  @db.Uuid
+  user_session_id String @db.VarChar(255)
+
+  // Metadata
+  session_start_time    DateTime @default(now()) @db.Timestamptz(6)
+  session_end_time      DateTime? @db.Timestamptz(6)
+  total_messages_count  Int      @default(0)
+  session_duration_minutes Int?
+
+  // Outcome
+  session_completed   Boolean  @default(false)
+  session_outcome     String?  @db.VarChar(100)
+  final_step_reached  String?  @db.VarChar(50)
+
+  // Device info
+  user_agent   String? @db.Text
+  ip_address   String? @db.Inet
+  device_type  String? @db.VarChar(20)
+
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user                  User?          @relation(fields: [user_id], references: [user_id])
+  conversations         Conversation[]
+  user_responses        UserResponse[]
+  fpm_interactions      FpmInteraction[]
+  user_clinic_referrals UserClinicReferral[]
+  conversation_analytics ConversationAnalytics[]
+}
+
+model Conversation {
+  conversation_id String   @id @default(uuid()) @db.Uuid
+  session_id      String?  @db.Uuid
+  user_id         String?  @db.Uuid
+
+  message_text    String   @db.Text
+  message_type    String   @db.VarChar(10)
+  message_source  String?  @default("typed") @db.VarChar(20)
+
+  chat_step        String? @db.VarChar(50)
+  widget_name      String? @db.VarChar(100)
+  selected_option  String? @db.VarChar(200)
+
+  message_delay_ms Int?
+  has_widget       Boolean @default(false)
+  widget_options   String[] @db.Text
+
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  message_sequence_number Int
+
+  // Relations
+  session        ChatSession? @relation(fields: [session_id], references: [session_id])
+  user           User?        @relation(fields: [user_id], references: [user_id])
+  user_responses UserResponse[]
+}
+
+model UserResponse {
+  response_id     String   @id @default(uuid()) @db.Uuid
+  user_id         String?  @db.Uuid
+  session_id      String?  @db.Uuid
+  conversation_id String?  @db.Uuid
+  previous_response_id String? @db.Uuid
+
+  response_category String @db.VarChar(50)
+  response_type     String @db.VarChar(50)
+  question_asked    String? @db.Text
+  user_response     String  @db.Text
+  response_value    String? @db.VarChar(200)
+  widget_used       String? @db.VarChar(100)
+  available_options String[] @db.Text
+  step_in_flow      String? @db.VarChar(50)
+  is_initial_response Boolean @default(true)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user               User?          @relation(fields: [user_id], references: [user_id])
+  session            ChatSession?   @relation(fields: [session_id], references: [session_id])
+  conversation       Conversation?  @relation(fields: [conversation_id], references: [conversation_id])
+  previous_response  UserResponse?  @relation("UserResponseToPrevious", fields: [previous_response_id], references: [response_id])
+  next_responses     UserResponse[] @relation("UserResponseToPrevious")
+}
+
+model FpmInteraction {
+  interaction_id String @id @default(uuid()) @db.Uuid
+  user_id        String? @db.Uuid
+  session_id     String? @db.Uuid
+
+  fpm_flow_type           String? @db.VarChar(50)
+  current_fpm_method      String? @db.VarChar(100)
+  interested_fpm_method   String? @db.VarChar(100)
+  fpm_duration_preference String? @db.VarChar(50)
+
+  contraception_type      String? @db.VarChar(50)
+  emergency_product       String? @db.VarChar(50)
+  prevention_duration     String? @db.VarChar(50)
+  selected_method         String? @db.VarChar(100)
+
+  satisfaction_level       String? @db.VarChar(50)
+  switch_reason            String? @db.VarChar(200)
+  stop_reason              String? @db.VarChar(200)
+  important_factors        String[] @db.Text
+  kids_in_future           String? @db.VarChar(20)
+  timing_preference        String? @db.VarChar(50)
+  menstrual_flow_preference String? @db.VarChar(100)
+
+  provided_information  String? @db.Text
+  next_action           String? @db.VarChar(100)
+  clinic_referral_needed Boolean @default(false)
+  human_agent_requested  Boolean @default(false)
+
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user    User?        @relation(fields: [user_id], references: [user_id])
+  session ChatSession? @relation(fields: [session_id], references: [session_id])
+}
+
+model ClinicLocation {
+  clinic_id String @id @default(uuid()) @db.Uuid
+  clinic_name String @db.VarChar(200)
+  clinic_type String? @db.VarChar(50)
+
+  state   String @db.VarChar(100)
+  lga     String @db.VarChar(100)
+  city    String? @db.VarChar(100)
+  address String? @db.Text
+  landmark String? @db.VarChar(200)
+
+  phone_number String? @db.VarChar(20)
+  email        String? @db.VarChar(100)
+  website      String? @db.VarChar(200)
+
+  services_offered      String[] @db.Text
+  fpm_methods_available String[] @db.Text
+  consultation_fee      Decimal? @db.Decimal(10,2)
+  operating_hours       String? @db.Text
+
+  latitude  Decimal? @db.Decimal(10,8)
+  longitude Decimal? @db.Decimal(11,8)
+
+  is_active    Boolean @default(true)
+  verified_at  DateTime? @db.Timestamptz(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  referrals UserClinicReferral[]
+}
+
+model UserClinicReferral {
+  referral_id String @id @default(uuid()) @db.Uuid
+  user_id     String? @db.Uuid
+  session_id  String? @db.Uuid
+  clinic_id   String? @db.Uuid
+
+  referral_reason     String? @db.VarChar(200)
+  user_concern        String? @db.VarChar(200)
+  recommended_service String? @db.VarChar(100)
+
+  referral_provided_at DateTime @default(now()) @db.Timestamptz(6)
+  user_contacted_clinic Boolean @default(false)
+  user_visited_clinic   Boolean @default(false)
+  visit_confirmed_at    DateTime? @db.Timestamptz(6)
+
+  follow_up_needed    Boolean @default(false)
+  follow_up_completed Boolean @default(false)
+  follow_up_notes     String? @db.Text
+
+  // Relations
+  user    User?          @relation(fields: [user_id], references: [user_id])
+  session ChatSession?   @relation(fields: [session_id], references: [session_id])
+  clinic  ClinicLocation? @relation(fields: [clinic_id], references: [clinic_id])
+}
+
+model ConversationAnalytics {
+  analytics_id String @id @default(uuid()) @db.Uuid
+  session_id   String?    @unique@db.Uuid
+  user_id      String? @db.Uuid
+
+  steps_completed         String[] @db.Text
+  widgets_interacted_with String[] @db.Text
+  flows_attempted         String[] @db.Text
+
+  total_user_messages    Int @default(0)
+  total_bot_messages     Int @default(0)
+  total_button_clicks    Int @default(0)
+  total_typed_responses  Int @default(0)
+  session_abandonment_point String? @db.VarChar(50)
+
+  information_provided   String[] @db.Text
+  goals_achieved         String[] @db.Text
+  unresolved_concerns    String[] @db.Text
+  satisfaction_rating    Int?
+
+  average_response_time_seconds Decimal? @db.Decimal(10,2)
+  errors_encountered            String[] @db.Text
+
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user    User?        @relation(fields: [user_id], references: [user_id])
+  session ChatSession? @relation(fields: [session_id], references: [session_id])
+}
