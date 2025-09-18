@@ -252,10 +252,10 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            "Chat with AI /Human",
+            "Wiregbe pẹlu AI / Eniyan",
             "Kọ nípa àwọn ìlànà miiran",
-            "Back to main menu",
-            "Get more sex life tips"
+            "Pada  si Ibere",
+            "Gba awọn imọran igbesi aye ibalopo diẹ sii"
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -272,9 +272,9 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            "Chat with AI /Human",
-            "Learn other methods",
-            "Back to main menu",
+            "Wiregbe pẹlu AI / Eniyan",
+            "Kọ ẹkọ awọn ọna miiran",
+            "Pada  si Ibere",
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
