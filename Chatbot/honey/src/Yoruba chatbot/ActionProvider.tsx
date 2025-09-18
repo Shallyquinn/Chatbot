@@ -325,7 +325,7 @@ class ActionProvider implements ActionProviderInterface {
 
 
     const confirmLocation = this.createChatBotMessage(
-      `Please confirm your local government area is ${location}`,
+      `Jọwọ, jẹrisi Ijọba Ibilẹ rẹ ${location}`,
       {
         widget: "locationConfirmation",
         delay: 500,
@@ -660,9 +660,9 @@ class ActionProvider implements ActionProviderInterface {
         return;
       }
       
-      case "Back to main menu": {
+      case "Pada  si Ibere": {
         const mainMenuMessage = this.createChatBotMessage(
-          "What would you like me to help you with?",
+          " Kin ni ohun ti o tún fẹ se báyìí?",
           {
             widget: "fpmOptions",
             delay: 500,
@@ -716,7 +716,7 @@ class ActionProvider implements ActionProviderInterface {
     };
 
     const responseMessage = this.createChatBotMessage(
-      "Thank you for your interest in sexual health. Is there anything else I can help you with?",
+      "Thank you for your interest in sexual health.n jẹ o fẹ lati béèrè ohun miran?",
       {
         widget: "moreHelpOptions",
         delay: 500,
@@ -736,7 +736,7 @@ class ActionProvider implements ActionProviderInterface {
 
   handleGeneralQuestion = async(): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
-      "I'd be happy to help with your questions! ",
+      "Inu mi yoo dun lati ṣe iranlọwọ pẹlu awọn ibeere rẹ! ",
       {delay: 500}
     );
     const agentMessage = this.createChatBotMessage(  
@@ -818,7 +818,7 @@ class ActionProvider implements ActionProviderInterface {
 
     if (answer === "Yes") {
       const helpOptions = this.createChatBotMessage(
-        "What additional help would you like?",
+        "Se mo tun le ran ọ lọwọ fun nnkan miiran bíi?",
         {
           widget: "moreHelpOptions",
           delay: 500,
@@ -832,7 +832,7 @@ class ActionProvider implements ActionProviderInterface {
       }));
     } else {
       const thankYou = this.createChatBotMessage(
-        "Thank you for using our service! Feel free to come back anytime you need help. Have a great day!",
+        "O ṣeun fun lilo iṣẹ wa! Lero ọfẹ lati pada wa nigbakugba ti o nilo iranlọwọ. Ojo re oni a dara gan ni!",
         { delay: 500 }
       );
 
@@ -862,7 +862,7 @@ class ActionProvider implements ActionProviderInterface {
     );
 
     const helpMessage = this.createChatBotMessage(
-      "Is there anything else I can help you with?",
+      "Se mo tun le ran ọ lọwọ fun nnkan miiran bíi?",
       {
         widget: "moreHelpOptions",
         delay: 1000,
