@@ -294,7 +294,6 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       available_options:['Emergency', 'Prevent in future'],
       step_in_flow:'contraceptionTypeOptions',
     })
-    
   };
   
   // New method to handle invalid contraception types
@@ -450,7 +449,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // PREVENT FUTURE PATH
   // =============================================================================
 
-  private handlePreventFuturePath = (userMessage: ChatMessage): void => {
+  private handlePreventFuturePath = async(userMessage: ChatMessage): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
       "Alright\n\nI am happy to provide you with more information about family planning methods that are effective in preventing pregnancy.",
       { delay: 500 }
@@ -469,13 +468,20 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       messages: [...prev.messages, userMessage, responseMessage, durationMessage],
       currentStep: "duration",
     }));
+    await this.api.createConversation({
+      message_text: userMessage.message,
+      message_type:'user',
+      chat_step:"contraceptionTypeOptions",
+      message_sequence_number:1,
+      widget_name:"contraceptionTypeOptions"
+    })
   };
 
   // =============================================================================
   // PREVENTION DURATION SELECTION
   // =============================================================================
   // Optimization (Alternative Approach)
-  handlePreventionDurationSelection = (duration: string): void => {
+  handlePreventionDurationSelection = async(duration: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: duration,
       type: "user",
@@ -512,6 +518,15 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     };
 
     const config = durationConfig[durationKey];
+     await this.api.createResponse({
+      response_category:'ContraceptionDuration',
+      response_type:'user',
+      question_asked:'How long do you want to prevent pregnancy?',
+      user_response:duration,
+      widget_used:config.widget,
+      available_options:Object.keys(durationConfig),
+      step_in_flow:"preventionDurationSelection",
+    })
 
     if (!config) {
       // Handle invalid duration
@@ -528,7 +543,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "duration",
       }));
+      
       return;
+    
     }
 
     const responseMessage = this.createChatBotMessage(config.message, { delay: 500 });
@@ -646,7 +663,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // METHOD SELECTION HANDLING
   // =============================================================================
 
-  handleMethodOptionsSelection = (method: string): void => {
+  handleMethodOptionsSelection = async(method: string): Promise<void> => {
     const contraceptiveMethod = method as ContraceptiveMethod;
     const userMessage: ChatMessage = {
       message: method,
@@ -718,6 +735,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       messages: [...prev.messages, ...messages],
       currentStep: "methodDetails",
     }));
+    await this.api.createResponse({
+      response_category: "ContraceptionMethod",
+      response_type: "user",
+      question_asked: "Which family planning method do you want to know about",
+      user_response: method,
+      widget_used: widgets.hasAudio ? widgets.audioWidget ?? "methodDetails" : "methodDetails",
+      available_options: Object.keys(this.getAllMethodOptions?.() ?? {}),
+      step_in_flow: "methodOptionsSelection",
+
+    })
   };
 
   // =============================================================================

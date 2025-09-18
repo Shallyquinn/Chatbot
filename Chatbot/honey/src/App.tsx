@@ -52,7 +52,8 @@ const AppContent: React.FC = () => {
         ref={chatContainerRef}
       >
         <div className="flex flex-row items-center bg-emerald-800 dark:bg-emerald-900 justify-between px-3 sm:px-4 py-3 transition-colors duration-300">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between w-full">
+            <div className="flex-row flex">
             <div className="w-15 h-15 sm:h-20 sm:w-20 rounded-full bg-white flex items-center justify-center mr-2 sm:mr-3 overflow-hidden">
               <img
                 src="../Honey_profile_pic.png"
@@ -75,7 +76,9 @@ const AppContent: React.FC = () => {
               <span className="text-white text-opacity-80 text-xs sm:text-sm">
                 Family Planning Assistant
               </span>
-            </div><div className="flex items-center space-x-4 sm:space-x-2">
+            </div>
+            </div>
+            <div className="flex items-center space-x-4 sm:space-x-2">
             <button className="p-1 sm:p-1.5 text-white hover:bg-emerald-700 rounded-full transition">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

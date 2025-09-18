@@ -506,8 +506,15 @@ class ActionProvider implements ActionProviderInterface {
       chat_step:"planningMethodSelection",
       message_sequence_number:1,
       widget_name:'planningMethodSelection',
-      widget_options:["contraception", "sexEnhancement"],
-      message_delay_ms:userMessage.delay
+      widget_options: [
+      "How to get pregnant",
+      "How to prevent pregnancy",
+      "How to improve sex life",
+      "Change/stop current FPM",
+      "Ask a general question",
+      ],
+      selected_option: method,
+      message_delay_ms:500
      })
   };
 
@@ -563,13 +570,13 @@ class ActionProvider implements ActionProviderInterface {
       id: uuidv4(),
     };
 
-     await this.api.createConversation({
-      message_type:'bot',
-      message_text:'I can help improve your sexual experience. What would you like to focus on?',
-      chat_step:'lubricantSelection',
-      widget_name:"lubricantOptions",
-      widget_options:['']
-    })
+    //  await this.api.createConversation({
+    //   message_type:'bot',
+    //   message_text:'I can help improve your sexual experience. What would you like to focus on?',
+    //   chat_step:'lubricantSelection',
+    //   widget_name:"lubricantOptions",
+    //   widget_options:['']
+    // })
 
     let responseMessage: ChatMessage;
 
@@ -596,11 +603,21 @@ class ActionProvider implements ActionProviderInterface {
         messages: [...prev.messages, userMessage, responseMessage],
         currentStep: "default",
       }));
+      await this.api.createResponse({
+      response_category:'ContraceptionType',
+      response_type:'user',
+      question_asked:'What kind of contraception do you want to know about?',
+      user_response:option,
+      widget_used:'contraceptiontypeoptions',
+      available_options:['Emergency', 'Prevent in future'],
+      step_in_flow:'contraceptionTypeOptions',
+    })
     }
+   
     
   };
 
-  handleLubricantOptions = (lubricant: string): void => {
+  handleLubricantOptions = async(lubricant: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: lubricant,
       type: "user",
@@ -630,6 +647,15 @@ class ActionProvider implements ActionProviderInterface {
       ],
       currentStep: "nextAction",
     }));
+   await this.api.createResponse({
+      response_category:'LubricantType',
+      response_type:'user',
+      question_asked:'What kind of lubricant do you want to know about?',
+      user_response:lubricant,
+      widget_used:'lubricantOptions',
+      available_options:['Water-based', 'Oil-based', 'Silicone-based'],
+      step_in_flow:'lubricantOptions',
+    })
   };
 
   handleNextAction = (action: string): void => {
@@ -800,13 +826,7 @@ class ActionProvider implements ActionProviderInterface {
         currentStep: "agentTypeSelection",
       }));
     }
-    await this.api.createConversation({
-      message_text: type,
-      message_type:'user',
-      chat_step:"agentTypeSelection",
-      message_sequence_number:1,
-      widget_name:"agentTypeOptions"
-    })
+   
   };
 
   handleMoreHelp = (answer: string): void => {

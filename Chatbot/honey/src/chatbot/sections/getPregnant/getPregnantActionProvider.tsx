@@ -53,19 +53,6 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       type: "user",
       id: uuidv4(),
     };
-    try{
-      await this.api.createConversation({
-    message_type: "user",
-    message_text: userMessage.message,
-    message_source: "typed",
-    chat_step: "getPregnantFPMSelection",
-    widget_name: "getPregnantFPMSelection",
-    message_sequence_number:1,
-    message_delay_ms: 500,
-  })
-    } catch(error){
-      console.log('Failed')
-    }
     
    
     // Use the original messages from getPregnantConfig
@@ -91,17 +78,25 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       
     }));
    await this.api.createConversation({
-    message_type: "user",
+    message_type:"user",
     message_text: userMessage.message,
     chat_step: "getPregnantFPMSelection",
     widget_name: "getPregnantFPMSelection",
+     widget_options: [
+        "Daily pills",
+        "Injectables",
+        "Implants",
+        "IUD",
+        "Condoms",
+        "Other",
+      ],             
     message_sequence_number:1,
     message_delay_ms: 500,
   }).catch(err => console.error("Failed to save conversation:", err));
   };
 
   // Handle FPM selection for get pregnant flow
-  handleGetPregnantFPMSelection = (selection: string): void => {
+  handleGetPregnantFPMSelection = async(selection: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: selection,
       type: "user",
@@ -134,6 +129,31 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       messages: [...prev.messages, ...messages],
       currentStep: response.nextStep,
     }));
+    try {
+      await this.api.createResponse({
+        response_category: "GetPregnantFPMSelection",
+        response_type:'user',
+        question_asked: "Are you currently using a family planning method (FPM) or did you recently use one?",
+        user_response: selection,
+        widget_used: "getPregnantFPMSelection",
+        available_options: [
+        "No FPM now or recently",
+        "IUD",
+        "Implants",
+        "Injections /Depo-provera / Sayana Press",
+        "Sayana Press",
+        "Daily Pills",
+        "Condoms",
+        "Emergency pills",
+        "Female sterilisation",
+        "Male sterilisation",
+        ],
+        step_in_flow: "getPregnantFPMSelection"
+      });
+
+    } catch (err) {
+      console.error("Failed to save FPM Selection responses")
+    }
   };
 
   // Get specific response based on FPM method
@@ -229,7 +249,6 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     const foundResponse = responses[method];
     console.log("Found response:", foundResponse ? "Yes" : "No", { method }); // Debug log
-
     return (
       foundResponse || {
         message: `I understand you're using ${method}. For specific guidance about conception while using this method, I recommend consulting with a healthcare provider. Please call 7790 for personalized assistance.`,
@@ -238,10 +257,11 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         nextStep: "getPregnantNextAction",
       }
     );
+     
   }
 
   // Handle trying duration selection (No FPM branch)
-  handleGetPregnantTryingDuration = (duration: string): void => {
+  handleGetPregnantTryingDuration = async(duration: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: duration,
       type: "user",
@@ -276,6 +296,19 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       ],
       currentStep: "getPregnantNextAction",
     }));
+    await this.api.createResponse({
+    response_category: "TryingDuration",
+    response_type: "user",
+    question_asked: "How long have you been trying to conceive?",
+    user_response: duration,
+    widget_used: "getPregnantTryingDuration",
+    available_options: [
+      "Less than 6 months",
+      "6-12 months",
+      "More than 1 year",
+    ],
+    step_in_flow: "getPregnantTryingDuration",
+  });
   };
 
   // Get advice based on trying duration
@@ -288,15 +321,16 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       " than 1 year":
         "After trying for over a year, it may be helpful to consult with a fertility specialist or healthcare provider. They can assess both partners and provide guidance on next steps. Don't lose hope - many couples conceive with proper medical guidance.",
     };
-
+    
     return (
       adviceMap[duration] ||
       "Thank you for sharing that information. For personalized advice about your conception journey, I recommend consulting with a healthcare provider who can assess your specific situation."
     );
+
   }
 
   // Handle IUD removal status
-  handleGetPregnantIUDRemoval = (status: string): void => {
+  handleGetPregnantIUDRemoval = async(status: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: status,
       type: "user",
@@ -326,6 +360,19 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       ],
       currentStep: "getPregnantNextAction",
     }));
+     await this.api.createResponse({
+    response_category: "IUDRemoval",
+    response_type: "user",
+    question_asked: "Have you had your IUD removed?",
+    user_response: status,
+    widget_used: "getPregnantIUDRemoval",
+    available_options: [
+      "Yes, more than 1 year",
+      "Yes, less than 1 year",
+      "No, I didn't remove",
+    ],
+    step_in_flow: "getPregnantIUDRemoval",
+  });
   };
 
   // Get IUD removal specific response
@@ -346,7 +393,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   }
 
   // Handle Implant removal status
-  handleGetPregnantImplantRemoval = (status: string): void => {
+  handleGetPregnantImplantRemoval = async(status: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: status,
       type: "user",
@@ -376,6 +423,19 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       ],
       currentStep: "getPregnantNextAction",
     }));
+    await this.api.createResponse({
+    response_category: "ImplantRemoval",
+    response_type: "user",
+    question_asked: "Have you had your implant removed?",
+    user_response: status,
+    widget_used: "getPregnantImplantRemoval",
+    available_options: [
+      "Longer than 3 months",
+      "Less than 3 months",
+      "No, I didn't remove",
+    ],
+    step_in_flow: "getPregnantImplantRemoval",
+  });
   };
 
   // Get implant removal specific response
@@ -396,7 +456,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   }
 
   // Handle injection stopping status
-  handleGetPregnantInjectionStop = (status: string): void => {
+  handleGetPregnantInjectionStop = async(status: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: status,
       type: "user",
@@ -426,6 +486,18 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       ],
       currentStep: "getPregnantNextAction",
     }));
+    await this.api.createResponse({
+      response_category: "ImplantRemoval",
+      response_type: "user",
+      question_asked: "Have you had your implant removed?",
+      user_response: status,
+      widget_used: "getPregnantImplantRemoval",
+      available_options: [
+        "Longer than 3 months",
+        "Less than 3 months",
+        "No, I didn't remove"
+      ]
+    })
   };
 
   // Get injection stop specific response
@@ -442,12 +514,21 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   }
 
   // Handle pills stopping status
-  handleGetPregnantPillsStop = (status: string): void => {
+  handleGetPregnantPillsStop = async(status: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: status,
       type: "user",
       id: uuidv4(),
     };
+
+    await this.api.createResponse({
+      response_category: "PillsStop",
+      response_type: "user",
+      question_asked: "Have you stopped taking the daily contraceptive pills?",
+      user_response: status,
+      widget_used: "getPregnantPillsStop",
+      available_options: ["Yes", "No"]
+    })
 
     const responseMessage = this.createChatBotMessage(
       this.getPillsStopResponse(status),
@@ -488,7 +569,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   }
 
   // Handle next action selection
-  handleGetPregnantNextAction = (action: string): void => {
+  handleGetPregnantNextAction = async(action: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: action,
       type: "user",
@@ -516,6 +597,17 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         ],
         currentStep: "getPregnantUserQuestion",
       }));
+
+       await this.api.createResponse({
+      response_category: "GetPregnant",
+      response_type: "user",
+      question_asked: "Do you have more questions?",
+      user_response: action,
+      widget_used: "getPregnantNextAction",
+      available_options: ["Ask more questions", "Find nearest clinic", "Back to main menu"],
+      step_in_flow: "getPregnantNextAction",
+    });
+
     } else if (action === "Find nearest clinic") {
       const clinicMessage = this.createChatBotMessage(
         "To find the nearest clinic, please share your location or enter your city/area name.",
@@ -527,6 +619,16 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         messages: [...prev.messages, userMessage, clinicMessage],
         currentStep: "locationInput",
       }));
+       await this.api.createResponse({
+      response_category: "GetPregnant",
+      response_type: "user",
+      question_asked: "Do you want to find the nearest clinic?",
+      user_response: action,
+      widget_used: "getPregnantNextAction",
+      available_options: ["Ask more questions", "Find nearest clinic", "Back to main menu"],
+      step_in_flow: "locationInput",
+    });
+
     } else if (action === "Back to main menu") {
       const mainMenuMessage = this.createChatBotMessage(
         "What would you like me to help you with?",
@@ -541,6 +643,15 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         messages: [...prev.messages, userMessage, mainMenuMessage],
         currentStep: "fpm",
       }));
+       await this.api.createResponse({
+      response_category: "Navigation",
+      response_type: "user",
+      question_asked: "Do you want to go back to the main menu?",
+      user_response: action,
+      widget_used: "getPregnantNextAction",
+      available_options: ["Ask more questions", "Find nearest clinic", "Back to main menu"],
+      step_in_flow: "fpm",
+    });
     }
   };
 
