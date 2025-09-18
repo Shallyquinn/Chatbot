@@ -195,7 +195,7 @@ class ActionProvider implements ActionProviderInterface {
     }
     
     const greeting = this.createChatBotMessage(
-      'Hey! My name is Honey. I am a family planning and pregnancy prevention chatbot. I am here to help with information on family planning, sexual health, and intimacy.\n\n I can answer your family planning questions, refer you to a medical professional to talk to, and also refer you to a family planning clinic\n\n If you want to be connected to a medical professional agent, just type the word "human" at any time. \n\n Any communication happening in this chat is strictly confidential, so you can feel safe sharing personal information',
+      'Ẹ pẹlẹ ní bẹyẹn! Oruko mi ni Honey. Mo je Ẹrọ ibaraẹnisọrọ aládàáni fun ifetosi omobibi ati idena Oyun. Mo le fun o ni alate Lori ifetosi omobibi ati Ìlera Ibalopo.\n\n Mo lè dahun àwọn ìbéèrè rẹ lórí ìfètòsọ́mọbíbí, mo lè tọ́kà rẹ sí akọṣẹmọṣẹ oníṣègùn tí ó lè bá sọ̀rọ̀ bẹ̀ẹ̀, mo lè tọ́kà ilé ìwòsàn ìfètòsọ́mọbíbí fún ọ\n\n If you want to be connected to a medical professional agent, just type the word "human" at any time. \n\n Gbogbo ohun tí a bá sọ nínú ibaraẹnisọrọ yìí jẹ́ aṣiri patápátá, nítorína, fókan bàlẹ̀ láti bá mi sọ aṣiri rẹ.',
       { delay: 500 }
     );
     const followup1 = this.createChatBotMessage(
@@ -206,7 +206,7 @@ class ActionProvider implements ActionProviderInterface {
       "Before we continue, I would like to ask you a few questions to assist you better.",
       { delay: 1000 }
     );
-    const genderQuestion = this.createChatBotMessage("What is your gender?", {
+    const genderQuestion = this.createChatBotMessage("Obìnrin ni yín tàbí ọkùnrin?", {
       widget: "genderOptions",
       delay: 1500,
     });
@@ -269,7 +269,7 @@ class ActionProvider implements ActionProviderInterface {
     }
 
     const lgaQuestion = this.createChatBotMessage(
-      `Great! What LGA (Local Government Area) are you in within ${state} state?`,
+      `Great!E te Ijọba ìbílẹ̀ ti ẹ n  ti n bá wa sọ̀rọ̀  within ${state} state?`,
       {
         widget: "lgaOptions",
         delay: 500,
@@ -301,7 +301,7 @@ class ActionProvider implements ActionProviderInterface {
       { delay: 500 }
     );
 
-    const ageQuestion = this.createChatBotMessage("What is your age group?", {
+    const ageQuestion = this.createChatBotMessage(" Kin ni ọjọ orí rẹ?", {
       widget: "ageOptions",
       delay: 500,
     });
