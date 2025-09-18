@@ -194,11 +194,11 @@ class MessageParser {
           this.actionProvider.handleSexLifeImprovement();
         } else if (lowerCase.includes("prevent pregnancy")) {
           this.actionProvider.handlePlanningMethodSelection(
-            "How to prevent pregnancy"
+            "Bawo ni lati se oyun"
           );
         } else if (lowerCase.includes("change") && lowerCase.includes("fpm")) {
           this.actionProvider.handleFPMChangeSelection(
-            "Change/stop current FPM"
+            "Yí / dá ìlànà dúró."
           );
         } else if (lowerCase === "human" || lowerCase.includes("agent")) {
           // Handle direct request for a human agent
