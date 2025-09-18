@@ -346,7 +346,7 @@ class ActionProvider implements ActionProviderInterface {
     };
 
     if (locationOption === "Yes, that's correct") {
-      const ageQuestion = this.createChatBotMessage("How old are you?", {
+      const ageQuestion = this.createChatBotMessage("Kin ni ọjọ orí rẹ?", {
         widget: "ageOptions",
         delay: 500,
       });
@@ -385,7 +385,7 @@ class ActionProvider implements ActionProviderInterface {
     }
 
     const maritalQuestion = this.createChatBotMessage(
-      "What's your marital status?",
+      "Ṣe wúndíá tàbí àpọn ni ọ báyìí àbí o ti ṣègbéyàwó?",
       {
         widget: "maritalStatusOptions",
         delay: 500,
@@ -412,15 +412,15 @@ class ActionProvider implements ActionProviderInterface {
       console.error("Failed to save marital status:", error);
     }
 
-    const thankYou = this.createChatBotMessage("Thank you for sharing!", {
+    const thankYou = this.createChatBotMessage("O seun fún ìdáhùn yìí!", {
       delay: 500,
     });
     const assistMsg = this.createChatBotMessage(
-      "Now I can assist you better.",
+      "Ní bayi mo le ran ọ lọwọ síi.",
       { delay: 500 }
     );
     const fpmQuestion = this.createChatBotMessage(
-      "I can provide you with information about Family Planning Methods (FPM) or other sex-related questions. What do you want to know? \n\nFPM = Family Planning Method",
+      "Mo le fún ọ ní àlàyé lórí àwọn ìlànà Ifeto ṣọmọ bibi (FPM) tàbí àwọn ìbéère mìíràn tí o jẹ mọ ibalopọ. Kí ni nnkan tí o fẹ́ mọ? \n\nFPM = Family Planning Method",
       { widget: "fpmOptions", delay: 500 }
     );
     this.setState((prev: ChatbotState) => ({
