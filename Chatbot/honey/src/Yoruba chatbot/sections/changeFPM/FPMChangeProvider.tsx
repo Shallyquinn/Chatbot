@@ -163,12 +163,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (userIntention === "switch") {
       const responseMessage = this.createChatBotMessage(
-        "Okay, I see.\n\nLet me ask you a few questions to better understand what kind of method would suit best for you.",
+        " O dára bẹẹ .\n\n Jẹ ki n bèèrè àwọn ìbéèrè diẹ lati ni oye daradara lọwọ rẹ, kini iru ilana ti yoo dara julọ fun ọ.",
         { delay: 500 }
       );
 
       const methodQuestion = this.createChatBotMessage(
-        "Which method are you currently using?\nMethod you use now",
+        "Ọna wo ni o nlo lọwọlọwọ??\nMethod you use now",
         {
           widget: "switchFPMOptions",
           delay: 1000,
@@ -189,7 +189,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     } else {
       // For concerned and stop - ask which method they're using
       const responseMessage = this.createChatBotMessage(
-        "Ok, I can help you. Which method are you currently using?\noptions(choose)",
+        "Ó dáa bẹ́ẹ̀.Jẹ́ kí n bèèrè àwọn ìbéèrè diẹ̀ lọwọ rẹ láti lè mọ̀ irú ìlànà tí yóò dára jùlọ fún ọ."
+
+
+
+
+\noptions(choose)",
         {
           widget:
             userIntention === "stop" ? "stopFPMOptions" : "currentFPMOptions",
@@ -222,7 +227,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     // Ask about satisfaction with the current method
     const satisfactionQuestion = this.createChatBotMessage(
-      "How has the method been working for you? Would you say you are somewhat satisfied, or not at all satisfied with your method?",
+      "Báwo ni ìlànà náà ṣe ti n ṣiṣẹ fún ọ? Ṣé o lè sọ pé o tẹ ọ lọ́run díẹ̀ tàbí kò tẹ ọ lọ́run rárá?",
       {
         widget: "satisfactionOptions",
         delay: 500,
@@ -247,7 +252,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     console.log("🔧 Stop flow - stored method in state:", method);
 
     const reasonQuestion = this.createChatBotMessage(
-      "Okay, thanks for sharing!\nCan you tell me why do you want to stop using this method?\n\nFP = Family planning method\nOptions(Choose one)",
+      "O seun fún ìdáhùn yìí.!\nṢé o lè sọ fún mi ìdí tí o fi fẹ́ dá ìlànà yìí dúró?\n\nFP = Family planning method\nOptions(Choose one)",
       {
         widget: "stopReasonOptions",
         delay: 500,
@@ -271,7 +276,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     const concernMessage = this.createChatBotMessage(
-      "I am sorry to hear that you are dissatisfied with the current family planning method.\n Could you tell me a little more about the situation? What is your concern? \n\n FP = Family Planning method (contraceptive)",
+      "Èmi yààtọ̀ pé kí o jẹ́ pé o kò ní itẹlọ́run pẹ̀lú ìlànà ìfètòsọ́mọbíbí tó wà lọ́wọ́.\n Ṣé o lè sọ fún mi díẹ̀ síi nípa ipò náà? kini aniyan rẹ \n\n FP = Family Planning method (contraceptive)",
       {
         widget: "fpmConcernOptions",
         delay: 500,
@@ -296,7 +301,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     this.satisfaction = satisfaction;
 
     const reasonQuestion = this.createChatBotMessage(
-      "May I know why do you want to switch?\nPick a reason why",
+      Ṣe mo lè mọ ìdí tí o fi fẹ́ yípadà sí omìrán?\nYan idi kan",
       {
         widget: "switchReasonOptions",
         delay: 500,
@@ -321,7 +326,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     this.switchReason = reason;
 
     const recommendationQuestion = this.createChatBotMessage(
-      "Would you like to know about other methods that you may like better?",
+      "Ṣé o fẹ́ mọ àwọn ìlànà mìíràn tí o lè nífẹ̀ẹ́ sí ju ti tẹ́lẹ̀ lọ?",
       {
         widget: "methodRecommendationOptions",
         delay: 500,
@@ -345,12 +350,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (response === "Yes") {
       const introMessage = this.createChatBotMessage(
-        "OK. Let me ask you a few questions to better understand what kind of method would be good for you.",
+        "Ó dára, jẹ́ kí n béèrè àwọn ìbéèrè diẹ̀ lọwọ rẹ láti ni òye irú ìlànà tí yóò dára fún ọ.",
         { delay: 500 }
       );
 
       const kidsQuestion = this.createChatBotMessage(
-        "Would you like to have kids in the future or not?",
+        "Ṣé o fẹ́ bímọ síi tàbí ṣé o fẹ́ bímọ ọmọ kankan mọ?",
         {
           widget: "kidsInFutureOptions",
           delay: 1000,
@@ -364,7 +369,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       }));
     } else {
       const nextActions = this.createChatBotMessage(
-        "What would you like to do next?",
+        " Kin ni ohun ti o tún fẹ se báyìí?",
         {
           widget: "fpmNextActionOptions",
           delay: 500,
@@ -391,7 +396,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (response === "Yes, I want more kids") {
       const timingQuestion = this.createChatBotMessage(
-        "How many years would you like to wait from now before you have another child?\nMenu",
+        "Ọdún mélòó ni o fẹ́ fi dúró kí o tó bímọ mìíràn?\nMenu",
         {
           widget: "timingOptions",
           delay: 500,
@@ -428,7 +433,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     );
 
     const factorsQuestion = this.createChatBotMessage(
-      "When you are picking a contraceptive method, which factor is the most important to you?\nPick one factor",
+      "O dára, bi o ba fe yàn ìlànà idèna oyún, kín ni awọn ohun to ṣe pàtàkì sì ọ?\nPick one factor",
       {
         widget: "importantFactorsOptions",
         delay: 1000,
@@ -457,7 +462,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (factor === "No effect on menstrual🩸") {
       responseMessage = this.createChatBotMessage(
-        "When you are picking a contraceptive method, what are the things that are important to you?",
+        "O dára, bi o ba fe yàn ìlànà idèna oyún, kín ni awọn ohun to ṣe pàtàkì sì ọ?",
         {
           widget: "menstrualFlowOptions",
           delay: 500,
@@ -468,7 +473,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       responseMessage = this.createChatBotMessage(response, { delay: 500 });
 
       const nextActions = this.createChatBotMessage(
-        "What would you like to do next?",
+        "Kí ni o fẹ́ ṣe ní atẹ̀lẹ̀yìn?",
         {
           widget: "fpmNextActionOptions",
           delay: 1000,
@@ -529,7 +534,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     return (
       recommendations[factor] ||
-      `Thank you for sharing your preference. For your specific needs regarding ${factor.toLowerCase()}, I recommend speaking with a healthcare provider at 7790 for personalized guidance.`
+      `Thank you for sharing your preference. For your specific needs regarding ${factor.toLowerCase()},Tí o bá fẹ́ gba àlàyé lórí rẹ̀ síi, jọwọ bá akọṣẹmọṣẹ oníṣègùn sọ̀rọ̀ lórí nomba 7790.`
     );
   }
 
@@ -545,7 +550,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     const responseMessage = this.createChatBotMessage(response, { delay: 500 });
 
     const nextActions = this.createChatBotMessage(
-      "What would you like to do next?",
+      "Kí ni o fẹ́ ṣe ní atẹ̀lẹ̀yìn?",
       {
         widget: "fpmNextActionOptions",
         delay: 1000,
@@ -576,7 +581,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     return (
       responses[preference] ||
-      "Thank you for sharing your preference. For more information on how different contraceptive methods affect menstrual flow, please call 7790 to speak with a healthcare professional."
+      "O ṣeun fun pinpin ayanfẹ rẹ. Fun alaye diẹ sii lori bii awọn ọna idena oyun ti o yatọ ṣe ni ipa lori sisan oṣu, jọwọ pe 7790 lati ba alamọja ilera kan sọrọ."
     );
   }
 
@@ -594,7 +599,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     );
 
     const nextActions = this.createChatBotMessage(
-      "What would you like to do next?",
+      "Kí ni o fẹ́ ṣe ní atẹ̀lẹ̀yìn?",
       {
         widget: "fpmNextActionOptions",
         delay: 1000,
@@ -627,7 +632,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     );
 
     const nextActions = this.createChatBotMessage(
-      "What would you like to do next?",
+      "Kí ni o fẹ́ ṣe ní atẹ̀lẹ̀yìn?",
       {
         widget: "fpmNextActionOptions",
         delay: 1000,
@@ -656,12 +661,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       );
 
       const callInfo = this.createChatBotMessage(
-        'If you want to speak to an agent for further enquiries and discussion, please call 7790.\n\nIf you want to be connected to a medical professional agent here in chat, just type the word "human".',
+        'Ti o ba fẹ ba asoju sọrọ siwaju sí lati mọ nipa ilana Ifeto ṣọmọ bíbí, jọwọ pe nọmba yìí 7790.\n\nTi o ba fẹ sopọ mọ aṣoju ọjọgbọn iṣoogun kan nibi ni iwiregbe, kan tẹ ọrọ naa “human”.',
         { delay: 1000 }
       );
 
       const moreHelp = this.createChatBotMessage(
-        "Can I help you with anything else?",
+        "Ṣe Mo le ran ọ lọwọ pẹlu ohunkohun miiran?",
         {
           widget: "moreHelpOptions",
           delay: 1500,
@@ -680,7 +685,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       );
 
       const moreHelp = this.createChatBotMessage(
-        "Can I help you with anything else?",
+        "Ṣe Mo le ran ọ lọwọ pẹlu ohunkohun miiran?",
         {
           widget: "moreHelpOptions",
           delay: 1000,
@@ -731,7 +736,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     } else if (action === "Ask more questions") {
       const response = this.createChatBotMessage("Okay!", { delay: 500 });
       const questionPrompt = this.createChatBotMessage(
-        "Please note that I am a family planning bot and can only respond to questions relating to family planning. What is your question?",
+        "O dara, kin ni ìbéèrè rẹ? Jọwọ mọ wipe mo je Oludamọran Ifeto ṣọmọ bíbí àti pé ibeere ti o jẹ mọ Ifeto ṣọmọ bíbí nikan ni mo le dá",
         { delay: 1000 }
       );
 
