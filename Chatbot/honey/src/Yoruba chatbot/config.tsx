@@ -103,7 +103,7 @@ const config = {
       widgetName: "genderOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Male 👨", "Female 👩", "Prefer not to say"]}
+          options={["Ọkùnrin 👨", "Obìnrin 👩", "Kò wù yín láti sọ ọ"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleGenderSelection(option)
@@ -165,7 +165,7 @@ const config = {
       widgetName: "maritalStatusOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Single", "Married", "Divorced", "Widowed", "In a relationship"]}
+          options={["Wundia", "Abileko ", "Ikọsilẹ", "Opo", " Ninu ibatan kan"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMaritalStatusSelection(option)
@@ -180,10 +180,10 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            "How to prevent pregnancy",
-            "How to get pregnant",
-            "How to improve sex life",
-            "Change/stop current FPM",
+            " Bí a ṣe le loyún",
+            "Bí a ṣe lè dènà oyún",
+            "Bí ìbálòpọ̀ ṣe lè dùn síi",
+            "Yí / dá ìlànà dúró.",
             "Ask a general question",
           ]}
           actionProvider={props.actionProvider}
@@ -191,7 +191,7 @@ const config = {
             props.actionProvider.handlePlanningMethodSelection(option)
           }
         />
-      ),
+      ),  
       props: {},
       mapStateToProps: ["messages", "currentStep"],
     },
@@ -253,7 +253,7 @@ const config = {
         <OptionButtons
           options={[
             "Chat with AI /Human",
-            "Learn other methods",
+            "Kọ nípa àwọn ìlànà miiran",
             "Back to main menu",
             "Get more sex life tips"
           ]}
@@ -303,7 +303,7 @@ const config = {
       widgetName: "moreHelpOptions",
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Yes", "No"]}
+          options={["Beeni", "Beeko"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMoreHelpOptions(option)
