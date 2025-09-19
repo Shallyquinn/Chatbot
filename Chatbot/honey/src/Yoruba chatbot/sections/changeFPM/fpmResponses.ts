@@ -275,7 +275,7 @@ export function getSpecificConcernResponse(
   // FIXED: Handle empty or undefined method
   if (!method || method.trim() === "") {
     console.warn("⚠️ Empty method provided, using generic response");
-    return `I understand your concern about ${concernType.toLowerCase()}. For direct and detailed counselling on better options for you, I recommend speaking with a healthcare provider who can address your specific situation. Please call 7790 for personalized assistance.`;
+    return `Mo loye ibakcdun rẹ nipa ${concernType.toLowerCase()}.Fun imọran taara ati alaye lori awọn aṣayan to dara julọ fun ọ, Mo ṣeduro sisọ pẹlu olupese ilera kan ti o le koju ipo rẹ pato. Jọwọ pe 7790 fun iranlọwọ ti ara ẹni.`;
   }
 
   // Normalize the keys to handle mismatches
@@ -292,7 +292,7 @@ export function getSpecificConcernResponse(
     console.warn("⚠️ Method not found in responses:", normalizedMethod);
     console.log("Available methods:", Object.keys(responses));
     
-    return `I understand your concern about ${concernType.toLowerCase()} with ${method}. For direct and detailed counselling on this specific method and concern, I recommend speaking with a healthcare provider who can address your situation. Please call 7790 for personalized assistance.`;
+    return `Mo loye ibakcdun rẹ nipa ${concernType.toLowerCase()} with ${method}. Fun imọran taara ati alaye lori awọn aṣayan to dara julọ fun ọ, Mo ṣeduro sisọ pẹlu olupese ilera kan ti o le koju ipo rẹ pato. Jọwọ pe 7790 fun iranlọwọ ti ara ẹni.`;
   }
 
   // Check if concern exists for this method
@@ -301,7 +301,7 @@ export function getSpecificConcernResponse(
     console.warn("⚠️ Concern not found for method:", { normalizedMethod, normalizedConcern });
     console.log("Available concerns for", normalizedMethod, ":", Object.keys(methodResponses));
     
-    return `I understand your concern about ${concernType.toLowerCase()} with ${method}. For direct and detailed counselling on this specific concern, I recommend speaking with a healthcare provider who can address your situation. Please call 7790 for personalized assistance.`;
+    return `Mo loye ibakcdun rẹ nipa ${concernType.toLowerCase()} with ${method}. Fun imọran taara ati alaye lori awọn aṣayan to dara julọ fun ọ, Mo ṣeduro sisọ pẹlu olupese ilera kan ti o le koju ipo rẹ pato. Jọwọ pe 7790 fun iranlọwọ ti ara ẹni.`;
   }
 
   const foundResponse = methodResponses[normalizedConcern];
