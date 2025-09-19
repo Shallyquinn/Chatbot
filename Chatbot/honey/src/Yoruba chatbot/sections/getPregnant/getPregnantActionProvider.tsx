@@ -70,7 +70,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
    
     // Use the original messages from getPregnantConfig
     const introMessage = this.createChatBotMessage(
-      "This is great! I am happy to give you advice on family planning.",
+      "Eleyi jẹ nla! Inu mi dun lati fun ọ ni imọran lori eto idile.",
       { delay: 500 }
     );
 
@@ -207,21 +207,21 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       "Emergency pills": {
         message:
           "Emergency contraceptive pills are only meant for occasional use and don't affect your long-term fertility. You can start trying to conceive whenever you're ready.",
-        followUpQuestion: "What would you like to do next?",
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
         followUpWidget: "getPregnantNextAction",
         nextStep: "getPregnantNextAction",
       },
       "Female sterilisation": {
         message:
-          "Female sterilisation is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: "What would you like to do next?",
+          "Sometimes female sterilisation is reversible. It can be immediately after or even several years later.Kindly visit your health provider for counselling.",
+        followUpQuestion: Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
         followUpWidget: "getPregnantNextAction",
         nextStep: "getPregnantNextAction",
       },
       "Male sterilisation": {
         message:
-          "Male sterilisation (vasectomy) is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: "What would you like to do next?",
+          "Nigba miiran ìlànà adena ọmọ bíbí ti  okunrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.",
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
         followUpWidget: "getPregnantNextAction",
         nextStep: "getPregnantNextAction",
       },
@@ -233,7 +233,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     return (
       foundResponse || {
         message: `I understand you're using ${method}. For specific guidance about conception while using this method, I recommend consulting with a healthcare provider. Please call 7790 for personalized assistance.`,
-        followUpQuestion: "What would you like to do next?",
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
         followUpWidget: "getPregnantNextAction",
         nextStep: "getPregnantNextAction",
       }
@@ -309,7 +309,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
       {
         widget: "getPregnantNextAction",
         delay: 1000,
@@ -341,7 +341,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Please consult with a healthcare provider about your IUD and conception plans. Call 7790 for personalized assistance."
+      "Jọwọ kan si alagbawo pẹlu olupese ilera nipa IUD rẹ ati awọn ero inu. Pe 7790 fun iranlọwọ ti ara ẹni."
     );
   }
 
@@ -386,8 +386,8 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       "Less than 3 months":
         "Good! Your implant has been removed recently. Most women's fertility returns immediately after implant removal, so you can start trying to conceive right away. It may take a few cycles for your body to fully adjust.",
       "No, I didn't remove":
-        "To get pregnant, you'll need to have your implant removed by a healthcare provider. This is a simple procedure that can be done at a clinic. Please call 7790 to schedule an appointment for implant removal.",
-    };
+        "Lati loyun, iwọ yoo nilo lati yọ ifinu rẹ kuro nipasẹ olupese ilera kan. Eyi jẹ ilana ti o rọrun ti o le ṣee ṣe ni ile-iwosan kan. Jọwọ pe 7790 lati ṣeto ipinnu lati pade fun yiyọkuro ifinu."
+  };
 
     return (
       responses[status] ||
@@ -437,7 +437,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Please consult with a healthcare provider about stopping your injections and conception plans. Call 7790 for personalized assistance."
+      "Jọwọ kan si alagbawo pẹlu olupese ilera kan nipa didaduro awọn abẹrẹ ati awọn ero ero inu rẹ. Pe 7790 fun iranlọwọ ti ara ẹni."
     );
   }
 
@@ -455,7 +455,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
       {
         widget: "getPregnantNextAction",
         delay: 1000,
@@ -483,7 +483,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Please consult with a healthcare provider about stopping your pills and conception plans. Call 7790 for personalized assistance."
+      "Jọwọ kan si alagbawo pẹlu olupese ilera kan nipa didaduro awọn oogun ati awọn ero ero inu rẹ. Pe 7790 fun iranlọwọ ti ara ẹni."
     );
   }
 
@@ -497,7 +497,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     if (action === "Ask more questions") {
       const moreQuestionsMessage = this.createChatBotMessage(
-        "I'm here to help with any questions you have about getting pregnant. What would you like to know?",
+        "Mo wà níbí láti ràn ẹ́ lọ́wọ́ nípa gbogbo ìbéèrè tó ní ṣe pẹ̀lú bí a ṣe lè lóyún. Kí ni o fẹ́ mọ̀?",
         { delay: 500 }
       );
 
@@ -518,7 +518,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       }));
     } else if (action === "Find nearest clinic") {
       const clinicMessage = this.createChatBotMessage(
-        "To find the nearest clinic, please share your location or enter your city/area name.",
+        "Láti rí ilé ìwòsàn tó súnmọ́ ọ, jọ̀wọ́ pín ipò rẹ tàbí kọ orúkọ ìlú/àgbègbè rẹ.",
         { delay: 500 }
       );
 
