@@ -23,7 +23,7 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          "No FPM now or recently",
+          " Rárá, emi ko tii máa lo ọkánkán ni isisinyi àti pé mi o tii lòó ri rárá",
           "IUD", 
           "Implants",
           "Injections/ Depo-provera",
@@ -58,9 +58,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          "Yes, more than 1 year",
-          "Yes, less than 1 year", 
-          "No, I didn't remove"
+          "Beeni, ju ọdun kan lọ",
+          "Rárá, tí o to ọdun kan", 
+          "Rárá, mi ò yọ́"
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -74,9 +74,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          "Longer than 3 months",
-          "Less than 3 months",
-          "No, I didn't remove"
+          "Ju oṣù mẹta",
+          "Ti o to oṣù mẹta",
+          "Rárá, mo yin lo"
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -114,9 +114,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          "Ask more questions",
-          "Find nearest clinic", 
-          "Back to main menu"
+          "Béèrè ìbéèrè míì síi",
+          "Wa ile iwosan to sunmọ", 
+          "Pada si akojọ aṣayan akọkọ"
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -130,7 +130,7 @@ export const getPregnantWidgets = [
 // Get Pregnant specific messages
 export const getPregnantMessages = {
   // Initial messages
-  introduction: createChatBotMessage("This is great! I am happy to give you advice on family planning.", {
+  introduction: createChatBotMessage("Eleyi jẹ nla! Inu mi dun lati fun ọ ni imọran lori eto idile.", {
     delay: 500,
   }),
   
@@ -144,19 +144,19 @@ export const getPregnantMessages = {
 
   // No FPM branch
   noFPMExplanation: createChatBotMessage(
-    "Most couples will get pregnant within a year if they have regular sex and don't use contraception. But this is very individual and dependent on many factors.", 
+    " Pupọ julọ awọn tọkọtaya yoo loyun laarin ọdun kan ti wọn ba ni ibalopọ deede ti wọn ko si lo idena oyun.  Ṣugbọn eyi yatọ laarin awọn ẹni-kọọkan ati pé o da lori ọpọlọpọ awọn okunfa.", 
     {
       delay: 500,
     }
   ),
   
-  tryingDurationQuestion: createChatBotMessage("How long have you been trying to get pregnant?", {
+  tryingDurationQuestion: createChatBotMessage(" A ti igba wo lo ti n gbìyànjú lati loyun?", {
     delay: 1000,
     widget: 'getPregnantTryingDuration',
   }),
 
   generalAdvice: createChatBotMessage(
-    "I see! No worries, getting pregnant might take some more time. However, I understand it might be frustrating. I recommend visiting your health care provider for proper medical assessment and guidance", 
+    "O ye wa wí pé eleyi lè fa idaamu, ṣugbọn ma ṣe fòyà, o kan le pẹ diẹ lati loyun padà.O le pe asoju ìpè lórí 7790 láti gbọ alaye kikun síi. Se o fẹ béèrè àwọn ìbéèrè síi?", 
     {
       delay: 500,
     }
