@@ -529,7 +529,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       }));
     } else if (action === "Back to main menu") {
       const mainMenuMessage = this.createChatBotMessage(
-        "What would you like me to help you with?",
+        "Kini iwọ yoo fẹ ki n ran ọ lọwọ?",
         {
           widget: "fpmOptions",
           delay: 500,
