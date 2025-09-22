@@ -43,7 +43,7 @@ export const SWITCH_FPM_METHODS = [
   "Implants",
   "Injections / Depo-provera",
   "Sayana Press",
-  "Daily Pills",
+  "Òògùn idena oyun onipajawiri",
   "Female sterilisation",
   "Male sterilisation"
 ] as const;
@@ -57,7 +57,7 @@ export const STOP_FPM_METHODS = [
   "Injections / Depo-provera",
   "Sayana Press",
   "Daily Pills",
-  "Condoms",
+  "Kọ́ndọ̀mù",
   "Emergency contraceptive",
   "Female sterilisation",
   "Male sterilisation"
