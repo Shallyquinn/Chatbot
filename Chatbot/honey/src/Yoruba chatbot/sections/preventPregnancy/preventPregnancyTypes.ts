@@ -24,11 +24,11 @@ export type EmergencyProduct = "Postpill" | "Postinor-2";
 
 // Prevention durations
 export type PreventionDuration = 
-  | "Up to 1 year"
-  | "1 - 2 years" 
-  | "3 - 4 years"
-  | "5 - 10 years"
-  | "Permanently";
+  | "Titi di ọdun kan"
+  | "Odun kan si meji" 
+  | "Mẹta si mẹrin ọdun"
+  | "ọdun marun si mẹwa"
+  | "Titilai";
 
 // Available contraceptive methods
 export type ContraceptiveMethod = 
@@ -94,25 +94,25 @@ export const EMERGENCY_PRODUCT_OPTIONS: EmergencyProduct[] = [
 ];
 
 export const PREVENTION_DURATION_OPTIONS: PreventionDuration[] = [
-  "Up to 1 year",
-  "1 - 2 years",
-  "3 - 4 years",
-  "5 - 10 years",
-  "Permanently"
+  "Titi di ọdun kan",
+  "Odun kan si meji",
+  "Mẹta si mẹrin ọdun",
+  "ọdun marun si mẹwa",
+  "Titilai"
 ];
 
 // Method options based on duration selection
 export const getMethodOptionsForDuration = (duration: PreventionDuration): ContraceptiveMethod[] => {
   switch (duration) {
-    case "Up to 1 year":
+    case "Titi di ọdun kan":
       return SHORT_TERM_METHODS;
-    case "1 - 2 years":
+    case "Odun kan si meji":
       return [...SHORT_TERM_METHODS, "Injectables"];
-    case "3 - 4 years":
+    case "Mẹta si mẹrin ọdun":
       return [...MEDIUM_TERM_METHODS, "Implants"];
-    case "5 - 10 years":
+    case "ọdun marun si mẹwa":
       return LONG_TERM_METHODS;
-    case "Permanently":
+    case "Titilai":
       return PERMANENT_METHODS;
     default:
       return SHORT_TERM_METHODS;
