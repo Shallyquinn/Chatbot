@@ -222,17 +222,17 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   handlePreventPregnancyInitiation = async(): Promise<void> => {
     const userMessage: ChatMessage = {
-      message: "How to prevent pregnancy",
+      message: "Báwo ni a ṣe lè dena oyun",
       type: "user",
       id: uuidv4(),
     };
     const responseMessage = this.createChatBotMessage(
-      "I see! 👍\n\nYou are at the right place, I can assist you with this.",
+      "Mo rí i! 👍\n\nO wà níbi tó tọ́, mo lè ràn ẹ lọ́wọ́ pẹ̀lú èyí",
       { delay: 500 }
     );
 
     const followUpMessage = this.createChatBotMessage(
-      "What kind of contraception do you want to know about?",
+      "Ìru ọ̀nà ìdena oyun wo ni o fẹ́ mọ̀ nípa rẹ̀?",
       { 
         delay: 1000,
         widget: "contraceptionTypeOptions"
@@ -288,7 +288,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     await this.api.createResponse({
       response_category:'ContraceptionType',
       response_type:'user',
-      question_asked:'What kind of contraception do you want to know about?',
+      question_asked:'Ìru ọ̀nà ìdena oyun wo ni o fẹ́ mọ̀ nípa rẹ̀?',
       user_response:contraceptionType,
       widget_used:'contraceptiontypeoptions',
       available_options:['Emergency', 'Prevent in future'],
@@ -321,7 +321,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   private handleEmergencyPath = async(userMessage: ChatMessage): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
-      "To avoid pregnancy after unprotected sex, you can take emergency contraceptive pills.\n\nEmergency pills are very effective when taken within 24 to 72 hours after unprotected sex. You are advised to not take it more than 3 times in a month. If you are ovulating, you should use an alternative contraceptive plan (condoms).",
+      "Láti dènà nini oyún lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò, o lè lo òògùn adena oyún onípàjáwìrì.\n\nÒògùn onípàjáwìrì yìí máa n ṣiṣẹ́ dáadáa tí a bá lo o láàrín wákàtí mẹrinlelogun sí wákàtí mejìlélàádọ́rin lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò. A gba yín láàmòràn kí ẹ má ṣe lo o ju ẹ́ẹ̀mẹ́ta lọ ninu osù kan.Ilana ìdáàbòbòbò míìrán (Kọndọmu) ni kí ẹ lo bí ẹ bá n pa ẹyin lọwọ.",
       { delay: 500 }
     );
 
@@ -330,12 +330,12 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     const productList = availableProducts.map((product, index) => `${index + 1}. ${product}`).join("\n");
 
     const productMessage = this.createChatBotMessage(
-      `Let me tell you some of the effective and available emergency contraceptive pills:\n${productList}`,
+      ` Jẹ ki n sọ diẹ fun ọ ninu àwọn oogun pajawiri adèna oyún ti o munadoko ti o wa:\n${productList}`,
       { delay: 1000 }
     );
 
     const selectionMessage = this.createChatBotMessage(
-      "Which product do you want to learn about?",
+      "Ewo nínú àwọn Òògùn yìí  ni o fẹ mọ nipa rẹ?",
       { 
         delay: 1500,
         widget: "emergencyProductOptions"
@@ -375,16 +375,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Using type-safe constants instead of magic strings
     const productInfoMap: Record<EmergencyProduct, string > = {
-      "Postpill": "Postpill is a one-dose emergency contraceptive pill by DKT. It contains 1.5 mg Levongestrel. It should be taken within 72 hours (3 days) of unprotected sex.\n\nThe sooner you take it, the more effective it is. It doesn’t work if you are already pregnant and will not harm an already established pregnancy.\n\n You can buy Postpill at any pharmacy or health store around you. It is 95% effective when taken within 24 hours of unprotected sex.\n\nIf more than 120 hours (5 days) have passed since unprotected sex, it won't be effective. In such a case, you should consult a healthcare provider.",
+      "Postpill": "Òògùn tàà pé ni "postpill" yìí jẹ́ òògùn oní lílò lẹ́kan ṣoṣo latọ́wọ́ ilé-ìṣẹ́ DKT.Ó ní ìwọ̀n mílígírámù kan àti ààbò èròjà kan tí a n pé ní Levongestrel. Ó gbọdọ̀ jẹ́ lílò ní kíákíà láàrín wákàtí mẹ́rinlelogun, ṣùgbọ́n ó sí tún lè lòó láàrín ọjọ́ márùn (ọgọ́fà wákàtí) lẹ́yìn tí ìbálòpọ̀ láìní ìdáàbòbò bá wáyé.\n\nBí o bá ṣe tete lo òògùn yìí sí ni yóò ṣe tete ṣiṣẹ́ sí. Kò lè ṣiṣẹ́ tí ó bá ti loyún tẹlẹ, bẹ́ẹ̀ ni kò lè pà oyún tí ó ti dúró lára rárá.\n\nÓ lè rí òògùn yìí rà ní ilé ìtajà òògùn tó súnmọ́ ọ. Ó munadoko ní àádọ́rún [95%] nínú ọgọ́rùn-ún bí a bá mu un láàárín wákàtí méjìlélọ́gọ́rin [24] lẹ́yìn ìbálòpò tí a kò lo ìdena oyun.\n\nTi o ba ti ju bíi ọgọfa wakati(ọjọ márùn) lọ lẹhin ibalopọ tí kò ní ìdáàbòbò, oogun yìí ko ní ṣiṣẹ rárá, o dara ki o yara pé oníṣègùn eto ìlera rẹ láti gba amọran mìíràn.",
       
-      "Postinor-2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
+      "Postinor-2": "Òògùn Postinor jẹ́ èyí tí ó maa n dènà oyún tí a ó fẹ́ láì ṣeùwù láàrín wákàtí méjìlélààdọ́rin lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
     };
 
     const productInfo = productInfoMap[emergencyProduct];
     if (!productInfo) {
       // Handle unknown product case
       const errorMessage = this.createChatBotMessage(
-        "I don't have information about that product. Please choose Postpill or Postinor-2.",
+        "Mi ò ní ìmọ̀ nípa ọjà yẹn. Jọ̀wọ́, yan Postpill tàbí Postinor-2.",
         { 
           delay: 500,
           widget: "emergencyProductOptions"
@@ -399,7 +399,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     await this.api.createResponse({
     response_category: "EmergencyProduct",
     response_type: "user",
-    question_asked: "Which emergency contraception product do you want to know about?",
+    question_asked: "Ìru ọ̀nà ìdena oyun wo ni o fẹ́ mọ̀ nípa rẹ̀?",
     user_response: emergencyProduct,
     widget_used: "emergencyProductOptions",
     available_options: ["Postpill", "Postinor-2"],
@@ -415,7 +415,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   //smart image display
     if (widgets.hasImage && widgets.imageWidget) {
       const imageMessage = this.createChatBotMessage(
-        `Here's what ${emergencyProduct} looks like:`,
+        `Èyí ni bí ${emergencyProduct} ṣe rí:`,
         { widget: widgets.imageWidget, delay: 1000 }
       );
       messages.push(imageMessage);
@@ -424,14 +424,14 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     //smart audio display
     if (widgets.hasAudio && widgets.audioWidget) {
       const audioMessage = this.createChatBotMessage(
-        `Click to listen to a short introduction of ${emergencyProduct} in Pidgin, if you want to.`,
+        `Tẹ̀ lórí láti gbọ́ ìtẹ̀síwájú kéékèèké nípa ${emergencyProduct} ní Pidgin, bí o bá fẹ́.`,
         { delay: widgets.hasImage? 1500 : 1000, widget: widgets.audioWidget }
       );
       messages.push(audioMessage);
     }
 
     const followUpMessage = this.createChatBotMessage(
-      "Do you want to find out about other family planning methods?",
+      "Ṣé o fẹ́ mọ̀ nípa àwọn ọ̀nà ìdílé míì tí a fi ń dena oyun",
       { 
         delay: 1500,
         widget: "learnMoreMethods"
@@ -452,12 +452,12 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   private handlePreventFuturePath = (userMessage: ChatMessage): void => {
     const responseMessage = this.createChatBotMessage(
-      "Alright\n\nI am happy to provide you with more information about family planning methods that are effective in preventing pregnancy.",
+      "O dára\n\nInu mi dùn láti sàlàyé síi fún ọ lórí àwọn ìlànà ifètò sọmọ bibi tí o n ṣiṣẹ dáadáa tí kò sì léwu.",
       { delay: 500 }
     );
 
     const durationMessage = this.createChatBotMessage(
-      "For how long do you want to prevent pregnancy?",
+      "Ọdún mélòó ni o fẹ fi dúró láì loyún?",
       { 
         delay: 1000,
         widget: "preventionDurationOptions"
@@ -489,24 +489,24 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Configuration object for cleaner code maintenance
     const durationConfig: Record<PreventionDuration, { message: string; widget: string }> = {
-      "Up to 1 year": {
-        message: `The short-term family planning methods are:\n\n ${this.formatMethodList(availableMethods)} \n\n1. Daily contraceptive pills\n2. The barrier contraceptives (diaphragm, female condom, male condom)`,
+      "Titi di ọdun kan": {
+        message: `Àwọn ìlànà ìfètò sọ́mọ bíbí aláàkókò kúkúrú ni:\n\n ${this.formatMethodList(availableMethods)} \n\n1. Òògùn adena oyún olojoojumo\n2. Àwọn adena oyún tí ó jẹ́ oní kíkì bọ oju ara, ìyẹn dayaframu àti kọ́ndọ̀mù`,
         widget: "shortTermMethods"
       },
-      "1 - 2 years": {
-        message: "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods or injectables.",
+      "Odun kan si meji": {
+        message: "Tí o bá fẹ́ dena oyun láàárín ọdún kan sí méjì, o lè lo èyíkéyìí nínú àwọn ọ̀nà ìdílé tí kò pẹ́ tọ́ (short-acting) tàbí abẹrẹ ìdílé (injectables).",
         widget: "mediumTermMethods"
       },
-      "3 - 4 years": {
-        message: `For 3 - 4 years of protection, you can use medium-term methods like injectables, IUD, IUS, or implants.${this.formatInlineMethodList(availableMethods)} `,
+      "Mẹta si mẹrin ọdun": {
+        message: `Fún ìdábò bo tó máa pé ọdún mẹ́ta sí mẹ́rin, o lè lo ọ̀nà àárín-ìgbà bíi abẹrẹ ìdílé, IUD, IUS tàbí implanti.${this.formatInlineMethodList(availableMethods)} `,
         widget: "longTermMethods"
       },
-      "5 - 10 years": {
+      "ọdun marun si mẹwa": {
         message: `For long-term protection (5 - 10 years), the most effective methods are IUD, IUS, and implants.${this.formatInlineMethodList(availableMethods)} `,
         widget: "extendedLongTermMethods"
       },
-      "Permanently": {
-        message: "For permanent prevention of pregnancy, you can consider sterilization methods. These are permanent and irreversible procedures.",
+      "Titilai": {
+        message: "Fún ìdena oyun títí láéláé, o lè ronú nípa ọ̀nà sterilization. Àwọn ọ̀nà wọ̀nyí jẹ́ títí láéláé, a kò sì lè yí wọn padà",
         widget: "permanentMethods"
       }
     };
@@ -563,9 +563,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   //   // const availableMethods = getMethodOptionsForDuration(durationKey);
 
   //   switch (durationKey) {
-  //     case "Up to 1 year":
+  //     case "Titi di ọdun kan":
   //       responseMessage = this.createChatBotMessage(
-  //         "The short-term family planning methods are:\n\n1. Daily contraceptive pills\n2. The barrier contraceptives (diaphragm, female condom, male condom)",
+  //         "“Awọn ọna igbero idile igba kukuru jẹ:\n\n1. Òògùn idena oyún olojoojumọ \n2. The barrier contraceptives (Aranmo )",
   //         { delay: 500 }
   //       );
   //       widget = "shortTermMethods";
@@ -573,31 +573,31 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   //     case "1 - 2 years":
   //       responseMessage = this.createChatBotMessage(
-  //         "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods or injectables.",
+  //         "Ti o ba fẹ ṣe idiwọ oyun laarin ọdun kan si meji, o le lo eyikeyi awọn ọna ṣiṣe eto ẹbi kukuru tabi awọn abẹrẹ.",
   //         { delay: 500 }
   //       );
   //       widget = "mediumTermMethods";
   //       break;
 
-  //     case "3-4 years":
+  //     case "Mẹta si mẹrin ọdun":
   //       responseMessage = this.createChatBotMessage(
-  //         "For 3-4 years of protection, you can use medium-term methods like injectables, IUD, IUS, or implants.",
+  //         "Fún ìdábò bo tó máa pé ọdún mẹ́ta sí mẹ́rin, o lè lo ọ̀nà àárín-ìgbà bíi abẹrẹ ìdílé, IUD, IUS tàbí implanti.",
   //         { delay: 500 }
   //       );
   //       widget = "longTermMethods";
   //       break;
 
-  //     case "5-10 years":
+  //     case "ọdun marun si mẹwa":
   //       responseMessage = this.createChatBotMessage(
-  //         "For long-term protection (5-10 years), the most effective methods are IUD, IUS, and implants.",
+  //         "Fún ìdábò bo pípẹ́ (ọdún márùn-ún sí mẹ́wàá), àwọn ọ̀nà tó munadoko jù lọ ni IUD, IUS àti implanti.",
   //         { delay: 500 }
   //       );
   //       widget = "extendedLongTermMethods";
   //       break;
 
-  //     case "Permanently":
+  //     case "Titilai":
   //       responseMessage = this.createChatBotMessage(
-  //         "For permanent prevention of pregnancy, you can consider sterilization methods. These are permanent and irreversible procedures.",
+  //         "Fún ìdena oyun títí láéláé, o lè ronú nípa ọ̀nà sterilization. Àwọn ọ̀nà wọ̀nyí jẹ́ títí láéláé, a kò sì lè yí wọn padà.",
   //         { delay: 500 }
   //       );
   //       widget = "permanentMethods";
