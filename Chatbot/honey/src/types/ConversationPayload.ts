@@ -7,5 +7,6 @@ export interface ConversationPayload {
   widget_name?: string;
   message_sequence_number:number,
   widget_options?:string[],
-  message_delay_ms:number
+  message_delay_ms:number,
+  selected_option: string
 }

@@ -656,7 +656,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   };
 
   // Handle user questions in get pregnant flow
-  handleGetPregnantUserQuestion = (question: string): void => {
+  handleGetPregnantUserQuestion = async(question: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: question,
       type: "user",

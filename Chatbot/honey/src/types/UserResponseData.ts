@@ -4,7 +4,6 @@ export interface UserResponseData {
   session_id?: string;
   conversation_id?: string;
   previous_response_id?: string;
-  
   response_category: string;
   response_type: string;
   question_asked?: string;
@@ -14,6 +13,5 @@ export interface UserResponseData {
   available_options?: string[];
   step_in_flow?: string;
   is_initial_response?: boolean;
-  
   created_at?: Date;
 }

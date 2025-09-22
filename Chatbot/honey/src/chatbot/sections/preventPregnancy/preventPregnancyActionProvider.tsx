@@ -659,6 +659,18 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     return methods.slice(0, -1).join(", ") + ", and " + methods[methods.length - 1];
   };
 
+  private getAllMethodOptions(): Record<string, string> {
+  return {
+    "Condom": "Barrier method",
+    "Pill": "Oral contraceptives",
+    "Injection": "Injectable contraceptives",
+    "Implant": "Hormonal implant",
+    "IUD": "Intrauterine device",
+    "Natural": "Fertility awareness methods",
+    "Other": "Other methods"
+  };
+}
+
   // =============================================================================
   // METHOD SELECTION HANDLING
   // =============================================================================
@@ -729,12 +741,14 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       }
     );
     messages.push(followUpMessage);
+    
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, ...messages],
       currentStep: "methodDetails",
     }));
+    
     await this.api.createResponse({
       response_category: "ContraceptionMethod",
       response_type: "user",

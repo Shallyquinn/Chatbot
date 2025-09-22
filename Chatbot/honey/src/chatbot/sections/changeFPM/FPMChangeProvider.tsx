@@ -45,7 +45,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   }
 
   // FIXED: Handler for selecting current FPM method
-  handleCurrentFPMSelection = (method: string): void => {
+  handleCurrentFPMSelection = async(method: string): Promise<void> => {
     console.log("🔍 handleCurrentFPMSelection called with:", method);
     console.log("🔍 Current state before update:", this.state.currentFPMMethod);
 
@@ -54,7 +54,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       type: "user",
       id: uuidv4(),
     };
-
+    await this.api.createFpmInteraction({current_fpm_method:method})
     // Store method locally for immediate use AND in state for persistence
     // this.currentMethodLocal = method;
     // console.log("🔧 Stored method locally:", this.currentMethodLocal);
@@ -76,13 +76,14 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         currentFPMMethod: method, // This will persist across ActionProvider instances
         currentStep: "fpmConcernType" as ChatStep,
       };
+      
     });
 
     console.log("🔍 State update initiated for method:", method);
   };
 
   // FIXED: Handler for FPM concern type selection
-  handleFPMConcernTypeSelection = (concernType: string): void => {
+  handleFPMConcernTypeSelection = async(concernType: string): Promise<void>=> {
     console.log("🔍 handleFPMConcernTypeSelection called with:", concernType);
     console.log("🔍 currentMethodLocal:", this.currentMethodLocal);
     console.log("🔍 this.state.currentFPMMethod:", this.state.currentFPMMethod);
@@ -97,7 +98,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     // Use local method first, fallback to state if needed
     const methodToUse =
       this.state.currentFPMMethod || this.currentMethodLocal || "";
-
+      await this.api.createFpmInteraction({fpm_flow_type:concernType})
     console.log("🔍 Using method for response:", methodToUse);
     console.log("About to call getSpecificConcernResponse with:", {
       method: methodToUse,
@@ -142,13 +143,14 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // FIXED: Handler for FPM concern selection
-  handleFPMConcernSelection = (option: string): void => {
+  handleFPMConcernSelection = async(option: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: option,
       type: "user",
       id: uuidv4(),
     };
 
+    await this.api.updateUser({current_concern_type:option})
     // Store the user's intention locally
     let userIntention = "";
     if (option === "Concerned about FP") {
@@ -186,6 +188,16 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         userIntention: userIntention,
         currentStep: "switchCurrentFPM",
       }));
+
+      await this.api.createResponse({
+      response_category: "FPMConcern",
+      response_type: "user",
+      question_asked: "What is your concern about family planning?",
+      user_response: option,
+      widget_used: "fpmConcernOptions",
+      available_options: ["Concerned about FP", "Want to switch FP", "Want to stop FP"] as string[],
+      step_in_flow: "fpmConcernSelection",
+    });
     } else {
       // For concerned and stop - ask which method they're using
       const responseMessage = this.createChatBotMessage(
@@ -210,7 +222,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // FIXED: Handler for selecting current FPM in the "switch" flow
-  handleSwitchCurrentFPMSelection = (method: string): void => {
+  handleSwitchCurrentFPMSelection = async(method: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: method,
       type: "user",
@@ -219,7 +231,8 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     // Store the selected method locally
     console.log("🔧 Switch flow - stored method locally:", method);
-
+    await this.api.createFpmInteraction({current_fpm_method:method})
+    await this.api.updateUser({current_fpm_method:method})
     // Ask about satisfaction with the current method
     const satisfactionQuestion = this.createChatBotMessage(
       "How has the method been working for you? Would you say you are somewhat satisfied, or not at all satisfied with your method?",
@@ -229,23 +242,42 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       }
     );
 
+    await this.api.createFpmInteraction({
+      switch_reason:method
+    })
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, satisfactionQuestion],
       currentFPMMethod: method, // store method in state for persistence
       currentStep: "satisfactionAssessment",
     }));
+     await this.api.createResponse({
+    response_category: "SwitchCurrentFPM",
+    response_type: "user",
+    question_asked: "Which method are you currently using?",
+    user_response: method,
+    widget_used: "switchFPMOptions",
+    available_options: [
+      "Pills",
+      "IUD",
+      "Implant",
+      "Injectables",
+      "Condoms",
+      "Other",
+    ] as string[],
+    step_in_flow: "switchCurrentFPMSelection",
+  });
   };
 
   // FIXED: Handler for stop FP flow
-  handleStopFPMSelection = (method: string): void => {
+  handleStopFPMSelection = async(method: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: method,
       type: "user",
       id: uuidv4(),
     };
     console.log("🔧 Stop flow - stored method in state:", method);
-
+    await this.api.createFpmInteraction({stop_reason:method})
     const reasonQuestion = this.createChatBotMessage(
       "Okay, thanks for sharing!\nCan you tell me why do you want to stop using this method?\n\nFP = Family planning method\nOptions(Choose one)",
       {
@@ -260,10 +292,20 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       currentFPMMethod: method, // store method in state for persistence
       currentStep: "stopReason",
     }));
+    await this.api.createResponse({
+      response_category:'StopFPMSelection',
+      response_type:'user',
+      question_asked:'Can you tell me why do you want to stop using this method?',
+      user_response:method,
+      widget_used:'stopReasonOptions',
+      available_options:[],
+      step_in_flow:'StopFPMSelection'  
+    })
+
   };
 
   // Handler for FPM change selection (first step after selecting "Change/stop current FPM")
-  handleFPMChangeSelection = (option: string): void => {
+  handleFPMChangeSelection = async(option: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: option,
       type: "user",
@@ -283,10 +325,20 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       messages: [...prev.messages, userMessage, concernMessage],
       currentStep: "fpmConcern",
     }));
+    await this.api.createResponse({
+       response_category: "FPMChangeSelection",
+      response_type: "user",
+      question_asked:
+        "How has the method been working for you? Would you say you are somewhat satisfied, or not at all satisfied with your method?",
+      user_response: option,
+      widget_used: "satisfactionOptions",
+      available_options: ["Somewhat satisfied", "Not at all satisfied"],
+      step_in_flow: "FPMChangeSelection",
+    })
   };
 
   // Handler for satisfaction assessment (switch flow)
-  handleSatisfactionAssessment = (satisfaction: string): void => {
+  handleSatisfactionAssessment = async(satisfaction: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: satisfaction,
       type: "user",
@@ -294,6 +346,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     this.satisfaction = satisfaction;
+    await this.api.createFpmInteraction({satisfaction_level:satisfaction})
 
     const reasonQuestion = this.createChatBotMessage(
       "May I know why do you want to switch?\nPick a reason why",
@@ -311,7 +364,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // Handler for switch reason
-  handleSwitchReason = (reason: string): void => {
+  handleSwitchReason = async(reason: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: reason,
       type: "user",
@@ -319,7 +372,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     this.switchReason = reason;
-
+    await this.api.createFpmInteraction({switch_reason:reason})
     const recommendationQuestion = this.createChatBotMessage(
       "Would you like to know about other methods that you may like better?",
       {
@@ -380,7 +433,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // Handler for kids in future
-  handleKidsInFuture = (response: string): void => {
+  handleKidsInFuture = async(response: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: response,
       type: "user",
@@ -388,7 +441,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     this.kidsInFuture = response;
-
+    // await this.api.createFpmInteraction({kids_in_future: response})
     if (response === "Yes, I want more kids") {
       const timingQuestion = this.createChatBotMessage(
         "How many years would you like to wait from now before you have another child?\nMenu",
@@ -409,7 +462,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // Handler for timing selection
-  handleTimingSelection = (timing: string): void => {
+  handleTimingSelection = async(timing: string):Promise<void> => {
     const userMessage: ChatMessage = {
       message: timing,
       type: "user",
@@ -418,6 +471,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     this.timing = timing;
     this.proceedToImportantFactors(userMessage);
+    await this.api.createFpmInteraction({timing_preference:timing})
   };
 
   // Helper method to proceed to important factors
@@ -443,7 +497,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   };
 
   // Handler for important factors
-  handleImportantFactors = (factor: string): void => {
+  handleImportantFactors =async(factor: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: factor,
       type: "user",
@@ -451,6 +505,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     const response = this.getFactorBasedRecommendation(factor);
+  
 
     let responseMessage: ChatMessage;
     let nextStep = "fpmNextAction";
@@ -480,6 +535,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         messages: [...prev.messages, userMessage, responseMessage, nextActions],
         currentStep: "fpmNextAction",
       }));
+      
       return;
     }
 
@@ -488,6 +544,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       messages: [...prev.messages, userMessage, responseMessage],
       currentStep: nextStep as ChatbotState["currentStep"],
     }));
+      await this.api.createFpmInteraction({important_factors:factor})
   };
 
   // Helper for factor-based recommendation
@@ -534,7 +591,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   }
 
   // Handler for menstrual flow preference
-  handleMenstrualFlowPreference = (preference: string): void => {
+  handleMenstrualFlowPreference = async(preference: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: preference,
       type: "user",
@@ -543,7 +600,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     const response = this.getMenstrualFlowResponse(preference);
     const responseMessage = this.createChatBotMessage(response, { delay: 500 });
-
+    await this.api.createFpmInteraction({menstrual_flow_preference:preference})
     const nextActions = this.createChatBotMessage(
       "What would you like to do next?",
       {
@@ -581,7 +638,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   }
 
   // Handler for stop reason
-  handleStopReason = (reason: string): void => {
+  handleStopReason = async(reason: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: reason,
       type: "user",
@@ -592,7 +649,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       "Okay, I understand and I am sorry you are experiencing these issues.\n\nPlease call 7790 and request to speak to a nurse counsellor to direct and counsel you on better options for you.",
       { delay: 500 }
     );
-
+    await this.api.createFpmInteraction({stop_reason:reason})
     const nextActions = this.createChatBotMessage(
       "What would you like to do next?",
       {
@@ -611,10 +668,11 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       ],
       currentStep: "fpmNextAction",
     }));
+  
   };
 
   // Handler for side effect selection
-  handleFPMSideEffectSelection = (sideEffect: string): void => {
+  handleFPMSideEffectSelection = async(sideEffect: string): Promise<void> => {
     const userMessage: ChatMessage = {
       message: sideEffect,
       type: "user",
@@ -626,6 +684,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       { delay: 500 }
     );
 
+    await this.api.createFpmInteraction({})
     const nextActions = this.createChatBotMessage(
       "What would you like to do next?",
       {

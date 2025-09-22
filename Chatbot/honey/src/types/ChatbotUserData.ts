@@ -10,4 +10,5 @@ export interface ChatbotUserData {
   current_fpm_method?: string | null;
   current_concern_type?: string | null;
   user_intention?: string | null;
+  main_menu_option?: string | null;
 }

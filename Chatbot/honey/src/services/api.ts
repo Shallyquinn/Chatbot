@@ -1,6 +1,8 @@
 import { ChatbotUserData } from "@/types/ChatbotUserData";
 import { ConversationPayload } from "@/types/ConversationPayload";
+import { FpmInteraction } from "@/types/FpmInteractionData";
 import { ResponsePayload } from "@/types/ResponseData";
+
 
 export class ApiService {
     private baseUrl: string;
@@ -16,15 +18,17 @@ export class ApiService {
         this.baseUrl = baseUrl;
 
 
-    const existingSession = localStorage.getItem('chatbot_session_id');
-    if(existingSession) {
-        this.sessionId = existingSession;
-    } else {
-        this.sessionId = this.generateSessionId();
-        localStorage.setItem('chatbot_session_id', this.sessionId)
+    // const existingSession = localStorage.getItem('chatbot_session_id');
+    // if(existingSession) {
+    //     this.sessionId = existingSession;
+    // } else {
+    //     this.sessionId = this.generateSessionId();
+    //     localStorage.setItem('chatbot_session_id', this.sessionId)
         
-    }
-    }
+    // }
+    // }
+    this.sessionId = this.generateSessionId();
+}
     private generateSessionId(): string {
         return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
@@ -48,6 +52,8 @@ export class ApiService {
   private async initializeUser(): Promise<void> {
     if (this.initialized) return;
     if (this.initializationPromise) return this.initializationPromise;
+
+    // const existingUser = await this.getUserBySession();
     this.initializationPromise = (async () => {
        try { 
         const user = await this.createOrUpdateUser({});
@@ -165,6 +171,18 @@ export class ApiService {
         ...payload
     }),
   });
+}
+
+async createFpmInteraction(payload:Partial<FpmInteraction>){
+  await this.initializeUser
+  return this.request(`${this.baseUrl}/fpm-interactions`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      session_id: this.chatSessionId,
+      ...payload
+    })
+  })
 }
 
 

@@ -11,7 +11,7 @@ export class UserController {
   @Post()
   async createOrUpdate(@Body() dto: CreateUserDto) {
   const user = await this.userService.upsert(dto);
-  return { id: user.user_id, sessionId: user.user_session_id }; // include the database id!
+  return { id: user.user_id, sessionId: user.user_session_id };
 }
 
   // Update user by session ID

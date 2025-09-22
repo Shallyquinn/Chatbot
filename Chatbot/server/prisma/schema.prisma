@@ -21,6 +21,7 @@ model User {
   selected_marital_status  String?  @db.VarChar(30)
 
   // Session state
+  main_menu_option    String?  @db.VarChar(50)
   current_step        String?  @db.VarChar(50)
   current_fpm_method  String?  @db.VarChar(100)
   current_concern_type String? @db.VarChar(100)

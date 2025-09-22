@@ -447,10 +447,27 @@ class ActionProvider implements ActionProviderInterface {
       type: "user",
       id: uuidv4(),
     };
-     await this.api.updateUser({current_fpm_method:method})
+     await this.api.updateUser({main_menu_option:method})
     
 
     let responseMessage: ChatMessage;
+
+     await this.api.createConversation({
+      message_text: method,
+      message_type: "user",
+      chat_step:"planningMethodSelection",
+      message_sequence_number:1,
+      widget_name:'planningMethodSelection',
+      widget_options: [
+      "How to get pregnant",
+      "How to prevent pregnancy",
+      "How to improve sex life",
+      "Change/stop current FPM",
+      "Ask a general question",
+      ],
+      selected_option: method,
+      message_delay_ms:500
+     })
 
     switch (method) {
       case "How to get pregnant":
@@ -491,7 +508,6 @@ class ActionProvider implements ActionProviderInterface {
         );
         break;
     }
-
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, responseMessage],
@@ -500,22 +516,7 @@ class ActionProvider implements ActionProviderInterface {
           ? "contraception"
           : "sexEnhancement",
     }));
-    await this.api.createConversation({
-      message_text: method,
-      message_type: "user",
-      chat_step:"planningMethodSelection",
-      message_sequence_number:1,
-      widget_name:'planningMethodSelection',
-      widget_options: [
-      "How to get pregnant",
-      "How to prevent pregnancy",
-      "How to improve sex life",
-      "Change/stop current FPM",
-      "Ask a general question",
-      ],
-      selected_option: method,
-      message_delay_ms:500
-     })
+    
   };
 
 

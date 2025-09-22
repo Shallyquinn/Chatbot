@@ -9,9 +9,11 @@ export class CreateClinicLocationDto {
   clinic_type?: string;
 
   @IsString()
+  @IsOptional()
   state: string;
 
   @IsString()
+  @IsOptional()
   lga: string;
 
   @IsOptional()
@@ -39,9 +41,11 @@ export class CreateClinicLocationDto {
   website?: string;
 
   @IsArray()
+  @IsOptional()
   services_offered: string[];
 
   @IsArray()
+  @IsOptional()
   fpm_methods_available: string[];
 
   @IsOptional()

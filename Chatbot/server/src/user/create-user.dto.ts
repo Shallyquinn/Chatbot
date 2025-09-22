@@ -3,7 +3,7 @@ import { IsBoolean, IsOptional, IsString } from 'class-validator';
 export class CreateUserDto {
   @IsString()
   user_session_id: string;
-
+  @IsOptional() @IsString() main_menu_option?: string | null;
   @IsOptional() @IsString() selected_language?: string | null;
   @IsOptional() @IsString() selected_gender?: string | null;
   @IsOptional() @IsString() selected_state?: string | null;
