@@ -28,9 +28,9 @@ export const getPregnantWidgets = [
           "Implants",
           "Injections/ Depo-provera",
           "Sayana Press",
-          "Daily Pills",
-          "Condoms", 
-          "Emergency pills",
+          "Òògùn idena oyún olojoojumọ ",
+          "Kọ́ndọ̀mù", 
+          "Òògùn idena oyun onipajawiri",
           "Female sterilisation",
           "Male sterilisation"
         ]}
@@ -45,7 +45,7 @@ export const getPregnantWidgets = [
     widgetName: "getPregnantTryingDuration", 
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={["Less than 1 year", "Longer than 1 year"]}
+        options={["Kere ju odun kan", "O gun ju ọdun kan lọ"]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantTryingDuration(option)
@@ -89,7 +89,7 @@ export const getPregnantWidgets = [
     widgetName: "getPregnantInjectionStop",
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={["Yes", "No"]}
+        options={["Beeni", "Bẹẹkọ"]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantInjectionStop(option)
@@ -101,7 +101,7 @@ export const getPregnantWidgets = [
     widgetName: "getPregnantPillsStop", 
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={["Yes", "No"]}
+        options={["Beeni", "Bẹẹkọ"]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantPillsStop(option)
