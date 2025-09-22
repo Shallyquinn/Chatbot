@@ -93,7 +93,7 @@ export const shortTermMethodsWidget = {
   widgetName: "shortTermMethods",
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration("Up to 1 year")}
+      options={getMethodOptionsForDuration("Titi di ọdun kan")}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -107,7 +107,7 @@ export const mediumTermMethodsWidget = {
   widgetName: "mediumTermMethods", 
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration("1 - 2 years")}
+      options={getMethodOptionsForDuration("Odun kan si meji")}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -121,7 +121,7 @@ export const longTermMethodsWidget = {
   widgetName: "longTermMethods",
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration("3 - 4 years")}
+      options={getMethodOptionsForDuration("Mẹta si mẹrin ọdun")}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -135,7 +135,7 @@ export const extendedLongTermMethodsWidget = {
   widgetName: "extendedLongTermMethods",
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration("5 - 10 years")}
+      options={getMethodOptionsForDuration("Ọdun marun si mẹwa")}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -149,7 +149,7 @@ export const permanentMethodsWidget = {
   widgetName: "permanentMethods",
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration("Permanently")}
+      options={getMethodOptionsForDuration("Titilai")}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -166,13 +166,13 @@ export const learnMoreMethodsWidget = {
   widgetName: "learnMoreMethods",
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={["Yes", "No"]}
+      options={["Beeni", "Beeko"]}
       actionProvider={props.actionProvider}
       handleClick={(option: string) => {
-        if (option === "Yes") {
-          props.actionProvider.handlePreventionDurationSelection("Up to 1 year");
+        if (option === "Beeni") {
+          props.actionProvider.handlePreventionDurationSelection("Titi di ọdun kan");
         } else {
-          props.actionProvider.handleNextAction("Back to main menu");
+          props.actionProvider.handleNextAction("Pada  si Ibere");
         }
       }}
     />
