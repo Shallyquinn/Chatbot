@@ -186,14 +186,14 @@ export const getPregnantMessages = {
   ),
 
   iudLessThanYear: createChatBotMessage(
-    "We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.", 
+    "O ye wa wí pé eleyi lè fa idaamu, ṣugbọn ma ṣe fòyà, o kan le pẹ diẹ lati loyun padà. O le pe asoju ìpè lórí 7790 láti gbọ alaye kikun síi.", 
     {
       delay: 500,
     }
   ),
 
   iudNotRemoved: createChatBotMessage(
-    "We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.", 
+    "Jọwọ ṣabẹwo si ile-iwosan nibiti o ti gba ilana yii tabi ile-iwosan ti o wa nitosi re lati yọ kuro.", 
     {
       delay: 500,
     }
@@ -208,7 +208,7 @@ export const getPregnantMessages = {
   ),
   
   implantRemovalQuestion: createChatBotMessage(
-    "Have you already removed the implant for more than 3 months and still can not get pregnant?", 
+    "Se o ti yọ ìlànà ifètò ṣọmọ bibi alapa fun osu meta oo de ti loyun?", 
     {
       delay: 1000,
       widget: 'getPregnantImplantRemoval',
@@ -223,14 +223,14 @@ export const getPregnantMessages = {
   ),
 
   implantLessThan3Months: createChatBotMessage(
-    "We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.", 
+    "O ye mi wí pé eleyi lè fa idaamu fún ọ, o dára ki o gba imọran kíkún síi láti ọwọ ọjọgbọn oníṣègùn.", 
     {
       delay: 500,
     }
   ),
 
   implantNotRemoved: createChatBotMessage(
-    "We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.", 
+    "Jọwọ ṣabẹwo si ile-iwosan nibiti o ti gba ilana yii tabi ile-iwosan ti o wa nitosi re lati yọ kuro.", 
     {
       delay: 500,
     }
@@ -245,7 +245,7 @@ export const getPregnantMessages = {
   ),
   
   injectionStopQuestion: createChatBotMessage(
-    "Have you stopped taking the injection for more than 6 months and still can not get pregnant?", 
+    "Ṣé o ti dáwọ́ lílò oògùn náà dúró ju oṣù mẹfa lọ, ṣùgbọ́n o ṣi kò lè lóyún?", 
     {
       delay: 1000,
       widget: 'getPregnantInjectionStop',
@@ -253,7 +253,7 @@ export const getPregnantMessages = {
   ),
 
   injectionStoppedYes: createChatBotMessage(
-    "I understand not being able to get pregnant might be frustrating. It is good to talk to a specialist and get more detailed advice.", 
+    "O ye mi wí pé eleyi lè fa idaamu fún ọ, o dára ki o gba imọran kíkún síi láti ọwọ ọjọgbọn oníṣègùn.", 
     {
       delay: 500,
     }
@@ -275,7 +275,7 @@ export const getPregnantMessages = {
   ),
   
   pillsStopQuestion: createChatBotMessage(
-    "Have you stopped taking the pill for more than 3 months and still can not get pregnant?", 
+    "Ṣé o ti dáwọ́ lílò oògùn náà dúró ju oṣù mẹta lọ, ṣùgbọ́n o ṣi kò lè lóyún?", 
     {
       delay: 1000,
       widget: 'getPregnantPillsStop',
@@ -307,32 +307,32 @@ export const getPregnantMessages = {
 
   // Sterilisation branches
   femaleSterilisationAdvice: createChatBotMessage(
-    "Sometimes female sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation", 
+    "Nígbà miiran ìlànà adena oyún nini obinrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ìlera rẹ fun imọran.", 
     {
       delay: 500,
     }
   ),
 
   maleSterilisationAdvice: createChatBotMessage(
-    "Sometimes male sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation.", 
+    "Nigba miiran ìlànà adena ọmọ bíbí ti  okunrin se e yipada. O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.", 
     {
       delay: 500,
     }
   ),
 
   // Next action question
-  nextActionQuestion: createChatBotMessage("What would you like to do next?", {
+  nextActionQuestion: createChatBotMessage("Kí ni o fẹ́ ṣe ní tẹ̀síwájú?", {
     delay: 1000,
     widget: 'getPregnantNextAction',
   }),
 
   // Ask more questions response
-  askMoreQuestions: createChatBotMessage("Okay!", {
+  askMoreQuestions: createChatBotMessage("O dara!", {
     delay: 500,
   }),
   
   askMoreQuestionsPrompt: createChatBotMessage(
-    "Please note that I am a family planning bot and can only respond to questions relating to family planning. What is your question?", 
+    "Jọwọ mọ wipe mo je Oludamọran Ifeto ṣọmọ bíbí àti pé ibeere ti o jẹ mọ Ifeto ṣọmọ bíbí nikan ni mo le dá. Kin ni ìbéèrè rẹ?", 
     {
       delay: 1000,
     }
