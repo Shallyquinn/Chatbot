@@ -13,27 +13,38 @@ export class ApiService {
     private chatSessionInitialized: boolean = false;
     private initializationPromise?: Promise<void>;
     private chatSessionPromise?: Promise<void>;
+    private getDeviceType(): string {
+      const ua = navigator.userAgent;
+
+      if (/mobile/i.test(ua)) return "mobile";
+      if (/tablet/i.test(ua)) return "tablet";
+      if (/iPad|Android(?!.*Mobile)/.test(ua)) return "tablet";
+      if (/Macintosh|Windows|Linux/i.test(ua)) return "desktop";
+
+      return "unknown";
+    }
 
     constructor(baseUrl: string = 'http://localhost:3000') {
         this.baseUrl = baseUrl;
 
 
-    // const existingSession = localStorage.getItem('chatbot_session_id');
-    // if(existingSession) {
-    //     this.sessionId = existingSession;
-    // } else {
-    //     this.sessionId = this.generateSessionId();
-    //     localStorage.setItem('chatbot_session_id', this.sessionId)
+    const existingSession = localStorage.getItem('chatbot_session_id');
+    if(existingSession) {
+        this.sessionId = existingSession;
+    } else {
+        this.sessionId = this.generateSessionId();
+        localStorage.setItem('chatbot_session_id', this.sessionId)
+
+        this.userId = localStorage.getItem("chat_user_id") ?? undefined;
+        this.chatSessionId = localStorage.getItem("chat_session_id") ?? undefined;
         
-    // }
-    // }
-    this.sessionId = this.generateSessionId();
-}
+    }
+    }
     private generateSessionId(): string {
-        return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      return `session_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
     }
 
-    
+
 
      private async request(url: string, options: RequestInit) {
     try {
@@ -52,8 +63,6 @@ export class ApiService {
   private async initializeUser(): Promise<void> {
     if (this.initialized) return;
     if (this.initializationPromise) return this.initializationPromise;
-
-    // const existingUser = await this.getUserBySession();
     this.initializationPromise = (async () => {
        try { 
         const user = await this.createOrUpdateUser({});
@@ -123,13 +132,18 @@ export class ApiService {
           user_session_id: this.sessionId,
           user_id: this.userId,
           user_agent: navigator.userAgent,
-          device_type:"desktop",
+          device_type: this.getDeviceType,
           session_end_time:null,
+          session_completed:true,
         }),
       });
 
       if (chatSession && chatSession.session_id) {
         this.chatSessionId = chatSession.session_id;
+        if (this.chatSessionId) {
+          localStorage.setItem("chat_session_id", this.chatSessionId);
+        }
+        return this.chatSessionId
       } else {
         throw new Error('Invalid chat session response');
       }
@@ -141,12 +155,13 @@ export class ApiService {
 
    async createConversation(payload: Partial<ConversationPayload>) {
     await this.initializeUser();
-
     return this.request(`${this.baseUrl}/conversations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sessionid: this.sessionId,
+      session_id: this.chatSessionId,
+        user_id: this.userId,
+        user_session_id: this.sessionId,
         ...payload
       }),
     });
@@ -162,7 +177,7 @@ export class ApiService {
   }
   
   async createResponse(payload:Partial<ResponsePayload>) { 
-    await this.initializeUser       
+  await this.initializeUser();
   return this.request(`${this.baseUrl}/responses`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -174,7 +189,8 @@ export class ApiService {
 }
 
 async createFpmInteraction(payload:Partial<FpmInteraction>){
-  await this.initializeUser
+  await this.initializeUser();
+  await this.ensureChatSession();
   return this.request(`${this.baseUrl}/fpm-interactions`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -185,20 +201,17 @@ async createFpmInteraction(payload:Partial<FpmInteraction>){
   })
 }
 
-
-  // async updateResponse(id: string, payload: Partial<ResponsePayload>) {
-  //   return this.request(`${this.baseUrl}/responses/${id}`, {
-  //     method:'PATCH',
-  //     headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         sessionId:this.chatSessionId,
-  //         conversation_id
-  //         ...payload
-  //       })
-  //     });
-  // }
-
-  
+async updateFpmInteraction(id:string, payload:Partial<FpmInteraction>){
+  await this.initializeUser();
+  return this.request(`${this.baseUrl}/fpm-interactions/${id}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      session_id: this.chatSessionId,
+      ...payload
+    })
+  })
+} 
 }
 
 export const apiService = new ApiService("http://localhost:3000");

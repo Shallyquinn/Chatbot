@@ -134,6 +134,7 @@ model FpmInteraction {
   current_fpm_method      String? @db.VarChar(100)
   interested_fpm_method   String? @db.VarChar(100)
   fpm_duration_preference String? @db.VarChar(50)
+  main_menu_option    String?  @db.VarChar(50)
 
   contraception_type      String? @db.VarChar(50)
   emergency_product       String? @db.VarChar(50)
@@ -147,6 +148,7 @@ model FpmInteraction {
   kids_in_future           String? @db.VarChar(20)
   timing_preference        String? @db.VarChar(50)
   menstrual_flow_preference String? @db.VarChar(100)
+  fpm_concern_type          String? @db.VarChar(100)
 
   provided_information  String? @db.Text
   next_action           String? @db.VarChar(100)

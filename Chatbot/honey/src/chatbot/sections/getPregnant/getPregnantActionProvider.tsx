@@ -43,7 +43,16 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     this.createChatBotMessage = createChatBotMessage;
     this.setState = setStateFunc;
     this.state = state;
-    this.api = apiClient
+    this.api = apiClient;
+    
+    const originalSetState = this.setState;
+    this.setState = (updater) => {
+      originalSetState((prev) => {
+        const newState = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem("chat_state", JSON.stringify(newState));
+        return newState;
+      });
+    };
   }
 
   // Initiate the get pregnant flow

@@ -3,44 +3,92 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateConversationDto } from './create-conversation.dto';
 import { QueryConversationDto } from './query-conversation.dto';
 import { UpdateConversationDto } from './update-conversation.dto';
+import { useContainer } from 'class-validator';
 
 @Injectable()
 export class ConversationsService {
     constructor(private prisma: PrismaService) {}
 
-    async create(dto: CreateConversationDto) {
-      
-        try {
-
-            return await this.prisma.conversation.create({
-                data: {
-                  session_id: dto.session_id ?? null,
-                  user_id: dto.user_id ?? null,
-                  message_text: dto.message_text,
-                  message_type: dto.message_type,
-                  message_source: dto.message_source ?? "typed",
-                  chat_step: dto.chat_step,
-                  widget_name: dto.widget_name,
-                  selected_option: dto.selected_option,
-                  message_delay_ms: dto.message_delay_ms,
-                  has_widget: dto.has_widget ?? false,
-                  widget_options: dto.widget_options ?? [],
-                  message_sequence_number: dto.message_sequence_number,
-                },
-                include: {
-                    session: true,
-                    
-                    user: true
-                },
-            });
-        } catch (error) {
-            if (error.code === 'P2003') {
-                throw new BadRequestException('Invalid session_id or user_id provided');
-            }
-            throw error;
-        }
+   async create(dto: CreateConversationDto & {user_session_id?: string}) {
+    console.log('=== CREATE CONVERSATION DEBUG ===');
+    console.log('Input DTO:', JSON.stringify(dto, null, 2));
+    
+    let session;
+    
+    // Try to find session by session_id first, then by user_session_id
+    if (dto.session_id && dto.session_id !== undefined) {
+        console.log('Looking up session by session_id:', dto.session_id);
+        
+        session = await this.prisma.chatSession.findUnique({
+            where: { session_id: dto.session_id },
+            include: { user: true },
+        });
+        
+    } else if (dto.user_session_id && dto.user_session_id !== undefined) {
+        console.log('Looking up session by user_session_id:', dto.user_session_id);
+        
+        session = await this.prisma.chatSession.findFirst({
+            where: { user_session_id: dto.user_session_id },
+            include: { user: true },
+        });
+        
+    } else {
+        console.error('Neither session_id nor user_session_id provided');
+        throw new BadRequestException('Either session_id or user_session_id is required');
+    }
+    
+    console.log('Found session:', session ? 'YES' : 'NO');
+    if (session) {
+        console.log('Session details:', JSON.stringify(session, null, 2));
+    }
+    
+    if (!session) {
+        const searchCriteria = dto.session_id ? `session_id: ${dto.session_id}` : `user_session_id: ${dto.user_session_id}`;
+        console.error('Session not found for', searchCriteria);
+        throw new BadRequestException(`Session not found for ${searchCriteria}`);
     }
 
+    const createData = {
+        session_id: session.session_id, // Use the actual session_id from database
+        user_id: session.user?.user_id,
+        message_text: dto.message_text,
+        message_type: dto.message_type,
+        message_source: dto.message_source ?? "typed",
+        chat_step: dto.chat_step,
+        widget_name: dto.widget_name,
+        selected_option: dto.selected_option,
+        message_delay_ms: dto.message_delay_ms,
+        has_widget: dto.has_widget ?? false,
+        widget_options: dto.widget_options ?? [],
+        message_sequence_number: dto.message_sequence_number,
+    };
+    
+    console.log('Data to create:', JSON.stringify(createData, null, 2));
+    
+    try {
+        const result = await this.prisma.conversation.create({
+            data: createData,
+            include: {
+                session: true,
+                user: true
+            },
+        });
+        
+        console.log('Created conversation:', JSON.stringify(result, null, 2));
+        console.log('=== END DEBUG ===');
+        
+        return result;
+        
+    } catch (error) {
+        console.error('Prisma create error:', error);
+        console.log('=== END DEBUG (ERROR) ===');
+        
+        if (error.code === 'P2003') {
+            throw new BadRequestException('Invalid session_id or user_id provided');
+        }
+        throw error;
+    }
+}
     async findAll(query: QueryConversationDto) {
         const {page = 1, limit = 20, session_id, user_session_id, message_type, chat_step} = query;
         const skip = (page - 1 ) * limit;

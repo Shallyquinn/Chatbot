@@ -44,10 +44,17 @@ export interface MediaWidgetProps {
   alt?: string;
 }
 
-const initialState: ChatbotState = {
-  messages: [],
-  currentStep: "language",
+
+const loadState = (): ChatbotState => {
+  try{
+    const saved = localStorage.getItem("chat_state");
+    return saved ? JSON.parse(saved) : {messages: [], currentStep: "language", messageSequence: 0};
+  } catch {
+    return {messages: [], currentStep: "language", messageSequence: 0};
+  }
 };
+
+const initialState: ChatbotState = loadState();
 
 const botName = "Honey";
 
@@ -81,6 +88,8 @@ const config = {
       backgroundColor: "#FFA500",
     },
   },
+
+
 
   // FIXED: Widgets configuration with proper IWidget interface structure
   widgets: [

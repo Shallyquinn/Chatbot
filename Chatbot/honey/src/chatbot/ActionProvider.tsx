@@ -7,8 +7,7 @@ import GetPregnantActionProvider from "./sections/getPregnant/getPregnantActionP
 import PreventPregnancyActionProvider from './sections/preventPregnancy/preventPregnancyActionProvider';
 import {apiService, ApiService} from "@/services/api";
 
-import { ThumbsDown } from "lucide-react";
-import { responses } from "./sections/changeFPM/fpmResponses";
+
 // =============================================================================
 // ACTION PROVIDER INTERFACE - Complete interface matching all widgets
 // =============================================================================
@@ -146,6 +145,16 @@ class ActionProvider implements ActionProviderInterface {
     this.setState = setStateFunc;
     this.state = state;
     this.api = apiService;
+    
+    
+    const originalSetState = this.setState;
+    this.setState = (updater) => {
+      originalSetState((prev) => {
+        const newState = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem("chat_state", JSON.stringify(newState));
+        return newState;
+      });
+    };
 
     // Initialize the FPMChangeProvider with the same parameters
     this.fpmChangeProvider = new FPMChangeProvider(
@@ -171,11 +180,6 @@ class ActionProvider implements ActionProviderInterface {
 
     console.log("🏗️ ActionProvider constructed with all providers");
   }
-
-  
-
-  
-
 
   // =============================================================================
   // BASIC SETUP HANDLER IMPLEMENTATIONS
@@ -210,19 +214,23 @@ class ActionProvider implements ActionProviderInterface {
       widget: "genderOptions",
       delay: 1500,
     });
-    this.setState((prev: ChatbotState) => ({
-      ...prev,
-      messages: [
-        ...prev.messages,
-        userMessage,
-        greeting,
-        followup1,
-        followUp2,
-        genderQuestion,
-      ],
-      currentStep: "gender",
-      selectedLanguage: language,
-    }));
+    this.setState((prev: ChatbotState) => {
+      const newState = {
+        ...prev,
+        messages: [
+          ...prev.messages,
+          userMessage,
+          greeting,
+          followup1,
+          followUp2,
+          genderQuestion,
+        ],
+        currentStep: "gender" as ChatStep,
+        selectedLanguage: language,
+      };
+      localStorage.setItem("chat_state", JSON.stringify(newState));
+      return newState;
+    });
 
   };
 
@@ -249,7 +257,7 @@ class ActionProvider implements ActionProviderInterface {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, stateQuestion],
-      currentStep: "stateSelection",
+      currentStep: "stateSelection" as ChatStep,
       selectedGender: gender,
     }));
     
@@ -279,7 +287,7 @@ class ActionProvider implements ActionProviderInterface {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, lgaQuestion],
-      currentStep: "lgaSelection",
+      currentStep: "lgaSelection" as ChatStep,
       selectedState: state,
     }));
   };
@@ -309,7 +317,7 @@ class ActionProvider implements ActionProviderInterface {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, confirmMessage, ageQuestion],
-      currentStep: "age",
+      currentStep: "age" as ChatStep,
       selectedLGA: lga,
     }));
 
@@ -334,7 +342,7 @@ class ActionProvider implements ActionProviderInterface {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, confirmLocation],
-      currentStep: "locationConfirm",
+      currentStep: "locationConfirm" as ChatStep,
     }));
   };
 
@@ -447,28 +455,11 @@ class ActionProvider implements ActionProviderInterface {
       type: "user",
       id: uuidv4(),
     };
-     await this.api.updateUser({main_menu_option:method})
-    
-
+     
     let responseMessage: ChatMessage;
 
-     await this.api.createConversation({
-      message_text: method,
-      message_type: "user",
-      chat_step:"planningMethodSelection",
-      message_sequence_number:1,
-      widget_name:'planningMethodSelection',
-      widget_options: [
-      "How to get pregnant",
-      "How to prevent pregnancy",
-      "How to improve sex life",
-      "Change/stop current FPM",
-      "Ask a general question",
-      ],
-      selected_option: method,
-      message_delay_ms:500
-     })
-
+     
+    await this.api.updateUser({main_menu_option:method})     
     switch (method) {
       case "How to get pregnant":
         this.handleGetPregnantInitiation();
@@ -508,15 +499,31 @@ class ActionProvider implements ActionProviderInterface {
         );
         break;
     }
-    this.setState((prev: ChatbotState) => ({
+        this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, responseMessage],
       currentStep:
         method === "How to prevent pregnancy"
           ? "contraception"
           : "sexEnhancement",
+          messageSequence: prev.messageSequence + 1,
     }));
-    
+    await this.api.createConversation({
+      message_text: method,
+      message_type: "user",
+      chat_step:"planningMethodSelection",
+      message_sequence_number:1,
+      widget_name:'planningMethodSelection',
+      widget_options: [
+      "How to get pregnant",
+      "How to prevent pregnancy",
+      "How to improve sex life",
+      "Change/stop current FPM",
+      "Ask a general question",
+      ],
+      selected_option: method,
+      message_delay_ms:500
+     })
   };
 
 
@@ -571,13 +578,6 @@ class ActionProvider implements ActionProviderInterface {
       id: uuidv4(),
     };
 
-    //  await this.api.createConversation({
-    //   message_type:'bot',
-    //   message_text:'I can help improve your sexual experience. What would you like to focus on?',
-    //   chat_step:'lubricantSelection',
-    //   widget_name:"lubricantOptions",
-    //   widget_options:['']
-    // })
 
     let responseMessage: ChatMessage;
 

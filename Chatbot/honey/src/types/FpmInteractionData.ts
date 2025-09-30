@@ -25,7 +25,7 @@ export interface FpmInteraction{
 
   stop_reason?: string;
 
-  important_factors?: string[];
+  important_factors?: string;
 
   kids_in_future?: string;
 

@@ -1,6 +1,7 @@
 export interface ConversationPayload {
   userId?: string;
-  session?: string;
+  user_session_id?: string,
+  session_id?: string;
   message_text: string;
   message_type: "user" | "bot";
   chat_step: string;

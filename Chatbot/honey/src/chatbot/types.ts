@@ -18,6 +18,7 @@ export interface ChatbotState {
   selectedLanguage?: string;
   selectedGender?: string;
   selectedAge?: string;
+  messageSequence: number;
 }
 
 export type ChatStep =

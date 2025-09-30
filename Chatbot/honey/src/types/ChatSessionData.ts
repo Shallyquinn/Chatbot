@@ -1,5 +1,4 @@
 export interface ChatSessionData {
-  session_id: string;
   user_id?: string;
   user_session_id: string;
   

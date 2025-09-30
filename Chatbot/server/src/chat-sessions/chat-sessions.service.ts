@@ -2,10 +2,27 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateChatSessionDto } from './create-session.dto';
 import { UpdateChatSessionDto } from './update-chat-session.dto';
+import { Session } from 'inspector/promises';
 
 @Injectable()
 export class ChatSessionsService {
   constructor(private readonly prisma: PrismaService) {}
+
+async testConnection() {
+  try {
+    await this.prisma.$connect();
+    console.log('Database connected successfully');
+    
+    // Test a simple query
+    const sessionCount = await this.prisma.chatSession.count();
+    console.log(`Found ${sessionCount} chat sessions`);
+    
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return false;
+  }
+}
 
   async create(dto: CreateChatSessionDto) {
     let userId = dto.user_id ?? null;
@@ -30,7 +47,7 @@ export class ChatSessionsService {
       }
     }
     
-    return this.prisma.chatSession.create({ data:{
+    const session= await this.prisma.chatSession.create({ data:{
       user_session_id: dto.user_session_id,
           user_id: userId, // <- now guaranteed (or explicitly null if you choose)
           session_start_time:
@@ -48,6 +65,7 @@ export class ChatSessionsService {
     },
     include: {user: true}
   });
+  return session;
   }
 
   async updateByUserSessionId(userSessionId: string, dto: UpdateChatSessionDto) {

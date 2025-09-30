@@ -44,8 +44,20 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     this.createChatBotMessage = createChatBotMessage;
     this.setState = setStateFunc;
     this.state = state;
-    this.api = apiClient
+    this.api = apiClient;
+    
+    
+    const originalSetState = this.setState;
+    this.setState = (updater) => {
+      originalSetState((prev) => {
+        const newState = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem("chat_state", JSON.stringify(newState));
+        return newState;
+      });
+    };
   }
+
+  
 
   // =============================================================================
   // SMART WIDGET DISCOVERY METHODS
@@ -100,6 +112,8 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       hasAudio: !!selectedAudio
     };
   };
+
+  
 
   /**
    * Gets widgets by method category for more reliable results
@@ -243,7 +257,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, responseMessage, followUpMessage],
-      currentStep: "contraception",
+      currentStep: "contraception" as any,
     }));
     await this.api.createConversation({
       message_text: userMessage.message,
@@ -371,6 +385,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
 
     const widgets = this.findMediaWidgets(emergencyProduct);
+   
 
     // Using type-safe constants instead of magic strings
     const productInfoMap: Record<EmergencyProduct, string > = {
@@ -378,23 +393,6 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       
       "Postinor-2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
     };
-
-    const productInfo = productInfoMap[emergencyProduct];
-    if (!productInfo) {
-      // Handle unknown product case
-      const errorMessage = this.createChatBotMessage(
-        "I don't have information about that product. Please choose Postpill or Postinor-2.",
-        { 
-          delay: 500,
-          widget: "emergencyProductOptions"
-        }
-      );
-      this.setState((prev: ChatbotState) => ({
-        ...prev,
-        messages: [...prev.messages, userMessage, errorMessage],
-        currentStep: "emergencyProduct",
-      }));
-
     await this.api.createResponse({
     response_category: "EmergencyProduct",
     response_type: "user",
@@ -404,7 +402,26 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     available_options: ["Postpill", "Postinor-2"],
     step_in_flow: "emergencyProductSelection",
   });
+    const productInfo = productInfoMap[emergencyProduct];
+    if (!productInfo) {
+    
+      // Handle unknown product case
+      const errorMessage = this.createChatBotMessage(
+        "I don't have information about that product. Please choose Postpill or Postinor-2.",
+        { 
+          delay: 500,
+          widget: "emergencyProductOptions"
+        }
+        
+      );
+   
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, errorMessage],
+        currentStep: "emergencyProduct",
+      }));
       return;
+    
     }
 
     
@@ -518,16 +535,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     };
 
     const config = durationConfig[durationKey];
-     await this.api.createResponse({
-      response_category:'ContraceptionDuration',
-      response_type:'user',
-      question_asked:'How long do you want to prevent pregnancy?',
-      user_response:duration,
-      widget_used:config.widget,
-      available_options:Object.keys(durationConfig),
-      step_in_flow:"preventionDurationSelection",
-    })
-
+    
     if (!config) {
       // Handle invalid duration
       const errorMessage = this.createChatBotMessage(
@@ -543,7 +551,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "duration",
       }));
-      
+       await this.api.createResponse({
+      response_category:'ContraceptionDuration',
+      response_type:'user',
+      question_asked:'How long do you want to prevent pregnancy?',
+      user_response:duration,
+      widget_used:config,
+      available_options:Object.keys(durationConfig),
+      step_in_flow:"preventionDurationSelection",
+    })
+
       return;
     
     }
@@ -731,6 +748,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         }
       );
       messages.push(audioMessage);
+     
     }
 
     const followUpMessage = this.createChatBotMessage(
@@ -739,6 +757,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         delay: 2000,
         widget: "learnMoreMethods"
       }
+      
     );
     messages.push(followUpMessage);
     
@@ -754,7 +773,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       response_type: "user",
       question_asked: "Which family planning method do you want to know about",
       user_response: method,
-      widget_used: widgets.hasAudio ? widgets.audioWidget ?? "methodDetails" : "methodDetails",
+      widget_used:"learnMoreMethods",
       available_options: Object.keys(this.getAllMethodOptions?.() ?? {}),
       step_in_flow: "methodOptionsSelection",
 

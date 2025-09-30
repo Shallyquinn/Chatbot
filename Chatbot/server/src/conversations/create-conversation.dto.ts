@@ -1,12 +1,16 @@
 import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsIn } from 'class-validator';
 
 export class CreateConversationDto {
-  @IsOptional()
   @IsString()
+  @IsOptional()
   session_id?: string;
 
-  @IsOptional()
   @IsString()
+  @IsOptional()
+  user_session_id?: string;
+
+  @IsString()
+  @IsOptional()
   user_id?: string;
 
   @IsString()

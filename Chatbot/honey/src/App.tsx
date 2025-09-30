@@ -15,6 +15,35 @@ const AppContent: React.FC = () => {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const chatContainerRef = useRef(null);
 
+
+  const saveMessages = (messages: any[]) => {
+   try {
+    localStorage.setItem("chat_messages", JSON.stringify(messages));
+   } catch (error) {
+    console.error("Error saving messages:", error);
+   }
+  };
+
+
+  const saveState = (state: any) => {
+    try {
+      localStorage.setItem("chat_state", JSON.stringify(state));
+    } catch (error) {
+      console.error("Error saving state:", error);
+    }
+  }
+
+  const loadState  = () => {
+    try {
+      const saved = localStorage.getItem("chat_state");
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error("Error loading state:", error);
+      return null;
+    }
+  }
+  
+
   // Check if device is mobile
   useEffect(() => {
     const checkIfMobile = () => {
@@ -30,6 +59,13 @@ const AppContent: React.FC = () => {
     // Cleanup event listener
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
+
+  // useEffect(()=> {
+  //   const savedMessages = config.loadMessages();
+  //   const savedState = config.loadInitialState();
+  //   setMessageHistory(savedMessages);
+  //   setChatState(savedState);
+  // }, []);
 
   // Auto scroll to bottom on new messages
   // useEffect(() => {
@@ -113,6 +149,12 @@ const AppContent: React.FC = () => {
               config={config}
               messageParser={MessageParser}
               actionProvider={ActionProvider}
+              messageHistory={(loadState()?.messages) || config.initialMessages}
+              saveMessages={(messages) => {
+                saveMessages(messages);
+                const currentState = loadState() || config.initialState;
+                saveState({ ...currentState, messages });
+              }}
             />
           </div>
         </div>

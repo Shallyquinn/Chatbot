@@ -41,6 +41,15 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     this.setState = setStateFunc;
     this.state = state; 
     this.api = apiClient
+
+     const originalSetState = this.setState;
+    this.setState = (updater) => {
+      originalSetState((prev) => {
+        const newState = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem("chat_state", JSON.stringify(newState));
+        return newState;
+      });
+    };
     
   }
 
@@ -505,8 +514,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     };
 
     const response = this.getFactorBasedRecommendation(factor);
-  
-
+    await this.api.createFpmInteraction({important_factors:factor})
     let responseMessage: ChatMessage;
     let nextStep = "fpmNextAction";
 
@@ -544,7 +552,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       messages: [...prev.messages, userMessage, responseMessage],
       currentStep: nextStep as ChatbotState["currentStep"],
     }));
-      await this.api.createFpmInteraction({important_factors:factor})
+      
   };
 
   // Helper for factor-based recommendation

@@ -15,6 +15,10 @@ export class CreateFpmInteractionDto {
 
   @IsOptional()
   @IsString()
+  fpm_concern_type?: string;
+
+  @IsOptional()
+  @IsString()
   current_fpm_method?: string;
 
   @IsOptional()
