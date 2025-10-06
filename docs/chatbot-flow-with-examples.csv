@@ -1,0 +1,41 @@
+Node ID,Parent ID,Type,Message/Content,Options,Next Actions,Media,Example User Input,Response Example
+START,null,START,"Welcome to Honey! I'm here to help you with family planning and reproductive health information. What language would you prefer?","[""English"", ""Yoruba""]",LANGUAGE_SELECT,honey_avatar.png,"- ""English""
+- ""English please""
+- ""I prefer English""","Based on selection:
+- ""Great! I'll continue in English.""
+- ""Daadaa! Maa so Yoruba"""
+LANGUAGE_SELECT,START,CHOICE,,,WELCOME_{selected_language},,"{selected_language in [""English"", ""Yoruba""]}","- ""English""
+- ""Yoruba""","Language specific welcome:
+EN: ""Hello! I'm Honey...""
+YO: ""Kaabo! Emi ni Honey..."""
+WELCOME_ENGLISH,LANGUAGE_SELECT,MESSAGE,"Hello! I'm Honey, your friendly healthcare companion. May I know your name?",,,honey_avatar.png,"- ""My name is Sarah""
+- ""I'm John""
+- ""Call me Mary""","- ""Nice to meet you, Sarah!""
+- ""Hello John, how can I help you today?""
+- ""Hi Mary! What would you like to know about?"""
+EMERGENCY_FLOW,MAIN_MENU,MESSAGE,"I understand you need information about emergency contraception. When did the unprotected intercourse occur?","[""Within 24 hours"", ""1-3 days ago"", ""3-5 days ago"", ""More than 5 days ago""]",EMERGENCY_TIME_CHECK,,,"- ""It happened last night""
+- ""About 2 days ago""
+- ""Yesterday evening""","Based on timing:
+≤24hrs: ""You're within the most effective window...""
+1-3 days: ""Emergency contraception can still be effective..."""
+PREVENTION_FLOW,MAIN_MENU,MESSAGE,"How long would you like your pregnancy prevention method to last?","[""Short term (up to 1 year)"", ""Medium term (1-2 years)"", ""Long term (3-4 years)"", ""Extended (5-10 years)"", ""Permanent""]",DURATION_METHOD_MATCH,,"- ""Something short term""
+- ""I want long lasting""
+- ""What are my options for 1 year?""","For short term:
+""Here are methods that last up to 1 year:
+1. Daily pills
+2. Injectable contraceptives
+3. Barrier methods"""
+METHOD_INFO,DURATION_METHOD_MATCH,DYNAMIC,"{method_details}","[""Learn more"", ""Find a clinic"", ""Try another method"", ""End conversation""]","[""METHOD_DETAIL"", ""CLINIC_FLOW"", ""PREVENTION_FLOW"", ""END""]",{method}_image.jpg,"- ""Tell me about daily pills""
+- ""How do injectables work?""
+- ""What are the side effects?""","For daily pills:
+""Daily pills are taken once a day at the same time. They contain hormones that prevent pregnancy by:
+1. Stopping ovulation
+2. Thickening cervical mucus
+3. Thinning the uterus lining"""
+CLINIC_FLOW,*,MESSAGE,"Let's help you find a clinic. Please select your state:","[{states_list}]",STATE_SELECTED,map_icon.png,"- ""Lagos""
+- ""I'm in Abuja""
+- ""Oyo state""","For Lagos:
+""Great! Now, please select your LGA in Lagos:
+1. Ikeja
+2. Lagos Island
+3. Surulere..."""

@@ -1,0 +1,71 @@
+```mermaid
+flowchart TD
+    Start([Start]) --> Lang{Language Selection}
+    Lang -->|English| WelcomeEN[Welcome Message EN]
+    Lang -->|Yoruba| WelcomeYO[Welcome Message YO]
+    
+    WelcomeEN --> Name[Name Input]
+    WelcomeYO --> Name
+    
+    Name --> MainMenu{Main Menu}
+    
+    MainMenu -->|Emergency| Emergency[Emergency Contraception]
+    MainMenu -->|Prevention| Prevention[Future Prevention]
+    MainMenu -->|Clinic| Clinic[Find Clinic]
+    
+    %% Emergency Flow
+    Emergency --> TimeCheck{When did it occur?}
+    TimeCheck -->|Within 24hrs| Options24[Show Options 24hrs]
+    TimeCheck -->|1-3 days| Options72[Show Options 72hrs]
+    TimeCheck -->|3-5 days| OptionsLimited[Limited Options]
+    TimeCheck -->|>5 days| ClinicRef[Clinic Referral]
+    
+    Options24 --> ProductInfo{Product Selection}
+    Options72 --> ProductInfo
+    OptionsLimited --> ProductInfo
+    
+    ProductInfo -->|Postpill| PostpillInfo[Postpill Details]
+    ProductInfo -->|Postinor| PostinorInfo[Postinor Details]
+    
+    PostpillInfo --> NextSteps{Next Steps}
+    PostinorInfo --> NextSteps
+    
+    %% Prevention Flow
+    Prevention --> Duration{Duration Preference}
+    Duration -->|Short Term| ShortTerm[Methods ≤1 year]
+    Duration -->|Medium Term| MedTerm[Methods 1-2 years]
+    Duration -->|Long Term| LongTerm[Methods 3-4 years]
+    Duration -->|Extended| Extended[Methods 5-10 years]
+    Duration -->|Permanent| Permanent[Permanent Methods]
+    
+    ShortTerm --> MethodInfo[Method Information]
+    MedTerm --> MethodInfo
+    LongTerm --> MethodInfo
+    Extended --> MethodInfo
+    Permanent --> MethodInfo
+    
+    MethodInfo --> MethodDetails{Detailed Info}
+    MethodDetails -->|Audio| Audio[Play Audio]
+    MethodDetails -->|Video| Video[Show Video]
+    MethodDetails -->|More Info| More[Additional Info]
+    
+    %% Clinic Flow
+    Clinic --> State[State Selection]
+    State --> LGA[LGA Selection]
+    LGA --> ClinicList[Available Clinics]
+    ClinicList --> ClinicDetails[Clinic Details]
+    
+    %% Common Endpoints
+    NextSteps -->|Find Clinic| Clinic
+    NextSteps -->|Learn Prevention| Prevention
+    NextSteps -->|End| End([End])
+    
+    MethodDetails -->|Find Clinic| Clinic
+    ClinicDetails --> End
+    
+    style Start fill:#9f9,stroke:#333,stroke-width:2px
+    style End fill:#f99,stroke:#333,stroke-width:2px
+    style Emergency fill:#ff9,stroke:#333
+    style Prevention fill:#9ff,stroke:#333
+    style Clinic fill:#f9f,stroke:#333
+```

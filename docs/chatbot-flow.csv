@@ -1,0 +1,19 @@
+Node ID,Parent ID,Type,Message/Content,Options,Next Actions,Media,Conditions,API Integration
+START,null,START,"Welcome to Honey! I'm here to help you with family planning and reproductive health information. What language would you prefer?","[""English"", ""Yoruba""]",LANGUAGE_SELECT,honey_avatar.png,,
+LANGUAGE_SELECT,START,CHOICE,,,WELCOME_{selected_language},,"{selected_language in [""English"", ""Yoruba""]}",updateUserLanguage
+WELCOME_ENGLISH,LANGUAGE_SELECT,MESSAGE,"Hello! I'm Honey, your friendly healthcare companion. May I know your name?",,,honey_avatar.png,,
+NAME_INPUT,WELCOME_ENGLISH,INPUT,,,MAIN_MENU,,{name.length > 0},updateUserName
+MAIN_MENU,NAME_INPUT,MENU,"What would you like to learn about today?","[""Emergency Contraception"", ""Future Pregnancy Prevention"", ""Find a Clinic""]","[""EMERGENCY_FLOW"", ""PREVENTION_FLOW"", ""CLINIC_FLOW""]",,,
+EMERGENCY_FLOW,MAIN_MENU,MESSAGE,"I understand you need information about emergency contraception. When did the unprotected intercourse occur?","[""Within 24 hours"", ""1-3 days ago"", ""3-5 days ago"", ""More than 5 days ago""]",EMERGENCY_TIME_CHECK,,,
+EMERGENCY_TIME_CHECK,EMERGENCY_FLOW,CONDITION,,,"{""Within 24 hours"": ""EMERGENCY_OPTIONS"", ""1-3 days ago"": ""EMERGENCY_OPTIONS"", ""3-5 days ago"": ""EMERGENCY_LIMITED"", ""More than 5 days ago"": ""EMERGENCY_LATE""}",,,
+EMERGENCY_OPTIONS,EMERGENCY_TIME_CHECK,MESSAGE,"Here are emergency contraceptive options available:","[""Postpill"", ""Postinor""]",PRODUCT_INFO,emergency_pills.jpg,,
+PRODUCT_INFO,EMERGENCY_OPTIONS,DYNAMIC,"{productInfo} Would you like to:","[""Find a clinic"", ""Learn about future prevention"", ""End conversation""]","[""CLINIC_FLOW"", ""PREVENTION_FLOW"", ""END""]",{product}_image.jpg,,getProductInfo
+PREVENTION_FLOW,MAIN_MENU,MESSAGE,"How long would you like your pregnancy prevention method to last?","[""Short term (up to 1 year)"", ""Medium term (1-2 years)"", ""Long term (3-4 years)"", ""Extended (5-10 years)"", ""Permanent""]",DURATION_METHOD_MATCH,,,
+DURATION_METHOD_MATCH,PREVENTION_FLOW,DYNAMIC,"{methods_list}","[{available_methods}]",METHOD_INFO,method_overview.jpg,,getMethodsByDuration
+METHOD_INFO,DURATION_METHOD_MATCH,DYNAMIC,"{method_details}","[""Learn more"", ""Find a clinic"", ""Try another method"", ""End conversation""]","[""METHOD_DETAIL"", ""CLINIC_FLOW"", ""PREVENTION_FLOW"", ""END""]",{method}_image.jpg,,getMethodDetails
+METHOD_DETAIL,METHOD_INFO,DYNAMIC,"{detailed_info}","[""Listen to audio"", ""Watch video"", ""Find a clinic"", ""Back to methods""]","[""PLAY_AUDIO"", ""SHOW_VIDEO"", ""CLINIC_FLOW"", ""PREVENTION_FLOW""]","{method}_detail.jpg",,"getMethodDetails, getMediaContent"
+CLINIC_FLOW,*,MESSAGE,"Let's help you find a clinic. Please select your state:","[{states_list}]",STATE_SELECTED,map_icon.png,,getStates
+STATE_SELECTED,CLINIC_FLOW,DYNAMIC,"Please select your LGA in {selected_state}:","[{lga_list}]",LGA_SELECTED,map_icon.png,,getLGAs
+LGA_SELECTED,STATE_SELECTED,DYNAMIC,"Here are clinics in {selected_lga}:","[{clinic_list}]",CLINIC_SELECTED,map_icon.png,,getClinics
+CLINIC_SELECTED,LGA_SELECTED,DYNAMIC,"{clinic_details}","[""Get directions"", ""Find another clinic"", ""End conversation""]","[""SHOW_DIRECTIONS"", ""CLINIC_FLOW"", ""END""]",clinic_icon.png,,getClinicDetails
+END,*,END,"Thank you for chatting with me! Is there anything else you'd like to know?","[""Start over"", ""End chat""]","[""MAIN_MENU"", null]",honey_avatar.png,,
