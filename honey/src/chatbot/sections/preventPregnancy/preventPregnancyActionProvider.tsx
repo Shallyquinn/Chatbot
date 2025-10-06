@@ -343,8 +343,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   handleContraceptionTypeSelection = async(type: string): Promise<void> => {
     await this.ensureChatSession();
     
-    //Type safety conversion
+    // Type safety conversion - type should match exactly: "Emergency" or "Prevent in future"
     const contraceptionType = type as ContraceptionType;
+    
     const userMessage: ChatMessage = {
       message: type,
       type: "user",
@@ -360,9 +361,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       widget_name: "contraceptionTypeOptions"
     }).catch(err => console.error('Failed to save user selection:', err));
 
-    // Using type-safe constants instead of magic strings
-    const EMERGENCY: ContraceptionType = "emergency";
-    const PREVENT_FUTURE: ContraceptionType = "prevent_future";
+    // Using type-safe constants that match the button text exactly
+    const EMERGENCY: ContraceptionType = "Emergency";
+    const PREVENT_FUTURE: ContraceptionType = "Prevent in future";
 
     switch (contraceptionType) {
       case EMERGENCY:
