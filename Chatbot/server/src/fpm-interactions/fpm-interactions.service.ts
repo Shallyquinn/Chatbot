@@ -9,7 +9,18 @@ export class FpmInteractionsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateFpmInteractionDto) {
-    return this.prisma.fpmInteraction.create({ data: dto });
+    if (dto.user_session_id) {
+      return this.prisma.fpmInteraction.upsert({
+        where: { user_session_id: dto.user_session_id },
+        update: dto,
+        create: dto,
+        select: {user_id:true, user_session_id:true}
+      });
+    } else {
+      return this.prisma.fpmInteraction.create({
+        data: dto
+      });
+    }
   }
 
   async findAll() {

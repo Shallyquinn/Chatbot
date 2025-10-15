@@ -5,6 +5,8 @@ export interface FpmInteraction{
 
   fpm_flow_type?: string;
 
+  main_menu_option?: string;
+
   current_fpm_method?: string;
 
   interested_fpm_method?: string;
@@ -40,4 +42,32 @@ export interface FpmInteraction{
   clinic_referral_needed?: boolean;
 
   human_agent_requested?: boolean;
+
+  fpm_concern_type: string;
+
+  pregnancy_trial: string;
+
+  iud_removal_duration: string;
+
+  implant_removal_duration: string;
+
+  injection_stop_period: string;
+
+  dailypills_stop_period: string;
+
+  contraception_choice: string;
+
+  improve_intimacy_choice: string;
+
+  other_method_choices: string;
+
+  side_effects: string;
+
+  switch_method: string;
+
+  prevention_choice: string;
+
+  emergency_prevention_choice: string;
+
+  gel_lubricant_choice: string;
 }

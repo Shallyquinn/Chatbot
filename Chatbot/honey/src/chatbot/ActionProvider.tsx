@@ -458,8 +458,19 @@ class ActionProvider implements ActionProviderInterface {
      
     let responseMessage: ChatMessage;
 
-     
-    await this.api.updateUser({main_menu_option:method})     
+     try {
+      await Promise.all([
+
+    this.api.updateUser({main_menu_option:method}),
+    this.api.createFpmInteraction({main_menu_option:method}) 
+
+      ])
+
+     } catch(error) {
+      console.error("API call failed:", error);    
+     }
+    
+        
     switch (method) {
       case "How to get pregnant":
         this.handleGetPregnantInitiation();
@@ -508,6 +519,7 @@ class ActionProvider implements ActionProviderInterface {
           : "sexEnhancement",
           messageSequence: prev.messageSequence + 1,
     }));
+    
     await this.api.createConversation({
       message_text: method,
       message_type: "user",
@@ -604,6 +616,7 @@ class ActionProvider implements ActionProviderInterface {
         messages: [...prev.messages, userMessage, responseMessage],
         currentStep: "default",
       }));
+      
       await this.api.createResponse({
       response_category:'ContraceptionType',
       response_type:'user',
@@ -614,8 +627,6 @@ class ActionProvider implements ActionProviderInterface {
       step_in_flow:'contraceptionTypeOptions',
     })
     }
-   
-    
   };
 
   handleLubricantOptions = async(lubricant: string): Promise<void> => {
@@ -648,7 +659,10 @@ class ActionProvider implements ActionProviderInterface {
       ],
       currentStep: "nextAction",
     }));
-   await this.api.createResponse({
+     try {
+      await Promise.all([
+      this.api.createFpmInteraction({gel_lubricant_choice:lubricant}),
+      this.api.createResponse({
       response_category:'LubricantType',
       response_type:'user',
       question_asked:'What kind of lubricant do you want to know about?',
@@ -657,6 +671,13 @@ class ActionProvider implements ActionProviderInterface {
       available_options:['Water-based', 'Oil-based', 'Silicone-based'],
       step_in_flow:'lubricantOptions',
     })
+      ])
+
+     } catch(error) {
+      console.error("API call failed:", error);    
+     }
+    
+  
   };
 
   handleNextAction = (action: string): void => {
@@ -784,7 +805,7 @@ class ActionProvider implements ActionProviderInterface {
       message_type:'bot',
       chat_step:"agentTypeSelection",
       message_sequence_number:1,
-      widget_name:"agentTypeOptions"
+      widget_name:"agentTypeOptions",
     })
   };
 
@@ -826,6 +847,21 @@ class ActionProvider implements ActionProviderInterface {
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "agentTypeSelection",
       }));
+       try {
+      await Promise.all([
+       this.api.createResponse({
+        response_type:'user',
+        question_asked:userMessage.message,
+        user_response:type,
+        widget_used:userMessage.widget,
+        available_options:[type],
+        step_in_flow:userMessage.id
+      })
+      ])
+
+     } catch(error) {
+      console.error("API call failed:", error);    
+     }
     }
    
   };

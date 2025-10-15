@@ -132,18 +132,13 @@ export class ApiService {
           user_session_id: this.sessionId,
           user_id: this.userId,
           user_agent: navigator.userAgent,
-          device_type: this.getDeviceType,
+          device_type:"desktop",
           session_end_time:null,
-          session_completed:true,
         }),
       });
 
       if (chatSession && chatSession.session_id) {
         this.chatSessionId = chatSession.session_id;
-        if (this.chatSessionId) {
-          localStorage.setItem("chat_session_id", this.chatSessionId);
-        }
-        return this.chatSessionId
       } else {
         throw new Error('Invalid chat session response');
       }
@@ -183,6 +178,8 @@ export class ApiService {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
      session_id: this.chatSessionId,
+     user_session_id: this.sessionId,
+     user_id:this.userId,
         ...payload
     }),
   });
@@ -190,12 +187,13 @@ export class ApiService {
 
 async createFpmInteraction(payload:Partial<FpmInteraction>){
   await this.initializeUser();
-  await this.ensureChatSession();
   return this.request(`${this.baseUrl}/fpm-interactions`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       session_id: this.chatSessionId,
+        user_id: this.userId,
+        user_session_id: this.sessionId,
       ...payload
     })
   })

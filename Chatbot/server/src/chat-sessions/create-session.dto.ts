@@ -2,7 +2,7 @@ import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID } from "cl
 
 
 export class CreateChatSessionDto {
-  @IsString() user_session_id: string;
+  @IsString() @IsOptional() user_session_id: string;
   @IsOptional() @IsUUID() user_id?: string;
   @IsOptional() @IsDateString() session_start_time?: string;
   @IsOptional() @IsDateString() session_end_time?: string | null;

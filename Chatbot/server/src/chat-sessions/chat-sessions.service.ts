@@ -47,7 +47,7 @@ async testConnection() {
       }
     }
     
-    const session= await this.prisma.chatSession.create({ data:{
+    const session = await this.prisma.chatSession.create({ data:{
       user_session_id: dto.user_session_id,
           user_id: userId, // <- now guaranteed (or explicitly null if you choose)
           session_start_time:

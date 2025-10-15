@@ -259,6 +259,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       messages: [...prev.messages, userMessage, responseMessage, followUpMessage],
       currentStep: "contraception" as any,
     }));
+    
     await this.api.createConversation({
       message_text: userMessage.message,
       message_type:'user',
@@ -299,7 +300,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         this.handleInvalidContraceptionType(userMessage);
         break;
     }
-    await this.api.createResponse({
+    try{
+      await Promise.all([
+        this.api.createFpmInteraction({prevention_choice:contraceptionType}),
+        this.api.createResponse({
       response_category:'ContraceptionType',
       response_type:'user',
       question_asked:'What kind of contraception do you want to know about?',
@@ -308,6 +312,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       available_options:['Emergency', 'Prevent in future'],
       step_in_flow:'contraceptionTypeOptions',
     })
+      ])
+    }catch(error){
+      console.error("API call failed:", error);
+    }
   };
   
   // New method to handle invalid contraception types
@@ -393,7 +401,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       
       "Postinor-2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
     };
-    await this.api.createResponse({
+    try{
+      await Promise.all([
+        this.api.createFpmInteraction({emergency_prevention_choice:emergencyProduct}),
+      this.api.createResponse({
     response_category: "EmergencyProduct",
     response_type: "user",
     question_asked: "Which emergency contraception product do you want to know about?",
@@ -401,7 +412,12 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     widget_used: "emergencyProductOptions",
     available_options: ["Postpill", "Postinor-2"],
     step_in_flow: "emergencyProductSelection",
-  });
+  })
+      ])
+    }catch(error){
+      console.error("API call failed:", error);
+    }
+    
     const productInfo = productInfoMap[emergencyProduct];
     if (!productInfo) {
     
@@ -551,7 +567,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "duration",
       }));
-       await this.api.createResponse({
+      try{
+      await Promise.all([
+        this.api.createFpmInteraction({prevention_duration:duration}),
+        this.api.createResponse({
       response_category:'ContraceptionDuration',
       response_type:'user',
       question_asked:'How long do you want to prevent pregnancy?',
@@ -560,7 +579,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       available_options:Object.keys(durationConfig),
       step_in_flow:"preventionDurationSelection",
     })
-
+      ])
+    }catch(error){
+      console.error("API call failed:", error);
+    }
       return;
     
     }
@@ -767,8 +789,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       messages: [...prev.messages, ...messages],
       currentStep: "methodDetails",
     }));
-    
-    await this.api.createResponse({
+    try{
+      await Promise.all([
+        this.api.createFpmInteraction({contraception_choice:method}),
+        this.api.createResponse({
       response_category: "ContraceptionMethod",
       response_type: "user",
       question_asked: "Which family planning method do you want to know about",
@@ -776,8 +800,12 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       widget_used:"learnMoreMethods",
       available_options: Object.keys(this.getAllMethodOptions?.() ?? {}),
       step_in_flow: "methodOptionsSelection",
-
     })
+      ])
+    }catch(error){
+      console.error("API call failed:", error);
+    }
+     
   };
 
   // =============================================================================

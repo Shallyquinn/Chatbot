@@ -17,6 +17,5 @@ export interface ChatSessionData {
   user_agent?: string;
   ip_address?: string;
   device_type?: string;
-  
   created_at: Date;
 }

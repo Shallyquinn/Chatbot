@@ -129,6 +129,7 @@ model FpmInteraction {
   interaction_id String @id @default(uuid()) @db.Uuid
   user_id        String? @db.Uuid
   session_id     String? @db.Uuid
+  user_session_id     String?  @unique @db.VarChar(255)
 
   fpm_flow_type           String? @db.VarChar(50)
   current_fpm_method      String? @db.VarChar(100)
@@ -149,6 +150,19 @@ model FpmInteraction {
   timing_preference        String? @db.VarChar(50)
   menstrual_flow_preference String? @db.VarChar(100)
   fpm_concern_type          String? @db.VarChar(100)
+  pregnancy_trial           String? @db.VarChar(100)
+  iud_removal_duration      String? @db.VarChar(100)
+  implant_removal_duration  String? @db.VarChar(100)
+  injection_stop_period     String? @db.VarChar(100)
+  dailypills_stop_period    String? @db.VarChar(100)
+  contraception_choice      String? @db.VarChar(100)   
+  improve_intimacy_choice   String? @db.VarChar(100)
+  other_method_choices      String? @db.VarChar(100)
+  side_effects              String? @db.VarChar(100)
+  switch_method             String? @db.VarChar(100)
+  prevention_choice         String? @db.VarChar(100)
+  emergency_prevention_choice String? @db.VarChar(100)   
+  gel_lubricant_choice String? @db.VarChar(100)   
 
   provided_information  String? @db.Text
   next_action           String? @db.VarChar(100)
