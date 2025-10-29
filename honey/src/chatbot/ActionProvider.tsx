@@ -13,6 +13,7 @@ import {
 import FPMChangeProvider from './sections/changeFPM/FPMChangeProvider';
 import GetPregnantActionProvider from './sections/getPregnant/getPregnantActionProvider';
 import PreventPregnancyActionProvider from './sections/preventPregnancy/preventPregnancyActionProvider';
+import { SexEnhancementActionProvider } from './sections/sexEnhancement/sexEnhancementActionProvider';
 import { apiService, ApiService } from '@/services/api';
 
 // ACTION PROVIDER INTERFACE - Complete interface matching all widgets
@@ -20,6 +21,7 @@ import { apiService, ApiService } from '@/services/api';
 export interface ActionProviderInterface {
   // NAVIGATION HANDLERS
   handleKeywordNavigation: (keyword: string) => void;
+  handleMedicalConditionsResponse(option: string): void;
 
   // GREETING FLOW HANDLERS
   handleInitialWelcome: () => void;
@@ -49,6 +51,8 @@ export interface ActionProviderInterface {
   handleEmergencyProductSelection: (product: string) => void;
   handlePreventionDurationSelection: (duration: string) => void;
   handleMethodOptionsSelection: (method: string) => void;
+  handleProductDetailSelection: (choice: string) => void; // Task 5: Product detail choice
+  handleLearnOtherMethods: (answer: string) => void; // Task 5: Continue learning flow
 
   // SEX LIFE IMPROVEMENT HANDLERS
 
@@ -66,6 +70,20 @@ export interface ActionProviderInterface {
   handleMoreHelp: (answer: string) => void;
   handleMoreHelpOptions: (option: string) => void;
   handleUserQuestion: (question: string) => void;
+
+  // Phase 3: CONFUSION DETECTION & HELP
+  showHelpMessage: (message: string) => void;
+
+  // Phase 3: ENHANCED NAVIGATION
+  handleFlowEndOption: (option: string) => void;
+
+  // Phase 3: COMPARE METHODS
+  handleAddToComparison: (method: string) => void;
+  handleCompareNow: () => void;
+  handleClearComparison: () => void;
+
+  // Phase 3: SESSION CONTINUATION
+  handleResumeSession: (resume: boolean) => void;
 
   // FPM CHANGE/STOP HANDLERS - Delegated to FPMChangeProvider
 
@@ -102,10 +120,12 @@ export interface ActionProviderInterface {
   handleGetPregnantPillsStop: (status: string) => void;
   handleGetPregnantNextAction: (action: string) => void;
   handleGetPregnantUserQuestion: (question: string) => void;
+
+  // DELEGATE PROVIDERS - Exposed for config access
+  sexEnhancementActionProvider: SexEnhancementActionProvider;
 }
 
 // HELPER TYPES
-
 type CreateChatBotMessage = (
   message: string,
   options?: {
@@ -124,6 +144,11 @@ type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
 // ACTION PROVIDER CLASS IMPLEMENTATION
 
 class ActionProvider implements ActionProviderInterface {
+  // Static flag to prevent multiple simultaneous initializations across all instances
+  private static globalChatSessionInitialized: boolean = false;
+  private static initializationPromise: Promise<void> | null = null;
+  private static constructionCount: number = 0; // Track total constructions for debugging
+
   createChatBotMessage: CreateChatBotMessage;
   setState: SetStateFunc;
   state: ChatbotState;
@@ -132,10 +157,11 @@ class ActionProvider implements ActionProviderInterface {
   private fpmChangeProvider: FPMChangeProvider;
   private getPregnantActionProvider: GetPregnantActionProvider;
   private preventPregnancyActionProvider: PreventPregnancyActionProvider;
+  public sexEnhancementActionProvider: SexEnhancementActionProvider;
 
   // Store user's location data
   private userState: string = '';
-  private api: ApiService;
+  public api: ApiService;
   private chatSessionInitialized: boolean = false;
 
   private userSessionId: string;
@@ -146,7 +172,20 @@ class ActionProvider implements ActionProviderInterface {
     setStateFunc: SetStateFunc,
     state: ChatbotState,
   ) {
-    this.createChatBotMessage = createChatBotMessage;
+    // Increment construction counter for debugging
+    ActionProvider.constructionCount++;
+    console.log(`🏗️ ActionProvider constructed (#${ActionProvider.constructionCount})`);
+    
+    // Wrap createChatBotMessage to automatically add timestamps
+    const originalCreateChatBotMessage = createChatBotMessage;
+    this.createChatBotMessage = (message: string, options?: Record<string, unknown>) => {
+      const msg = originalCreateChatBotMessage(message, options);
+      return {
+        ...msg,
+        timestamp: new Date().toISOString(),
+      };
+    };
+    
     this.setState = setStateFunc;
     this.state = state;
     this.api = apiService;
@@ -184,6 +223,15 @@ class ActionProvider implements ActionProviderInterface {
       this.userSessionId
     );
 
+    this.sexEnhancementActionProvider = new SexEnhancementActionProvider(
+      this.createChatBotMessage,
+      setStateFunc,
+      state,
+      this.api,
+      this.userSessionId,
+      this.handleGeneralQuestion.bind(this)
+    );
+
     // Set up server-based state persistence with localStorage fallback
     const originalSetState = this.setState;
     this.setState = (updater) => {
@@ -206,28 +254,115 @@ class ActionProvider implements ActionProviderInterface {
       });
     };
 
-    // Load state from server on initialization
-    this.loadStateFromServer();
-
-    console.log('🏗️ ActionProvider constructed with all providers');
+    // DON'T load state in constructor - it causes infinite re-renders
+    // State is already loaded by config.tsx from localStorage
+    // Server sync will happen on first user interaction via ensureChatSession
   }
 
   // Session management for proper database storage
 
   // Ensure chat session is initialized before API calls
-  private async ensureChatSession() {
+  public async ensureChatSession() {
+    // Check global flag first to prevent multiple simultaneous calls
+    if (ActionProvider.globalChatSessionInitialized) {
+      return;
+    }
+
+    // If another instance is already initializing, wait for it
+    if (ActionProvider.initializationPromise) {
+      await ActionProvider.initializationPromise;
+      return;
+    }
+
+    // This instance will handle initialization
     if (!this.chatSessionInitialized) {
       try {
-        await this.api.initializeChatSession();
+        // Create a shared promise that other instances can wait on
+        ActionProvider.initializationPromise = this.api.initializeChatSession();
+        await ActionProvider.initializationPromise;
+        
+        // Mark as initialized globally
         this.chatSessionInitialized = true;
+        ActionProvider.globalChatSessionInitialized = true;
+        
+        console.log('✅ Chat session initialization complete');
       } catch (error) {
         console.error('Failed to initialize chat session:', error);
+      } finally {
+        // Clear the promise so future calls can retry if needed
+        ActionProvider.initializationPromise = null;
+      }
+    }
+  }
+
+  // Save complete chat state to server for WhatsApp-style cross-device sync
+  private async saveStateToServer(state: ChatbotState): Promise<void> {
+    try {
+      await this.ensureChatSession();
+      
+      await this.api.saveUserSession({
+        user_session_id: this.userSessionId,
+        chat_state: JSON.stringify(state),
+        last_activity: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('ActionProvider: Failed to save state to server:', error);
+      // Don't throw - state is already saved to localStorage
+    }
+  }
+
+  // Load chat state from server on initialization for cross-device sync
+  private async loadStateFromServer(): Promise<void> {
+    try {
+      await this.ensureChatSession();
+      
+      const response = await this.api.getUserSession(this.userSessionId);
+      
+      if (response && response.chat_state) {
+        const serverState = JSON.parse(response.chat_state);
+        
+        // Compare with localStorage to use most recent
+        const localState = localStorage.getItem('chat_state');
+        if (localState) {
+          const localStateObj = JSON.parse(localState);
+          const localTimestamp = new Date(localStateObj.lastUpdated || 0).getTime();
+          const serverTimestamp = new Date(response.last_activity || 0).getTime();
+          
+          // Use server state if it's more recent
+          if (serverTimestamp > localTimestamp) {
+            this.setState(serverState);
+            localStorage.setItem('chat_state', JSON.stringify(serverState));
+            console.log('✅ Loaded more recent state from server');
+          } else {
+            console.log('✅ Local state is more recent, keeping it');
+          }
+        } else {
+          // No local state, use server state
+          this.setState(serverState);
+          localStorage.setItem('chat_state', JSON.stringify(serverState));
+          console.log('✅ Loaded state from server');
+        }
+      } else {
+        console.log('ℹ️ No saved state found on server');
+      }
+    } catch (error) {
+      console.error('ActionProvider: Failed to load state from server:', error);
+      // Fall back to localStorage
+      const localState = localStorage.getItem('chat_state');
+      if (localState) {
+        try {
+          const state = JSON.parse(localState);
+          this.setState(state);
+          console.log('✅ Loaded state from localStorage fallback');
+        } catch (parseError) {
+          console.error('Failed to parse localStorage state:', parseError);
+        }
       }
     }
   }
 
   // Get next message sequence number for tracking
-  private getNextSequenceNumber(): number {
+  public getNextSequenceNumber(): number {
     return ++this.messageSequenceNumber;
   }
 
@@ -522,15 +657,36 @@ class ActionProvider implements ActionProviderInterface {
     }));
   };
 
+  // Helper method to create user messages with automatic timestamp
+  private createUserMessage = (message: string, tag?: string): ChatMessage => {
+    return {
+      message,
+      type: 'user',
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      tag,
+    };
+  };
+
+  // Phase 3: Helper method to show contextual help messages when confusion is detected
+  showHelpMessage = (message: string): void => {
+    const helpMessage = this.createChatBotMessage(message, { delay: 300 });
+    this.addMessageToState(helpMessage);
+    
+    // Track help message to database
+    this.api.createConversation({
+      message_text: message,
+      message_type: 'bot',
+      chat_step: 'help_message',
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: 300
+    }).catch(err => console.error('Failed to save help message:', err));
+  };
+
   // BASIC SETUP HANDLER IMPLEMENTATIONS
 
   handleLanguageSelection = async (language: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: language,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'language_selection',
-    };
+    const userMessage = this.createUserMessage(language, 'language_selection');
 
     // Initialize chat session first for proper data tracking
     await this.ensureChatSession();
@@ -552,7 +708,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'language',
         widget_name: 'languageOptions',
-        message_sequence_number: 1,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -607,12 +763,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleGenderSelection = async (gender: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: gender,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'gender_selection',
-    };
+    const userMessage = this.createUserMessage(gender, 'gender_selection');
 
     await this.ensureChatSession();
 
@@ -631,7 +782,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'gender',
         widget_name: 'genderOptions',
-        message_sequence_number: 2,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -658,12 +809,7 @@ class ActionProvider implements ActionProviderInterface {
 
   handleStateSelection = async (state: string): Promise<void> => {
     this.userState = state;
-    const userMessage: ChatMessage = {
-      message: state,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'state_selection',
-    };
+    const userMessage = this.createUserMessage(state, 'state_selection');
     await this.ensureChatSession();
 
     // Save to API but don't block on failure
@@ -681,7 +827,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'stateSelection',
         widget_name: 'stateOptions',
-        message_sequence_number: 3,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -708,12 +854,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleLGASelection = async (lga: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: lga,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'lga_selection',
-    };
+    const userMessage = this.createUserMessage(lga, 'lga_selection');
     await this.ensureChatSession();
 
     // Save to API but don't block on failure
@@ -731,7 +872,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'lgaSelection',
         widget_name: 'lgaOptions',
-        message_sequence_number: 4,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -781,11 +922,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleLocationConfirmation = (locationOption: string): void => {
-    const userMessage: ChatMessage = {
-      message: locationOption,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(locationOption);
 
     if (locationOption === "Yes, that's correct") {
       const ageQuestion = this.createChatBotMessage('How old are you?', {
@@ -814,12 +951,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleAgeSelection = async (age: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: age,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'age_selection',
-    };
+    const userMessage = this.createUserMessage(age, 'age_selection');
 
     await this.ensureChatSession();
 
@@ -838,7 +970,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'age',
         widget_name: 'ageOptions',
-        message_sequence_number: 5,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -865,12 +997,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleMaritalStatusSelection = async (status: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: 'user',
-      id: uuidv4(),
-      tag: 'marital_status_selection',
-    };
+    const userMessage = this.createUserMessage(status, 'marital_status_selection');
     await this.ensureChatSession();
 
     // Save to API but don't block on failure
@@ -890,7 +1017,7 @@ class ActionProvider implements ActionProviderInterface {
         message_type: 'user',
         chat_step: 'maritalStatus',
         widget_name: 'maritalStatusOptions',
-        message_sequence_number: 6,
+        message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
       .catch((error) => {
@@ -948,7 +1075,7 @@ class ActionProvider implements ActionProviderInterface {
         message_text: method,
         message_type: 'user',
         chat_step: 'planningMethodSelection',
-        message_sequence_number: 1,
+        message_sequence_number: this.getNextSequenceNumber(),
         widget_name: 'planningMethodSelection',
         widget_options: [
           'How to get pregnant',
@@ -979,15 +1106,8 @@ class ActionProvider implements ActionProviderInterface {
         return;
 
       case 'How to improve sex life':
-        responseMessage = this.createChatBotMessage(
-          'I can help improve your sexual experience. What would you like to focus on?',
-          {
-            widget: 'sexEnhancementOptions',
-            delay: 500,
-          },
-        );
-        this.handleSexLifeImprovement();
-        break;
+        this.sexEnhancementActionProvider.handleSexEnhancementInitiation();
+        return;
 
       case 'Change/stop current FPM':
         this.setState((prev: ChatbotState) => ({
@@ -1043,6 +1163,30 @@ class ActionProvider implements ActionProviderInterface {
           handleMethodOptionsSelection: (method: string) => void;
         }
       ).handleMethodOptionsSelection(method);
+    }
+  };
+
+  // Task 5: Product detail selection handler
+  handleProductDetailSelection = (choice: string): void => {
+    if ('handleProductDetailSelection' in this.preventPregnancyActionProvider) {
+      (
+        this
+          .preventPregnancyActionProvider as PreventPregnancyActionProvider & {
+          handleProductDetailSelection: (choice: string) => void;
+        }
+      ).handleProductDetailSelection(choice);
+    }
+  };
+
+  // Task 5: Learn other methods handler
+  handleLearnOtherMethods = (answer: string): void => {
+    if ('handleLearnOtherMethods' in this.preventPregnancyActionProvider) {
+      (
+        this
+          .preventPregnancyActionProvider as PreventPregnancyActionProvider & {
+          handleLearnOtherMethods: (answer: string) => void;
+        }
+      ).handleLearnOtherMethods(answer);
     }
   };
 
@@ -1216,6 +1360,1024 @@ class ActionProvider implements ActionProviderInterface {
       available_options: ['Water-based', 'Oil-based', 'Silicone-based'],
       step_in_flow: 'lubricantOptions',
     }).catch(err => console.error('Failed to save response data:', err));
+  };
+
+  // Phase 3: Enhanced Navigation - Flow End Options Handler
+  handleFlowEndOption = async (option: string): Promise<void> => {
+    await this.ensureChatSession();
+    
+    const userMessage: ChatMessage = {
+      message: option,
+      type: 'user',
+      id: uuidv4(),
+    };
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, userMessage],
+    }));
+
+    // Track user selection
+    await this.api.createConversation({
+      message_text: option,
+      message_type: 'user',
+      chat_step: 'flowEndOption',
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: 'flowEndOptions'
+    }).catch(err => console.error('Failed to save flow end option:', err));
+
+    const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+
+    switch (option) {
+      case 'Learn about other methods': {
+        // Return to duration selection to explore methods
+        const learnMoreText = MessageFormatter.formatInfo(
+          "Great! Let's explore other family planning methods. For how long do you want to prevent pregnancy?"
+        );
+        const learnMoreMsg = this.createChatBotMessage(learnMoreText, {
+          delay: 500,
+          widget: 'preventionDurationOptions'
+        });
+
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, learnMoreMsg],
+          currentStep: 'duration',
+        }));
+
+        // Track bot response
+        await this.api.createConversation({
+          message_text: learnMoreText,
+          message_type: 'bot',
+          chat_step: 'duration',
+          message_sequence_number: this.getNextSequenceNumber(),
+          widget_name: 'preventionDurationOptions',
+          message_delay_ms: 500
+        }).catch(err => console.error('Failed to save learn more message:', err));
+        break;
+      }
+
+      case 'Find nearest clinic': {
+        // Navigate to clinic finder
+        const clinicText = MessageFormatter.formatInfo(
+          "I'll help you find the nearest clinic. 📍"
+        );
+        const clinicMsg = this.createChatBotMessage(clinicText, { delay: 300 });
+
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, clinicMsg],
+        }));
+
+        // Track bot response
+        await this.api.createConversation({
+          message_text: clinicText,
+          message_type: 'bot',
+          chat_step: 'clinic_navigation',
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 300
+        }).catch(err => console.error('Failed to save clinic message:', err));
+
+        // Navigate to clinic finder
+        await this.handleKeywordNavigation('clinic');
+        break;
+      }
+
+      case 'Back to main menu': {
+        // Return to main FPM selection
+        const menuText = MessageFormatter.formatSuccess(
+          "Welcome back to the main menu! 🏠 What would you like help with today?"
+        );
+        const menuMessage = this.createChatBotMessage(menuText, {
+          delay: 500,
+          widget: 'planningMethodOptions'
+        });
+
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, menuMessage],
+          currentStep: 'fpm',
+        }));
+
+        // Track bot response
+        await this.api.createConversation({
+          message_text: menuText,
+          message_type: 'bot',
+          chat_step: 'fpm',
+          message_sequence_number: this.getNextSequenceNumber(),
+          widget_name: 'planningMethodOptions',
+          message_delay_ms: 500
+        }).catch(err => console.error('Failed to save menu message:', err));
+        break;
+      }
+
+      case 'End conversation': {
+        // Phase 3.5: Show conversation summary before farewell
+        await this.showConversationSummary();
+        
+        // Show farewell
+        const farewellText = MessageFormatter.formatSuccess(
+          "Thank you for chatting with me! 😊 Feel free to come back anytime you need help. Stay safe! 🛡️"
+        );
+        const farewellMsg = this.createChatBotMessage(farewellText, { delay: 1500 });
+
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, farewellMsg],
+        }));
+
+        // Track bot response
+        await this.api.createConversation({
+          message_text: farewellText,
+          message_type: 'bot',
+          chat_step: 'conversation_end',
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 1500
+        }).catch(err => console.error('Failed to save farewell message:', err));
+
+        // Clear conversation state
+        localStorage.removeItem('conversationState');
+        localStorage.removeItem('conversationStateTimestamp');
+        break;
+      }
+
+      default: {
+        console.warn('Unknown flow end option:', option);
+        const errorText = MessageFormatter.formatWarning(
+          "I didn't understand that option. Please try again."
+        );
+        await this.showHelpMessage(errorText);
+        return;
+      }
+    }
+
+    // Track response data
+    await this.api.createResponse({
+      response_category: 'FlowEndNavigation',
+      response_type: 'user',
+      question_asked: 'What would you like to do next?',
+      user_response: option,
+      widget_used: 'flowEndOptions',
+      available_options: ['Learn about other methods', 'Find nearest clinic', 'Back to main menu', 'End conversation'],
+      step_in_flow: 'flowEndOption'
+    }).catch(err => console.error('Failed to save response:', err));
+  };
+
+  // Phase 3.3: Compare Methods Feature
+  private compareSelectedMethods: string[] = [];
+  private readonly MAX_COMPARE_METHODS = 4;
+
+  // Phase 3.4: Session Continuation
+  private readonly SESSION_TIMEOUT_MINUTES = 30;
+  
+  private saveConversationState = (): void => {
+    const state = {
+      currentStep: this.state.currentStep,
+      lastMethodViewed: this.state.lastMethodViewed || null,
+      compareSelectedMethods: this.compareSelectedMethods,
+      timestamp: Date.now(),
+      messageCount: this.state.messages.length
+    };
+    localStorage.setItem('conversationState', JSON.stringify(state));
+    localStorage.setItem('conversationStateTimestamp', Date.now().toString());
+  };
+
+  private restoreConversationState = async (): Promise<boolean> => {
+    try {
+      const savedState = localStorage.getItem('conversationState');
+      const savedTimestamp = localStorage.getItem('conversationStateTimestamp');
+      
+      if (!savedState || !savedTimestamp) return false;
+
+      const state = JSON.parse(savedState);
+      const timestamp = parseInt(savedTimestamp);
+      const ageMinutes = (Date.now() - timestamp) / (60 * 1000);
+
+      // Only restore if less than SESSION_TIMEOUT_MINUTES old
+      if (ageMinutes > this.SESSION_TIMEOUT_MINUTES) {
+        localStorage.removeItem('conversationState');
+        localStorage.removeItem('conversationStateTimestamp');
+        return false;
+      }
+
+      const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+
+      // Describe last activity
+      let activityDescription = "exploring family planning options";
+      if (state.currentStep === 'methodDetails' && state.lastMethodViewed) {
+        activityDescription = `learning about ${state.lastMethodViewed}`;
+      } else if (state.currentStep === 'duration') {
+        activityDescription = "selecting prevention duration";
+      } else if (state.currentStep === 'emergency') {
+        activityDescription = "looking at emergency contraception";
+      } else if (state.compareSelectedMethods && state.compareSelectedMethods.length > 0) {
+        activityDescription = `comparing ${state.compareSelectedMethods.length} methods`;
+      }
+
+      const resumeText = MessageFormatter.formatInfo(
+        `Welcome back! 👋\n\nI see you were ${activityDescription} about ${Math.round(ageMinutes)} minutes ago.\n\nWould you like to continue where you left off?`
+      );
+
+      const resumeMsg = this.createChatBotMessage(resumeText, {
+        delay: 500,
+        widget: 'resumeOptions'
+      });
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, resumeMsg],
+      }));
+
+      // Restore comparison state if exists
+      if (state.compareSelectedMethods && state.compareSelectedMethods.length > 0) {
+        this.compareSelectedMethods = state.compareSelectedMethods;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error restoring conversation state:', error);
+      localStorage.removeItem('conversationState');
+      localStorage.removeItem('conversationStateTimestamp');
+      return false;
+    }
+  };
+
+  handleAddToComparison = async (method: string): Promise<void> => {
+    await this.ensureChatSession();
+
+    // Check if already added
+    if (this.compareSelectedMethods.includes(method)) {
+      const alreadyAddedMsg = this.createChatBotMessage(
+        `⚠️ *${method}* is already in your comparison list.`,
+        { delay: 300 }
+      );
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, alreadyAddedMsg],
+      }));
+      return;
+    }
+
+    // Check maximum limit
+    if (this.compareSelectedMethods.length >= this.MAX_COMPARE_METHODS) {
+      const maxLimitMsg = this.createChatBotMessage(
+        `⚠️ You can compare up to ${this.MAX_COMPARE_METHODS} methods at a time. Please compare now or clear your selection.`,
+        { delay: 300, widget: 'comparisonActions' }
+      );
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, maxLimitMsg],
+      }));
+      return;
+    }
+
+    // Add method to comparison
+    this.compareSelectedMethods.push(method);
+
+    const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+    
+    const confirmText = MessageFormatter.formatSuccess(
+      `Added *${method}* to comparison!\n\n` +
+      `📋 Methods selected (${this.compareSelectedMethods.length}):\n` +
+      this.compareSelectedMethods.map((m, i) => `${i + 1}. ${m}`).join('\n') +
+      `\n\nSelect ${this.compareSelectedMethods.length < 2 ? 'at least one more method' : 'another method'} or tap "Compare Now" below.`
+    );
+
+    const confirmMsg = this.createChatBotMessage(confirmText, {
+      delay: 500,
+      widget: 'comparisonActions'
+    });
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, confirmMsg],
+    }));
+
+    // Track addition
+    await this.api.createConversation({
+      message_text: `Added ${method} to comparison`,
+      message_type: 'bot',
+      chat_step: 'addToComparison',
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: 500
+    }).catch(err => console.error('Failed to save comparison add:', err));
+  };
+
+  handleCompareNow = async (): Promise<void> => {
+    await this.ensureChatSession();
+
+    if (this.compareSelectedMethods.length < 2) {
+      await this.showHelpMessage(
+        "⚠️ Please select at least 2 methods to compare. Tap methods to add them to your comparison list."
+      );
+      return;
+    }
+
+    const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+
+    // Generate comparison table
+    const comparisonText = await this.generateMethodComparison(this.compareSelectedMethods);
+    const comparisonMsg = this.createChatBotMessage(comparisonText, { delay: 1000 });
+
+    // Add follow-up options
+    const followUpText = MessageFormatter.formatInfo(
+      "What would you like to do next?"
+    );
+    const followUpMsg = this.createChatBotMessage(followUpText, {
+      delay: 2000,
+      widget: 'flowEndOptions'
+    });
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, comparisonMsg, followUpMsg],
+    }));
+
+    // Track comparison
+    await this.api.createResponse({
+      response_category: 'MethodComparison',
+      response_type: 'user',
+      question_asked: 'Compare methods',
+      user_response: this.compareSelectedMethods.join(', '),
+      widget_used: 'comparisonActions',
+      available_options: this.compareSelectedMethods,
+      step_in_flow: 'compareNow'
+    }).catch(err => console.error('Failed to save comparison:', err));
+
+    // Clear comparison after showing
+    this.compareSelectedMethods = [];
+  };
+
+  handleClearComparison = async (): Promise<void> => {
+    this.compareSelectedMethods = [];
+
+    const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+    
+    const clearMsg = this.createChatBotMessage(
+      MessageFormatter.formatSuccess("✅ Comparison list cleared! Select methods to start a new comparison."),
+      { delay: 300 }
+    );
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, clearMsg],
+    }));
+  };
+
+  // Phase 4.1: Intelligent Journey Summarization
+  showConversationSummary = async (): Promise<void> => {
+    const summary = this.extractConversationSummary();
+    const journey = this.analyzeUserJourney();
+    
+    const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+    
+    // Phase 4: Enhanced summary with journey analysis
+    const summaryText = this.generateIntelligentSummary(summary, journey, MessageFormatter);
+    const summaryMsg = this.createChatBotMessage(summaryText, { delay: 1000 });
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, summaryMsg],
+    }));
+
+    // Save summary to database with journey metadata
+    await this.api.createConversation({
+      message_text: summaryText,
+      message_type: 'bot',
+      chat_step: 'conversationSummary',
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: 1000
+    }).catch(err => console.error('Failed to save summary:', err));
+
+    // Save journey analytics
+    await this.api.createResponse({
+      response_category: 'JourneyAnalytics',
+      response_type: 'system',
+      question_asked: 'User Journey Summary',
+      user_response: JSON.stringify({
+        primaryIntent: journey.primaryIntent,
+        keyDecisions: journey.keyDecisions.length,
+        methodsViewed: summary.methodsViewed.length,
+        duration: summary.duration,
+        completedGoal: journey.completedGoal
+      }),
+      widget_used: 'conversationSummary',
+      step_in_flow: 'journeyComplete'
+    }).catch(err => console.error('Failed to save journey analytics:', err));
+  };
+
+  // Phase 4.1: Analyze user journey to identify patterns and intent
+  private analyzeUserJourney = (): {
+    primaryIntent: 'emergency' | 'prevention' | 'exploration' | 'comparison' | 'clinic_search';
+    urgency: 'high' | 'medium' | 'low';
+    keyDecisions: Array<{ step: string; decision: string; timestamp?: string }>;
+    completedGoal: boolean;
+    dropOffPoint?: string;
+  } => {
+    const messages = this.state.messages || [];
+    const journey = {
+      primaryIntent: 'exploration' as 'emergency' | 'prevention' | 'exploration' | 'comparison' | 'clinic_search',
+      urgency: 'medium' as 'high' | 'medium' | 'low',
+      keyDecisions: [] as Array<{ step: string; decision: string; timestamp?: string }>,
+      completedGoal: false,
+      dropOffPoint: undefined as string | undefined
+    };
+
+    // Analyze message flow to determine primary intent
+    const userMessages = messages.filter(m => m.type === 'user');
+    const botMessages = messages.filter(m => m.type === 'bot');
+
+    // Intent detection from early messages (first 5 user messages)
+    const earlyMessages = userMessages.slice(0, 5).map(m => m.message.toLowerCase()).join(' ');
+    
+    if (earlyMessages.includes('emergency') || earlyMessages.includes('postpill') || 
+        earlyMessages.includes('urgent') || earlyMessages.includes('yesterday')) {
+      journey.primaryIntent = 'emergency';
+      journey.urgency = 'high';
+    } else if (earlyMessages.includes('compare') || this.compareSelectedMethods.length > 0) {
+      journey.primaryIntent = 'comparison';
+      journey.urgency = 'low';
+    } else if (earlyMessages.includes('clinic') || earlyMessages.includes('location') || 
+               earlyMessages.includes('near me')) {
+      journey.primaryIntent = 'clinic_search';
+      journey.urgency = 'medium';
+    } else if (earlyMessages.includes('prevent') || earlyMessages.includes('future') ||
+               earlyMessages.includes('1 year') || earlyMessages.includes('3 years')) {
+      journey.primaryIntent = 'prevention';
+      journey.urgency = 'low';
+    }
+
+    // Extract key decisions from user selections
+    userMessages.forEach((msg, index) => {
+      const decision = msg.message;
+      const timestamp = msg.timestamp;
+      
+      // Identify decision points
+      if (decision === 'Emergency' || decision === 'Prevent in future') {
+        journey.keyDecisions.push({
+          step: 'contraception_type',
+          decision: decision,
+          timestamp
+        });
+      } else if (['Up to 1 year', '1 - 2 years', '3 - 4 years', '5 - 10 years', 'Permanently'].includes(decision)) {
+        journey.keyDecisions.push({
+          step: 'prevention_duration',
+          decision: decision,
+          timestamp
+        });
+      } else if (['Daily pills', 'Male condom', 'Female condom', 'Implants', 'Injectables', 
+                  'IUD', 'IUS', 'Emergency pills', 'Diaphragm'].includes(decision)) {
+        journey.keyDecisions.push({
+          step: 'method_selection',
+          decision: decision,
+          timestamp
+        });
+      } else if (decision.includes('clinic') || decision.includes('location')) {
+        journey.keyDecisions.push({
+          step: 'clinic_search',
+          decision: 'Searched for clinic',
+          timestamp
+        });
+      }
+    });
+
+    // Determine if goal was completed
+    const lastBotMessage = botMessages[botMessages.length - 1]?.message.toLowerCase() || '';
+    
+    if (journey.primaryIntent === 'emergency') {
+      // Goal complete if emergency product info was shown
+      journey.completedGoal = botMessages.some(m => 
+        m.message.toLowerCase().includes('postpill') || 
+        m.message.toLowerCase().includes('emergency contraception')
+      );
+    } else if (journey.primaryIntent === 'prevention') {
+      // Goal complete if at least one method was viewed
+      journey.completedGoal = journey.keyDecisions.some(d => d.step === 'method_selection');
+    } else if (journey.primaryIntent === 'comparison') {
+      // Goal complete if comparison was shown
+      journey.completedGoal = botMessages.some(m => m.message.toLowerCase().includes('method comparison'));
+    } else if (journey.primaryIntent === 'clinic_search') {
+      // Goal complete if clinic info was shown
+      journey.completedGoal = botMessages.some(m => 
+        m.message.toLowerCase().includes('clinic') || 
+        m.message.toLowerCase().includes('location')
+      );
+    } else {
+      // Exploration - complete if multiple topics covered
+      journey.completedGoal = journey.keyDecisions.length >= 2;
+    }
+
+    // Identify drop-off point if goal not completed
+    if (!journey.completedGoal && journey.keyDecisions.length > 0) {
+      const lastDecision = journey.keyDecisions[journey.keyDecisions.length - 1];
+      journey.dropOffPoint = lastDecision.step;
+    }
+
+    return journey;
+  };
+
+  // Phase 4.1: Generate intelligent summary based on journey
+  private generateIntelligentSummary = (
+    summary: {
+      topicsExplored: string[];
+      methodsViewed: string[];
+      recommendations: string[];
+      duration: string;
+    },
+    journey: {
+      primaryIntent: string;
+      urgency: string;
+      keyDecisions: Array<{ step: string; decision: string }>;
+      completedGoal: boolean;
+      dropOffPoint?: string;
+    },
+    MessageFormatter: any
+  ): string => {
+    let summaryText = MessageFormatter.formatInfo("📊 *Your Journey Summary*\n\n");
+
+    // Personalized opening based on intent and completion
+    if (journey.completedGoal) {
+      if (journey.primaryIntent === 'emergency') {
+        summaryText += "✅ Great! You got the emergency contraception information you needed.\n\n";
+      } else if (journey.primaryIntent === 'prevention') {
+        summaryText += "✅ Excellent! You explored family planning options for your needs.\n\n";
+      } else if (journey.primaryIntent === 'comparison') {
+        summaryText += "✅ Perfect! You compared different methods to make an informed choice.\n\n";
+      } else if (journey.primaryIntent === 'clinic_search') {
+        summaryText += "✅ Great! You found clinic information.\n\n";
+      } else {
+        summaryText += "✅ You explored family planning options today.\n\n";
+      }
+    } else {
+      summaryText += "📝 Here's what we covered in our conversation:\n\n";
+    }
+
+    // Show methods viewed
+    if (summary.methodsViewed.length > 0) {
+      summaryText += `👁️ *Methods You Viewed:*\n`;
+      summary.methodsViewed.forEach((method) => {
+        const emoji = MessageFormatter.getMethodEmoji(method);
+        summaryText += `• ${method} ${emoji}\n`;
+      });
+      summaryText += "\n";
+    }
+
+    // Show key decisions made
+    if (journey.keyDecisions.length > 0) {
+      summaryText += `📝 *Key Decisions:*\n`;
+      journey.keyDecisions.slice(0, 3).forEach((decision) => {
+        summaryText += `• ${decision.decision}\n`;
+      });
+      summaryText += "\n";
+    }
+
+    // Show topics explored
+    if (summary.topicsExplored.length > 0) {
+      summaryText += `📚 *Topics Covered:* ${summary.topicsExplored.slice(0, 3).join(', ')}\n\n`;
+    }
+
+    // Session stats
+    summaryText += `⏱️ *Time Spent:* ${summary.duration}\n\n`;
+
+    // Phase 4.2: Context-aware recommendations
+    summaryText += this.generateRecommendations(summary, journey, MessageFormatter);
+
+    return summaryText;
+  };
+
+  // Phase 4.2: Extract contextual data from conversation
+  private extractContextualData = (messages: any[]): {
+    ageGroup?: string;
+    maritalStatus?: string;
+    lifestyle: string[];
+    concerns: string[];
+    preferences: string[];
+    healthFactors: string[];
+  } => {
+    const context = {
+      lifestyle: [] as string[],
+      concerns: [] as string[],
+      preferences: [] as string[],
+      healthFactors: [] as string[]
+    };
+
+    messages.forEach((msg) => {
+      const text = msg.message.toLowerCase();
+
+      // Detect lifestyle factors
+      if (text.match(/busy|travel|work|schedule|forget/i)) {
+        context.lifestyle.push('busy_schedule');
+      }
+      if (text.match(/partner|relationship|married/i)) {
+        context.lifestyle.push('relationship');
+      }
+      if (text.match(/irregular|heavy period|menstrual|cramp/i)) {
+        context.concerns.push('menstrual_concerns');
+      }
+      if (text.match(/pain|discomfort|side effect/i)) {
+        context.concerns.push('side_effects');
+      }
+      if (text.match(/weight|acne|mood|headache/i)) {
+        context.concerns.push('hormonal_effects');
+      }
+
+      // Detect preferences
+      if (text.match(/long.term|permanent|years/i)) {
+        context.preferences.push('long_term');
+      }
+      if (text.match(/short.term|temporary|month/i)) {
+        context.preferences.push('short_term');
+      }
+      if (text.match(/natural|no hormone|hormone.free/i)) {
+        context.preferences.push('non_hormonal');
+      }
+      if (text.match(/convenient|easy|simple/i)) {
+        context.preferences.push('convenience');
+      }
+      if (text.match(/cheap|afford|cost|price/i)) {
+        context.preferences.push('cost_conscious');
+      }
+
+      // Detect health factors
+      if (text.match(/smoke|smoking|cigarette/i)) {
+        context.healthFactors.push('smoking');
+      }
+      if (text.match(/blood pressure|hypertension/i)) {
+        context.healthFactors.push('high_blood_pressure');
+      }
+      if (text.match(/diabetes/i)) {
+        context.healthFactors.push('diabetes');
+      }
+      if (text.match(/breast.?feed|nursing|lactating/i)) {
+        context.healthFactors.push('breastfeeding');
+      }
+    });
+
+    return context;
+  };
+
+  // Phase 4.2: Generate personalized recommendations with context awareness
+  private generateRecommendations = (
+    summary: {
+      topicsExplored: string[];
+      methodsViewed: string[];
+      recommendations: string[];
+      duration: string;
+    },
+    journey: {
+      primaryIntent: string;
+      urgency: string;
+      completedGoal: boolean;
+      dropOffPoint?: string;
+    },
+    MessageFormatter: any
+  ): string => {
+    let recommendations = "💡 *Next Steps:*\n";
+    
+    // Extract contextual data for enhanced recommendations
+    const context = this.extractContextualData(this.state.messages || []);
+
+    // Intent-based recommendations
+    if (journey.primaryIntent === 'emergency') {
+      recommendations += "• Visit a pharmacy or clinic within 5 days for emergency contraception\n";
+      recommendations += "• Consider long-term contraception to prevent future emergencies\n";
+      recommendations += "• Get a pregnancy test if your next period is late\n";
+    } else if (journey.primaryIntent === 'prevention') {
+      if (summary.methodsViewed.length > 0) {
+        recommendations += "• Book a consultation with a healthcare provider to discuss your choice\n";
+        recommendations += "• Visit a clinic to start your chosen method\n";
+        
+        // Phase 4.2: Context-aware method suggestions
+        if (context.lifestyle.includes('busy_schedule')) {
+          recommendations += "• Given your busy schedule, ask about long-acting methods like implants or IUD\n";
+        }
+        if (context.preferences.includes('non_hormonal')) {
+          recommendations += "• You mentioned interest in hormone-free options - discuss copper IUD with your provider\n";
+        }
+        if (context.preferences.includes('cost_conscious')) {
+          recommendations += "• Ask about government-subsidized clinics for more affordable options\n";
+        }
+        
+        if (summary.methodsViewed.length === 1) {
+          recommendations += "• Consider comparing with other methods to find the best fit\n";
+        }
+      } else {
+        recommendations += "• Continue exploring methods to find what suits you best\n";
+        recommendations += "• Consider your lifestyle, budget, and health needs\n";
+      }
+    } else if (journey.primaryIntent === 'comparison') {
+      recommendations += "• Review the comparison to make an informed decision\n";
+      recommendations += "• Discuss your top choice with a healthcare provider\n";
+      recommendations += "• Visit a clinic to start your selected method\n";
+    } else if (journey.primaryIntent === 'clinic_search') {
+      recommendations += "• Call ahead to confirm clinic hours and services\n";
+      recommendations += "• Bring any relevant health information\n";
+      recommendations += "• Ask about costs and insurance coverage\n";
+    } else {
+      // General exploration
+      recommendations += "• Continue chatting anytime you have questions\n";
+      recommendations += "• Visit a healthcare provider for personalized advice\n";
+      recommendations += "• Explore different methods to find your best fit\n";
+    }
+
+    // Phase 4.2: Health factor contraindications
+    if (context.healthFactors.length > 0) {
+      recommendations += "\n⚕️ *Important Health Note:*\n";
+      
+      if (context.healthFactors.includes('smoking')) {
+        recommendations += "• Inform your provider about smoking - some methods may not be suitable\n";
+      }
+      if (context.healthFactors.includes('high_blood_pressure')) {
+        recommendations += "• With blood pressure concerns, your provider will recommend appropriate methods\n";
+      }
+      if (context.healthFactors.includes('breastfeeding')) {
+        recommendations += "• Some methods are safe while breastfeeding - ask about progestin-only options\n";
+      }
+      if (context.healthFactors.includes('diabetes')) {
+        recommendations += "• Discuss diabetes management with contraception options with your provider\n";
+      }
+    }
+
+    // Phase 4.2: Concern-based recommendations
+    if (context.concerns.length > 0) {
+      if (context.concerns.includes('menstrual_concerns')) {
+        recommendations += "\n🩸 *For Menstrual Concerns:*\n";
+        recommendations += "• Some methods can reduce heavy periods or cramps (IUD, pills, implant)\n";
+        recommendations += "• Discuss your menstrual symptoms with a healthcare provider\n";
+      }
+      if (context.concerns.includes('side_effects')) {
+        recommendations += "\n💊 *About Side Effects:*\n";
+        recommendations += "• Most side effects are temporary and manageable\n";
+        recommendations += "• Your provider can switch methods if side effects persist\n";
+      }
+    }
+
+    // Phase 4.2: Follow-up timing based on method viewed
+    if (summary.methodsViewed.length > 0) {
+      const method = summary.methodsViewed[0];
+      recommendations += "\n📅 *Follow-Up Suggestion:*\n";
+      
+      if (method.includes('pills')) {
+        recommendations += "• Return in 3 months to share your experience and get a refill\n";
+      } else if (method.includes('Implant')) {
+        recommendations += "• Check in after 1 month if you have concerns, otherwise in 6 months\n";
+      } else if (method.includes('Injectable')) {
+        recommendations += "• Schedule your next injection in 3 months (don't miss the window!)\n";
+      } else if (method.includes('IUD') || method.includes('IUS')) {
+        recommendations += "• Return for a follow-up check after your next period\n";
+      } else if (method.includes('condom')) {
+        recommendations += "• Chat with us anytime you have questions about proper use\n";
+      }
+    }
+
+    // Urgency-based additions
+    if (journey.urgency === 'high') {
+      recommendations += "\n⚠️ *Important:* For emergency situations, seek immediate medical attention.\n";
+    }
+
+    // Incomplete goal suggestions
+    if (!journey.completedGoal && journey.dropOffPoint) {
+      recommendations += "\n📌 *Tip:* You can return anytime to continue where you left off.\n";
+    }
+
+    recommendations += "\n💬 Feel free to come back anytime! Stay safe! 🛡️";
+
+    return recommendations;
+  };
+
+  private extractConversationSummary = (): {
+    topicsExplored: string[];
+    decisions: Array<{ question: string; answer: string }>;
+    methodsViewed: string[];
+    recommendations: string[];
+    duration: string;
+  } => {
+    const summary = {
+      topicsExplored: [] as string[],
+      decisions: [] as Array<{ question: string; answer: string }>,
+      methodsViewed: [] as string[],
+      recommendations: [] as string[],
+      duration: '0 minutes'
+    };
+
+    const messages = this.state.messages || [];
+    
+    // Extract topics from bot messages
+    const topicsSet = new Set<string>();
+    messages.forEach((msg) => {
+      if (msg.type === 'bot') {
+        const text = msg.message.toLowerCase();
+        
+        if (text.includes('emergency') || text.includes('postpill')) {
+          topicsSet.add('Emergency contraception');
+        }
+        if (text.includes('daily pills') || text.includes('oral contraceptive')) {
+          topicsSet.add('Daily contraceptive pills');
+        }
+        if (text.includes('condom')) {
+          topicsSet.add('Condoms');
+        }
+        if (text.includes('implant') || text.includes('jadelle')) {
+          topicsSet.add('Contraceptive implants');
+        }
+        if (text.includes('injectable') || text.includes('sayana')) {
+          topicsSet.add('Injectable contraceptives');
+        }
+        if (text.includes('iud') || text.includes('iuslydia')) {
+          topicsSet.add('IUD/IUS');
+        }
+        if (text.includes('clinic') || text.includes('location')) {
+          topicsSet.add('Clinic locations');
+        }
+        if (text.includes('compare') || text.includes('comparison')) {
+          topicsSet.add('Method comparison');
+        }
+      }
+    });
+    
+    summary.topicsExplored = Array.from(topicsSet);
+
+    // Extract methods viewed from currentStep or messages
+    const methodsSet = new Set<string>();
+    messages.forEach((msg) => {
+      if (msg.type === 'user') {
+        const methods = [
+          'Daily pills', 'Male condom', 'Female condom', 'Implants',
+          'Injectables', 'IUD', 'IUS', 'Emergency pills', 'Diaphragm'
+        ];
+        methods.forEach((method) => {
+          if (msg.message.includes(method)) {
+            methodsSet.add(method);
+          }
+        });
+      }
+    });
+    
+    summary.methodsViewed = Array.from(methodsSet);
+
+    // Calculate session duration (rough estimate from message timestamps)
+    if (messages.length > 1) {
+      const firstMsg = messages[0];
+      const lastMsg = messages[messages.length - 1];
+      
+      if (firstMsg.timestamp && lastMsg.timestamp) {
+        const durationMs = new Date(lastMsg.timestamp).getTime() - new Date(firstMsg.timestamp).getTime();
+        const durationMin = Math.round(durationMs / (60 * 1000));
+        summary.duration = durationMin > 0 ? `${durationMin} minutes` : 'Less than a minute';
+      }
+    }
+
+    return summary;
+  };
+
+  // Phase 3.4: Handle Resume Session
+  handleResumeSession = async (resume: boolean): Promise<void> => {
+    await this.ensureChatSession();
+
+    if (resume) {
+      const savedState = localStorage.getItem('conversationState');
+      if (!savedState) {
+        await this.showHelpMessage("⚠️ Sorry, I couldn't find your previous session. Let's start fresh!");
+        return;
+      }
+
+      try {
+        const state = JSON.parse(savedState);
+        
+        const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+
+        const continueMsg = this.createChatBotMessage(
+          MessageFormatter.formatSuccess("Great! Let's continue from where you left off. ✅"),
+          { delay: 300 }
+        );
+
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, continueMsg],
+          currentStep: state.currentStep || prev.currentStep,
+        }));
+
+        // Restore comparison state
+        if (state.compareSelectedMethods && state.compareSelectedMethods.length > 0) {
+          this.compareSelectedMethods = state.compareSelectedMethods;
+          
+          const compareRestoredMsg = this.createChatBotMessage(
+            MessageFormatter.formatInfo(
+              `📋 I've restored your comparison list with ${state.compareSelectedMethods.length} method(s):\n` +
+              state.compareSelectedMethods.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')
+            ),
+            { delay: 800, widget: 'comparisonActions' }
+          );
+          
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, compareRestoredMsg],
+          }));
+        } else if (state.currentStep === 'duration') {
+          // Show duration options
+          const durationMsg = this.createChatBotMessage(
+            "For how long do you want to prevent pregnancy?",
+            { delay: 500, widget: 'preventionDurationOptions' }
+          );
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, durationMsg],
+          }));
+        } else {
+          // Show flow end options to continue
+          const optionsMsg = this.createChatBotMessage(
+            MessageFormatter.formatInfo("What would you like to do?"),
+            { delay: 500, widget: 'flowEndOptions' }
+          );
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, optionsMsg],
+          }));
+        }
+
+        // Track session resume
+        await this.api.createConversation({
+          message_text: "Resumed previous session",
+          message_type: 'bot',
+          chat_step: 'sessionResume',
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 300
+        }).catch(err => console.error('Failed to save resume:', err));
+
+      } catch (error) {
+        console.error('Error resuming session:', error);
+        await this.showHelpMessage("⚠️ Sorry, I had trouble resuming your session. Let's start fresh!");
+      }
+    } else {
+      // Start fresh
+      localStorage.removeItem('conversationState');
+      localStorage.removeItem('conversationStateTimestamp');
+      
+      const MessageFormatter = (await import('./utils/MessageFormatter')).MessageFormatter;
+
+      const freshStartMsg = this.createChatBotMessage(
+        MessageFormatter.formatSuccess("Perfect! Let's start fresh. What would you like help with today?"),
+        { delay: 300, widget: 'planningMethodOptions' }
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, freshStartMsg],
+        currentStep: 'fpm',
+      }));
+
+      // Track fresh start
+      await this.api.createConversation({
+        message_text: "Started fresh session",
+        message_type: 'bot',
+        chat_step: 'freshStart',
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 300
+      }).catch(err => console.error('Failed to save fresh start:', err));
+    }
+  };
+
+  private generateMethodComparison = async (methods: string[]): Promise<string> => {
+    const methodData: Record<string, { duration: string; effectiveness: string; cost: string; availability: string }> = {
+      "Daily pills": { duration: "Daily", effectiveness: "91-99%", cost: "₦500-1,500/month", availability: "Pharmacies, Clinics" },
+      "Male condom": { duration: "Per use", effectiveness: "82-98%", cost: "₦50-200/pack", availability: "Pharmacies, Stores" },
+      "Female condom": { duration: "Per use", effectiveness: "79-95%", cost: "₦200-500 each", availability: "Pharmacies, Clinics" },
+      "Implants": { duration: "3-5 years", effectiveness: "99%+", cost: "₦10,000-25,000", availability: "Clinics, Hospitals" },
+      "Injectables": { duration: "3 months", effectiveness: "94-99%", cost: "₦1,500-3,000/dose", availability: "Clinics, Hospitals" },
+      "IUD": { duration: "5-10 years", effectiveness: "99%+", cost: "₦5,000-15,000", availability: "Clinics, Hospitals" },
+      "IUS": { duration: "5-7 years", effectiveness: "99%+", cost: "₦15,000-35,000", availability: "Clinics, Hospitals" },
+      "Emergency pills": { duration: "One-time", effectiveness: "75-89%", cost: "₦500-2,000", availability: "Pharmacies, Clinics" },
+      "Diaphragm": { duration: "Per use", effectiveness: "88-94%", cost: "₦5,000-10,000", availability: "Clinics" },
+    };
+
+    const { MessageFormatter } = await import('./utils/MessageFormatter');
+    
+    let comparison = MessageFormatter.formatInfo("📊 *Method Comparison*\n\n");
+    
+    methods.forEach((method, index) => {
+      const data = methodData[method] || { 
+        duration: "Contact clinic", 
+        effectiveness: "Contact clinic", 
+        cost: "Varies", 
+        availability: "Contact clinic" 
+      };
+      
+      const emoji = MessageFormatter.getMethodEmoji(method);
+      
+      comparison += `*${index + 1}. ${method}* ${emoji}\n`;
+      comparison += `⏱️ Duration: ${data.duration}\n`;
+      comparison += `📈 Effectiveness: ${data.effectiveness}\n`;
+      comparison += `💰 Cost: ${data.cost}\n`;
+      comparison += `📍 Availability: ${data.availability}\n`;
+      
+      if (index < methods.length - 1) {
+        comparison += `\n${'─'.repeat(30)}\n\n`;
+      }
+    });
+
+    comparison += `\n\n💡 *Tip:* For personalized advice, visit a healthcare provider.`;
+    
+    return comparison;
   };
 
   handleNextAction = async (action: string): Promise<void> => {
@@ -1506,7 +2668,7 @@ class ActionProvider implements ActionProviderInterface {
           currentStep: 'agentTypeSelection',
         }));
       }
-    } else if (type === 'AI Agent') {
+    } else if (type === 'AI Chatbot' || type === 'AI chatbot' || type === 'AI Agent') {
       const aiMessage = this.createChatBotMessage(
         "Perfect! I'm here to help. Please ask your question and I'll do my best to provide accurate information.",
         { delay: 500 },
@@ -1518,16 +2680,19 @@ class ActionProvider implements ActionProviderInterface {
       }));
 
       // Save conversation step to backend
-      // TODO: Enable when API method is available
-      // await this.saveConversationMessage({
-      //   message_text: aiMessage.message,
-      //   message_type: 'bot',
-      //   chat_step: 'ai_agent_selected',
-      //   message_sequence_number: this.getNextMessageSequence()
-      // });
+      await this.ensureChatSession();
+      await this.api.createConversation({
+        message_text: aiMessage.message,
+        message_type: 'bot',
+        chat_step: 'ai_agent_selected',
+        message_sequence_number: this.getNextSequenceNumber(),
+        detected_intent: 'ai_chatbot_selected',
+        widget_name: 'agentTypeOptions',
+        message_delay_ms: 500,
+      }).catch(err => console.error('Failed to log AI selection:', err));
     } else {
       const errorMessage = this.createChatBotMessage(
-        "I'm sorry, I didn't understand that. Please choose either 'Human Agent' or 'AI Agent'.",
+        "I'm sorry, I didn't understand that. Please choose either 'Human Agent' or 'AI Chatbot'.",
         { delay: 500 },
       );
 
@@ -1543,19 +2708,18 @@ class ActionProvider implements ActionProviderInterface {
 
   private async escalateToHuman(): Promise<EscalationResult | null> {
     try {
-      const response = await fetch('/api/agent/escalate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId: this.getCurrentConversationId(),
-          userId: this.userSessionId,
-          conversationSummary: this.getConversationSummary(),
-        }),
-      });
-
-      if (response.ok) {
-        return (await response.json()) as EscalationResult;
+      // Get the current conversation ID
+      const currentConversationId = this.getCurrentConversationId();
+      
+      if (!currentConversationId) {
+        console.error('No conversation ID available for escalation');
+        return null;
       }
+
+      // Use the API service to escalate
+      const response = await this.api.escalateToAgent(currentConversationId);
+      
+      return response as EscalationResult | null;
     } catch (error) {
       console.error('Error escalating to human:', error);
     }
@@ -1591,12 +2755,16 @@ class ActionProvider implements ActionProviderInterface {
     // Set up periodic queue status updates
     const updateInterval = setInterval(async () => {
       try {
-        const response = await fetch(
-          `/api/agent/queue-status?conversationId=${this.getCurrentConversationId()}`,
-        );
-        if (response.ok) {
-          const queueData = await response.json();
-          this.handleQueueUpdate(queueData);
+        const currentConversationId = this.getCurrentConversationId();
+        if (!currentConversationId) return;
+
+        const queueData = await this.api.getQueueStatus(currentConversationId);
+        if (queueData && queueData.status === 'QUEUED') {
+          this.handleQueueUpdate({
+            position: queueData.position || 0,
+            estimatedWaitTime: queueData.estimatedWaitTime || '15 minutes',
+            status: queueData.status,
+          });
         }
       } catch (error) {
         console.error('Error fetching queue status:', error);
@@ -2110,58 +3278,6 @@ class ActionProvider implements ActionProviderInterface {
 
     return summary || '• No demographic information stored yet\n';
   };
-
-  // SERVER STATE MANAGEMENT METHODS
-
-  private async saveStateToServer(state: ChatbotState): Promise<void> {
-    try {
-      await this.api.saveUserSession({
-        user_session_id: this.userSessionId,
-        chat_state: JSON.stringify(state),
-        last_activity: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Failed to save state to server:', error);
-      throw error;
-    }
-  }
-
-  // TODO: Implement when API method is available
-  // private async saveConversationMessage(messageData: ConversationMessage): Promise<void> {
-  //   try {
-  //     await this.api.saveConversationMessage({
-  //       user_session_id: this.userSessionId,
-  //       conversation_id: this.getCurrentConversationId(),
-  //       ...messageData,
-  //       timestamp: new Date().toISOString()
-  //     });
-  //   } catch (error) {
-  //     console.error("Failed to save conversation message:", error);
-  //     // Don't throw error to prevent breaking the flow
-  //   }
-  // }
-
-  private async loadStateFromServer(): Promise<void> {
-    try {
-      const serverState = await this.api.getUserSession(this.userSessionId);
-      if (serverState && serverState.chat_state) {
-        const parsedState = JSON.parse(serverState.chat_state);
-
-        // Update localStorage with server data
-        localStorage.setItem('chat_state', serverState.chat_state);
-
-        // Update the current state if server has more recent data
-        this.setState(() => parsedState);
-
-        console.log('✅ State loaded from server successfully');
-      }
-    } catch (error) {
-      console.warn(
-        'Could not load state from server, continuing with localStorage:',
-        error,
-      );
-    }
-  }
 }
 
 export default ActionProvider;

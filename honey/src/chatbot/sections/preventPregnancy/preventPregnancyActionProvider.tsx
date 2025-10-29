@@ -9,8 +9,11 @@ import {
   EmergencyProduct,
   PreventionDuration,
   ContraceptiveMethod,
-  getMethodOptionsForDuration
+  getMethodOptionsForDuration,
+  normalizeDurationInput,
+  PREVENTION_DURATION_OPTIONS
 } from "./preventPregnancyTypes";
+import { PRODUCT_DATA, getProductInfo } from "./productData"; // Task 5: Product information
 import { 
   getMediaWidgetByName, 
   getMediaWidgetsByCategory,
@@ -27,6 +30,9 @@ import { imageWidgets } from "@/components/mediaWidgetsConfig";
 import { ApiService } from "@/services/api";
 import { botMessage } from "react-chatbot-kit/build/src/components/Chat/chatUtils";
 import { use } from "react";
+import { ConfusionDetector } from '../../utils/ConfusionDetector';
+import { MessageFormatter } from '../../utils/MessageFormatter';
+import { SmartMessageTimer } from '../../utils/SmartMessageTimer';
 
 
 class PreventPregnancyActionProvider implements PreventPregnancyProviderInterface {
@@ -45,7 +51,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     apiClient: ApiService,
     userSessionId?: string
   ) {
-    this.createChatBotMessage = createChatBotMessage;
+    // Wrap createChatBotMessage to automatically add timestamps
+    const originalCreateChatBotMessage = createChatBotMessage;
+    this.createChatBotMessage = (message: string, options?: Record<string, unknown>) => {
+      const msg = originalCreateChatBotMessage(message, options);
+      return {
+        ...msg,
+        timestamp: new Date().toISOString(),
+      };
+    };
+    
     this.setState = setStateFunc;
     this.state = state;
     this.api = apiClient;
@@ -103,6 +118,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   private resetSequenceNumber(): void {
     this.messageSequenceNumber = 1;
   }
+
+  // Helper method to create user messages with automatic timestamp
+  private createUserMessage = (message: string): ChatMessage => {
+    return {
+      message,
+      type: 'user',
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+    };
+  };
 
   
 
@@ -284,20 +309,20 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   handlePreventPregnancyInitiation = async(): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: "How to prevent pregnancy",
-      type: "user",
-      id: uuidv4(),
-    };
-    const responseMessage = this.createChatBotMessage(
-      "I see! 👍\n\nYou are at the right place, I can assist you with this.",
-      { delay: 500 }
-    );
+    const userMessage = this.createUserMessage("How to prevent pregnancy");
+    
+    // Phase 2: Use MessageFormatter for professional greeting
+    const greetingText = MessageFormatter.formatSuccess("I see! 👍\n\nYou are at the right place, I can assist you with this.");
+    const greetingTiming = SmartMessageTimer.createTimingConfig(greetingText, 'confirmation', 'medium');
+    const responseMessage = this.createChatBotMessage(greetingText, { delay: greetingTiming.delay });
 
+    // Phase 2: Add button guidance for clarity
+    const questionText = MessageFormatter.addButtonGuidance("What kind of contraception do you want to know about?\n\nEmergency = you had sex recently and want to avoid pregnancy");
+    const questionTiming = SmartMessageTimer.createTimingConfig(questionText, 'question', 'medium');
     const followUpMessage = this.createChatBotMessage(
-      "What kind of contraception do you want to know about?",
+      questionText,
       { 
-        delay: 1000,
+        delay: questionTiming.delay,
         widget: "contraceptionTypeOptions"
       }
     );
@@ -346,20 +371,23 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Type safety conversion - type should match exactly: "Emergency" or "Prevent in future"
     const contraceptionType = type as ContraceptionType;
     
-    const userMessage: ChatMessage = {
-      message: type,
-      type: "user",
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(type);
 
-    // Track user selection
-    await this.api.createConversation({
-      message_text: type,
-      message_type: 'user',
-      chat_step: "contraceptionTypeSelection",
-      message_sequence_number: this.getNextSequenceNumber(),
-      widget_name: "contraceptionTypeOptions"
-    }).catch(err => console.error('Failed to save user selection:', err));
+    // Track user selection in Conversation and FpmInteraction
+    await Promise.all([
+      this.api.createConversation({
+        message_text: type,
+        message_type: 'user',
+        chat_step: "contraceptionTypeSelection",
+        message_sequence_number: this.getNextSequenceNumber(),
+        widget_name: "contraceptionTypeOptions"
+      }),
+      this.api.createFpmInteraction({
+        contraception_type: type,
+        main_menu_option: "How to prevent pregnancy",
+        fpm_concern_type: type === "Emergency" ? "emergency_contraception" : "future_prevention"
+      } as any)
+    ]).catch(err => console.error('Failed to save user selection:', err));
 
     // Using type-safe constants that match the button text exactly
     const EMERGENCY: ContraceptionType = "Emergency";
@@ -411,24 +439,37 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // =============================================================================
 
   private handleEmergencyPath = async(userMessage: ChatMessage): Promise<void> => {
-    const responseMessage = this.createChatBotMessage(
-      "To avoid pregnancy after unprotected sex, you can take emergency contraceptive pills.\n\nEmergency pills are very effective when taken within 24 to 72 hours after unprotected sex. You are advised to not take it more than 3 times in a month. If you are ovulating, you should use an alternative contraceptive plan (condoms).",
-      { delay: 500 }
+    // Phase 2: Format emergency contraception info with warning
+    const emergencyInfoText = MessageFormatter.formatWarning(
+      "To avoid pregnancy after unprotected sex, you can take emergency contraceptive pills.\n\n" +
+      "Emergency pills are very effective when taken within 24 to 72 hours after unprotected sex. " +
+      "You are advised to not take it more than 3 times in a month. " +
+      "If you are ovulating, you should use an alternative contraceptive plan (condoms).\n\n" +
+      "Please note that they are not effective if you are already pregnant."
     );
+    const emergencyTiming = SmartMessageTimer.createTimingConfig(emergencyInfoText, 'warning', 'high');
+    const responseMessage = this.createChatBotMessage(emergencyInfoText, { delay: emergencyTiming.delay });
 
     //use type-safe products list
     const availableProducts: EmergencyProduct[] = ["postpill", "postinor2"];
-    const productList = availableProducts.map((product, index) => `${index + 1}. ${product}`).join("\n");
-
-    const productMessage = this.createChatBotMessage(
-      `Let me tell you some of the effective and available emergency contraceptive pills:\n${productList}`,
-      { delay: 1000 }
+    
+    // Phase 2: Format product list with info icon
+    const productListText = MessageFormatter.formatInfo(
+      "Let me tell you some of the effective and available emergency contraceptive pills:\n\n" +
+      "• Postpill can be taken within 5 days after sex\n" +
+      "• Postinor-2 is effective within 3 days after sex\n\n" +
+      "Which product do you want to learn about?"
     );
+    const productTiming = SmartMessageTimer.createTimingConfig(productListText, 'info', 'medium');
+    const productMessage = this.createChatBotMessage(productListText, { delay: productTiming.delay });
 
+    // Phase 2: Add button guidance
+    const selectionText = MessageFormatter.addButtonGuidance("Select one to learn more:");
+    const selectionTiming = SmartMessageTimer.createTimingConfig(selectionText, 'question', 'medium');
     const selectionMessage = this.createChatBotMessage(
-      "Which product do you want to learn about?",
+      selectionText,
       { 
-        delay: 1500,
+        delay: selectionTiming.delay,
         widget: "emergencyProductOptions"
       }
     );
@@ -445,7 +486,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       message_type: 'bot',
       chat_step: "emergencyPath",
       message_sequence_number: this.getNextSequenceNumber(),
-      message_delay_ms: 500
+      message_delay_ms: emergencyTiming.delay
     }).catch(err => console.error('Failed to save response:', err));
     
     await this.api.createConversation({
@@ -453,7 +494,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       message_type: 'bot',
       chat_step: "emergencyPath",
       message_sequence_number: this.getNextSequenceNumber(),
-      message_delay_ms: 1000
+      message_delay_ms: productTiming.delay
     }).catch(err => console.error('Failed to save product message:', err));
     
     await this.api.createConversation({
@@ -473,20 +514,14 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   handleEmergencyProductSelection = async(product: string): Promise<void> => {
     // Type safety conversion
     const emergencyProduct = product as EmergencyProduct;
-    const userMessage: ChatMessage = {
-      message: product,
-      type: "user", 
-      id: uuidv4(),
-    };
-
-
+    const userMessage = this.createUserMessage(product);
 
     const widgets = this.findMediaWidgets(emergencyProduct);
    
 
     // Using type-safe constants instead of magic strings
     const productInfoMap: Record<EmergencyProduct, string > = {
-      "postpill": "Postpill is a one-dose emergency contraceptive pill by DKT. It contains 1.5 mg Levongestrel. It should be taken within 72 hours (3 days) of unprotected sex.\n\nThe sooner you take it, the more effective it is. It doesn’t work if you are already pregnant and will not harm an already established pregnancy.\n\n You can buy Postpill at any pharmacy or health store around you. It is 95% effective when taken within 24 hours of unprotected sex.\n\nIf more than 120 hours (5 days) have passed since unprotected sex, it won't be effective. In such a case, you should consult a healthcare provider.",
+      "postpill": "Postpill is a one-dose emergency contraceptive pill by DKT. It contains 1.5 mg Levongestrel. It should be taken orally as soon as possible but can still be taken within 5 days (120 hours) of unprotected sex. It doesn’t work if you are already pregnant and will not harm an already established pregnancy.\n\n You can buy Postpill at any pharmacy or health store around you. It is 95% effective when taken within 24 hours of unprotected sex.\n\nIf more than 120 hours (5 days) have passed since unprotected sex, it won't be effective. In such a situation, kindly call 7790 and ask to speak to a nurse counsellor for further guidance.",
       
       "postinor2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
     };
@@ -522,35 +557,82 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }
 
     
-
-    const responseMessage = this.createChatBotMessage(productInfo, { delay: 500 });
+    // Phase 2: Apply smart timing for medical content (high urgency)
+    const timing = SmartMessageTimer.createTimingConfig(productInfo, 'info', 'high');
+    const responseMessage = this.createChatBotMessage(productInfo, { delay: timing.delay });
     const messages = [userMessage, responseMessage];
-  //smart image display
+  
+    // Smart image display with formatted intro
     if (widgets.hasImage && widgets.imageWidget) {
+      const imageIntro = MessageFormatter.formatInfo(
+        `Here's what ${emergencyProduct} looks like:`
+      );
       const imageMessage = this.createChatBotMessage(
-        `Here's what ${emergencyProduct} looks like:`,
-        { widget: widgets.imageWidget, delay: 1000 }
+        imageIntro,
+        { widget: widgets.imageWidget, delay: timing.delay + 800 }
       );
       messages.push(imageMessage);
     }
 
-    //smart audio display
+    // Smart audio display with formatted intro  
     if (widgets.hasAudio && widgets.audioWidget) {
+      const audioIntro = MessageFormatter.formatTip(
+        `Click to listen to a short introduction of ${emergencyProduct} in Pidgin, if you want to.`
+      );
+      const audioDelay = widgets.hasImage ? timing.delay + 1500 : timing.delay + 800;
       const audioMessage = this.createChatBotMessage(
-        `Click to listen to a short introduction of ${emergencyProduct} in Pidgin, if you want to.`,
-        { delay: widgets.hasImage? 1500 : 1000, widget: widgets.audioWidget }
+        audioIntro,
+        { delay: audioDelay, widget: widgets.audioWidget }
       );
       messages.push(audioMessage);
     }
 
+    // Track product info message with smart timing (calculated based on medical content)
+    await this.api.createConversation({
+      message_text: productInfo,
+      message_type: 'bot',
+      chat_step: "emergencyProductDetails",
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: timing.delay
+    });
+
+    // Add follow-up with button guidance
+    const followUpText = MessageFormatter.addButtonGuidance(
+      "Do you want to find out about other family planning methods?"
+    );
+    const followUpDelay = timing.delay + 1500;
     const followUpMessage = this.createChatBotMessage(
-      "Do you want to find out about other family planning methods?",
+      followUpText,
       { 
-        delay: 1500,
+        delay: followUpDelay,
         widget: "learnMoreMethods"
       }
     );
     messages.push(followUpMessage);
+    
+    // Phase 3: Add flow end navigation options after follow-up
+    const flowEndText = MessageFormatter.formatInfo(
+      "Or you can choose another action below:"
+    );
+    const flowEndDelay = followUpDelay + 800;
+    const flowEndMessage = this.createChatBotMessage(
+      flowEndText,
+      { 
+        delay: flowEndDelay,
+        widget: "flowEndOptions"
+      }
+    );
+    messages.push(flowEndMessage);
+    
+    // Track flow end options message
+    await this.api.createConversation({
+      message_text: flowEndMessage.message,
+      message_type: 'bot',
+      chat_step: "flowEndOptions",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: "flowEndOptions",
+      message_delay_ms: flowEndDelay
+    }).catch(err => console.error('Failed to save flow end options:', err));
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
@@ -564,15 +646,17 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // =============================================================================
 
   private handlePreventFuturePath = async(userMessage: ChatMessage): Promise<void> => {
-    const responseMessage = this.createChatBotMessage(
-      "Alright\n\nI am happy to provide you with more information about family planning methods that are effective in preventing pregnancy.",
-      { delay: 500 }
-    );
+    // Format intro message to match WhatsApp transcript exactly
+    const introText = "Allright 👌\nI am happy to provide you with more information about family planning methods that are effective and safe for you.";
+    const introTiming = SmartMessageTimer.createTimingConfig(introText, 'info', 'medium');
+    const responseMessage = this.createChatBotMessage(introText, { delay: introTiming.delay });
 
+    // Phase 2: Question exactly as in WhatsApp
+    const questionText = "For how long do you want to prevent pregnancy?";
     const durationMessage = this.createChatBotMessage(
-      "For how long do you want to prevent pregnancy?",
+      questionText,
       { 
-        delay: 1000,
+        delay: introTiming.delay + 800,
         widget: "preventionDurationOptions"
       }
     );
@@ -583,14 +667,20 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       currentStep: "duration",
     }));
     
-    // Track bot messages
-    await this.api.createConversation({
-      message_text: responseMessage.message,
-      message_type: 'bot',
-      chat_step: "preventFuturePath",
-      message_sequence_number: this.getNextSequenceNumber(),
-      message_delay_ms: 500
-    }).catch(err => console.error('Failed to save response:', err));
+    // Track bot messages with smart timing and record FpmInteraction
+    await Promise.all([
+      this.api.createConversation({
+        message_text: responseMessage.message,
+        message_type: 'bot',
+        chat_step: "preventFuturePath",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: introTiming.delay
+      }),
+      this.api.createFpmInteraction({
+        prevention_choice: "Prevent in future",
+        contraception_type: "Future prevention"
+      } as any)
+    ]).catch(err => console.error('Failed to save response:', err));
     
     await this.api.createConversation({
       message_text: durationMessage.message,
@@ -605,15 +695,29 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // =============================================================================
   // PREVENTION DURATION SELECTION
   // =============================================================================
-  // Optimization (Alternative Approach)
+  // PREVENTION DURATION SELECTION
+  // Handles both button clicks and typed natural language inputs
   handlePreventionDurationSelection = async(duration: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: duration,
-      type: "user",
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(duration);
+
+    // Normalize the input (handles "Up to 1 year", "short term", "1 year", etc.)
+    const durationKey = normalizeDurationInput(duration);
+
+    if (!durationKey) {
+      // User typed something we don't recognize
+      const errorMessage = this.createChatBotMessage(
+        "I didn't recognize that duration option. Please select from the options below:",
+        { widget: "preventionDurationOptions", delay: 400 }
+      );
+      
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, errorMessage],
+      }));
+      return;
+    }
 
     // Track user duration selection
     await this.api.createConversation({
@@ -623,40 +727,61 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       message_sequence_number: this.getNextSequenceNumber(),
       widget_name: "preventionDurationOptions"
     }).catch(err => console.error('Failed to save user selection:', err));
-
-    const durationKey = duration as PreventionDuration;
     
     // Now using the getMethodOptionsForDuration function!
     const availableMethods = getMethodOptionsForDuration(durationKey);
 
-    // Configuration object for cleaner code maintenance
+    // Phase 2: Enhanced duration config with proper formatting (using display labels as keys)
     const durationConfig: Record<PreventionDuration, { message: string; widget: string }> = {
-      "short_term": {
-        message: `The short-term family planning methods are:\n\n ${this.formatMethodList(availableMethods)} \n\n1. Daily contraceptive pills\n2. The barrier contraceptives (diaphragm, female condom, male condom)`,
+      "Up to 1 year": {
+        message: "The short-term family planning methods are:\n\n" +
+          "1. Daily contraceptive pills\n" +
+          "2. The barrier contraceptives which are Diaphragms and Condoms\n" +
+          "3. Injectables.",
         widget: "shortTermMethods"
       },
-      "medium_term": {
-        message: "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods or injectables.",
+      "1 - 2 years": {
+        message: "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods, the Injectables or the Implants.",
         widget: "mediumTermMethods"
       },
-      "long_term": {
-        message: `For 3 - 4 years of protection, you can use medium-term methods like injectables, IUD, IUS, or implants.${this.formatInlineMethodList(availableMethods)} `,
+      "3 - 4 years": {
+        message: "For 3-4 years, you can use:\n\n" +
+          "1. Injectables\n" +
+          "2. IUD (Intrauterine Device)\n" +
+          "3. IUS (Intrauterine System)\n" +
+          "4. Implants",
         widget: "longTermMethods"
       },
-      "extended_term": {
-        message: `For long-term protection (5 - 10 years), the most effective methods are IUD, IUS, and implants.${this.formatInlineMethodList(availableMethods)} `,
+      "5 - 10 years": {
+        message: "For 5-10 years, the most effective long-lasting methods are:\n\n" +
+          "1. IUD (up to 10 years)\n" +
+          "2. IUS (up to 5 years)\n" +
+          "3. Implants (up to 5 years)",
         widget: "extendedLongTermMethods"
       },
       "Permanently": {
-        message: "For permanent prevention of pregnancy, you can consider sterilization methods. These are permanent and irreversible procedures.",
+        message: "For permanent prevention of pregnancy, these methods are available:\n\n" +
+          "1. Tubal ligation (for women)\n" +
+          "2. Vasectomy (for men)\n\n" +
+          "⚠️ Please note: These procedures are permanent and irreversible.",
         widget: "permanentMethods"
+      },
+      "Not sure": {
+        message: "It is okay to be unsure. These are options to consider based on your needs and preferences:\n" +
+          "1) Devices that healthcare providers insert, lasting 3-10 years.\n" +
+          "2) Injectables that last 3 months.\n" +
+          "3) Methods you can start and stop on your own at flexible times.\n" +
+          "4) Permanent methods.\n" +
+          "Take the time to evaluate these options before making your decision.\n\n" +
+          "If you want to be connected to a medical professional agent, just type the word \"human\" at any time.",
+        widget: "notSureCategoryOptions"
       }
     };
 
     const config = durationConfig[durationKey];
     
     if (!config) {
-      // Handle invalid duration
+      // Handle invalid duration - user typed unrecognized input
       const errorMessage = this.createChatBotMessage(
         "I didn't recognize that duration option. Let me show you the available prevention durations again.",
         { 
@@ -670,26 +795,31 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "duration",
       }));
-       await this.api.createResponse({
-      response_category:'ContraceptionDuration',
-      response_type:'user',
-      question_asked:'How long do you want to prevent pregnancy?',
-      user_response:duration,
-      widget_used:config,
-      available_options:Object.keys(durationConfig),
-      step_in_flow:"preventionDurationSelection",
-    })
+      
+      // Track unrecognized duration input
+      await this.api.createResponse({
+        response_category: 'ContraceptionDuration',
+        response_type: 'user',
+        question_asked: 'How long do you want to prevent pregnancy?',
+        user_response: duration,
+        widget_used: 'preventionDurationOptions',
+        available_options: PREVENTION_DURATION_OPTIONS,
+        step_in_flow: "preventionDurationSelection",
+      }).catch(err => console.error('Failed to track unrecognized duration:', err));
 
       return;
-    
     }
 
-    const responseMessage = this.createChatBotMessage(config.message, { delay: 500 });
+    // Phase 2: Apply smart timing based on message content
+    const responseTiming = SmartMessageTimer.createTimingConfig(config.message, 'info', 'medium');
+    const responseMessage = this.createChatBotMessage(config.message, { delay: responseTiming.delay });
 
+    // Method selection prompt - match WhatsApp exactly
+    const selectionText = "Click on any of the methods to get more information about it.";
     const methodSelectionMessage = this.createChatBotMessage(
-      `Click on any of the ${availableMethods.length} available methods to get more information:`,
+      selectionText,
       { 
-        delay: 1000,
+        delay: responseTiming.delay + 1000,
         widget: config.widget
       }
     );
@@ -699,14 +829,13 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       messages: [...prev.messages, userMessage, responseMessage, methodSelectionMessage],
       currentStep: "methodDetails",
     }));
-    
-    // Track bot messages
+    // Track bot messages with smart timing (save to server)
     await this.api.createConversation({
       message_text: responseMessage.message,
       message_type: 'bot',
       chat_step: "preventionDurationResponse",
       message_sequence_number: this.getNextSequenceNumber(),
-      message_delay_ms: 500
+      message_delay_ms: responseTiming.delay
     }).catch(err => console.error('Failed to save response:', err));
     
     await this.api.createConversation({
@@ -715,19 +844,140 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       chat_step: "methodSelection",
       message_sequence_number: this.getNextSequenceNumber(),
       widget_name: config.widget,
-      message_delay_ms: 1000
+      message_delay_ms: responseTiming.delay + 1000
     }).catch(err => console.error('Failed to save selection message:', err));
+    // Track successful duration selection in FpmInteraction
+    try {
+      await Promise.all([
+        this.api.createFpmInteraction({
+          prevention_duration: duration,
+          prevention_choice: 'Prevent in future'
+        }),
+        this.api.createResponse({
+          response_category: 'PreventionDuration',
+          response_type: 'user',
+          question_asked: 'How long do you want to prevent pregnancy?',
+          user_response: duration,
+          widget_used: config.widget,
+          available_options: Object.keys(durationConfig),
+          step_in_flow: 'preventionDurationSelection',
+        })
+      ]);
+    } catch (error) {
+      console.error('API call failed:', error);
+    }
+
+    // After showing method details, prompt medical conditions screening for user safety
+    const screeningIntro = this.createChatBotMessage(
+      "Before we continue, please check these medical conditions — some methods may not be safe for people with certain conditions.",
+      { delay: 800 }
+    );
+
+    const screeningQuestion = this.createChatBotMessage(
+      "Do you have any of the medical conditions listed?",
+      { delay: 1200, widget: 'medicalConditionsCheck' }
+    );
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, screeningIntro, screeningQuestion],
+      // reuse existing step
+      currentStep: 'methodDetails',
+    }));
+
+    // Record that medical screening was shown
+    try {
+      await this.api.createFpmInteraction({
+        medical_screening_shown: 'yes'
+      } as any);
+    } catch (error) {
+      console.error('Failed to record medical screening shown:', error);
+    }
+
+  };
+
+  // =============================================================================
+  // "NOT SURE" CATEGORY SELECTION HANDLER
+  // =============================================================================
+  handleNotSureCategorySelection = async(category: string): Promise<void> => {
+    await this.ensureChatSession();
     
-    // Track response data
-    await this.api.createResponse({
-      response_category: 'ContraceptionDuration',
-      response_type: 'user',
-      question_asked: 'How long do you want to prevent pregnancy?',
-      user_response: duration,
-      widget_used: 'preventionDurationOptions',
-      available_options: Object.keys(durationConfig),
-      step_in_flow: "preventionDurationSelection",
-    }).catch(err => console.error('Failed to save response data:', err));
+    const userMessage = this.createUserMessage(category);
+
+    // Map "Not sure" category to methods
+    let widget = "";
+    let message = "";
+    
+    switch (category) {
+      case "3-10 years":
+        message = "For devices that last 3-10 years, you have these options:\n\n" +
+          "• IUD (Intrauterine Device) - Up to 10 years\n" +
+          "• IUS (Intrauterine System) - Up to 5 years\n" +
+          "• Implants - Up to 3-5 years\n\n" +
+          "These are inserted by healthcare providers and work continuously.";
+        widget = "extendedLongTermMethods";
+        break;
+      
+      case "3 months":
+        message = "For injectables that last 3 months:\n\n" +
+          "• Depo-Provera (The shot)\n" +
+          "• One injection every 3 months\n" +
+          "• Very effective and convenient\n\n" +
+          "You just need to remember to get your shot every 3 months.";
+        widget = "mediumTermMethods";
+        break;
+      
+      case "Flexible methods":
+        message = "For methods you can start and stop on your own:\n\n" +
+          "• Daily pills - Take one every day\n" +
+          "• Diaphragm - Use when needed\n" +
+          "• Female condom - Use when needed\n" +
+          "• Male condom - Use when needed\n\n" +
+          "These give you complete control and flexibility.";
+        widget = "shortTermMethods";
+        break;
+      
+      case "Permanent methods":
+        message = "For permanent prevention:\n\n" +
+          "• Tubal ligation (for women)\n" +
+          "• Vasectomy (for men)\n\n" +
+          "⚠️ Important: These are permanent and irreversible. Please speak with a healthcare provider before deciding.";
+        widget = "permanentMethods";
+        break;
+      
+      default:
+        message = "I didn't recognize that option. Please select from the categories shown.";
+        widget = "notSureCategoryOptions";
+    }
+
+    const responseMessage = this.createChatBotMessage(message, { delay: 500 });
+    const methodSelectionMessage = this.createChatBotMessage(
+      "Which method do you want to learn about?",
+      { delay: 1000, widget: widget }
+    );
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, userMessage, responseMessage, methodSelectionMessage],
+      currentStep: "methodDetails",
+    }));
+
+    // Track the selection
+    await this.api.createConversation({
+      message_text: category,
+      message_type: 'user',
+      chat_step: "notSureCategorySelection",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: "notSureCategoryOptions"
+    }).catch(err => console.error('Failed to save user selection:', err));
+
+    await this.api.createConversation({
+      message_text: responseMessage.message,
+      message_type: 'bot',
+      chat_step: "notSureCategoryResponse",
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: 500
+    }).catch(err => console.error('Failed to save response:', err));
   };
   //old handlePreventionDurationSelection
   // =============================================================================
@@ -839,16 +1089,13 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // =============================================================================
   // METHOD SELECTION HANDLING
   // =============================================================================
+  // METHOD SELECTION HANDLER (Task 5: Product Information Flow)
+  // =============================================================================
 
   handleMethodOptionsSelection = async(method: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const contraceptiveMethod = method as ContraceptiveMethod;
-    const userMessage: ChatMessage = {
-      message: method,
-      type: "user",
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(method);
 
     // Track user method selection
     await this.api.createConversation({
@@ -859,100 +1106,102 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       widget_name: "methodOptions"
     }).catch(err => console.error('Failed to save user selection:', err));
 
-    const methodInfo = this.getMethodInformation(contraceptiveMethod);
-    const widgets = this.getWidgetsByMethodType(method);
+    // Task 5: Get product information from productData
+    const productInfo = getProductInfo(method);
 
-    if (!methodInfo) {
-      // Handle unknown method
-      const errorMessage = this.createChatBotMessage(
-        "I don't have detailed information about that method. Please consult with a healthcare provider.",
-        { delay: 500 }
+    if (!productInfo) {
+      const errorText = MessageFormatter.formatWarning(
+        "I don't have detailed information about that method. Please consult with a healthcare provider."
       );
+      const errorMessage = this.createChatBotMessage(errorText, { delay: 500 });
       
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, errorMessage],
         currentStep: "methodDetails",
+        preventPregnancy: {
+          ...prev.preventPregnancy,
+          selectedProduct: method
+        }
       }));
       return;
     }
 
-    const responseMessage = this.createChatBotMessage(methodInfo.description, { delay: 500 });
+    // Task 5: Store selected product in state for later handlers
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      preventPregnancy: {
+        ...prev.preventPregnancy,
+        selectedProduct: method
+      }
+    }));
 
-    const messages = [userMessage, responseMessage];
+    const messages: ChatMessage[] = [userMessage];
+
+    // Task 5.1: Display full product description
+    let productDescription = `*${productInfo.name.toUpperCase()}*\n\n${productInfo.description}`;
     
-    // Track main method information
-    await this.api.createConversation({
-      message_text: responseMessage.message,
-      message_type: 'bot',
-      chat_step: "methodDetails",
-      message_sequence_number: this.getNextSequenceNumber(),
-      message_delay_ms: 500
-    }).catch(err => console.error('Failed to save method details:', err));
-
-
-    // let audioMessage: ChatMessage | null = null;
-    // if (methodInfo.audioWidget) {
-    //   audioMessage = this.createChatBotMessage(
-    //     methodInfo.audioPrompt,
-    //     { 
-    //       delay: 1000,
-    //       widget: methodInfo.audioWidget
-    //     }
-    //   );
-    // }
-
-    // const messages = audioMessage 
-    //   ? [userMessage, responseMessage, audioMessage]
-    //   : [userMessage, responseMessage];
-
-    // ✅ SMART AUDIO DISPLAY
-    if (widgets.hasAudio && widgets.audioWidget) {
-      const audioMessage = this.createChatBotMessage(
-        `Click to listen to a short introduction of ${method} in Pidgin, if you want to.`,
-        { 
-          delay: widgets.hasImage ? 1500 : 1000,
-          widget: widgets.audioWidget
-        }
-      );
-      messages.push(audioMessage);
-      
-      // Track audio message
-      await this.api.createConversation({
-        message_text: audioMessage.message,
-        message_type: 'bot',
-        chat_step: "methodDetails",
-        message_sequence_number: this.getNextSequenceNumber(),
-        widget_name: widgets.audioWidget,
-        message_delay_ms: widgets.hasImage ? 1500 : 1000
-      }).catch(err => console.error('Failed to save audio message:', err));
+    if (productInfo.howItWorks) {
+      productDescription += `\n\n${productInfo.howItWorks}`;
+    }
+    
+    if (productInfo.usage) {
+      productDescription += `\n\n${productInfo.usage}`;
     }
 
-    const followUpMessage = this.createChatBotMessage(
-      "Do you want to find out about other family planning methods?",
-      { 
-        delay: 2000,
-        widget: "learnMoreMethods"
-      }
-      
-    );
-    messages.push(followUpMessage);
-    
-    // Track follow-up message
+    const descriptionTiming = SmartMessageTimer.createTimingConfig(productDescription, 'info', 'medium');
+    const descriptionMessage = this.createChatBotMessage(productDescription, { delay: descriptionTiming.delay });
+    messages.push(descriptionMessage);
+
+    // Track product description
     await this.api.createConversation({
-      message_text: followUpMessage.message,
+      message_text: descriptionMessage.message,
       message_type: 'bot',
-      chat_step: "learnMoreMethods",
+      chat_step: "productDescription",
       message_sequence_number: this.getNextSequenceNumber(),
-      widget_name: "learnMoreMethods",
-      message_delay_ms: 2000
-    }).catch(err => console.error('Failed to save follow-up:', err));
-    
+      message_delay_ms: descriptionTiming.delay
+    }).catch(err => console.error('Failed to save product description:', err));
+
+    // Task 5.2: Display audio prompt (matching WhatsApp script exactly)
+    const audioDelay = descriptionTiming.delay + 1200;
+    const audioMessage = this.createChatBotMessage(
+      productInfo.audioPrompt,
+      { delay: audioDelay }
+    );
+    messages.push(audioMessage);
+
+    await this.api.createConversation({
+      message_text: audioMessage.message,
+      message_type: 'bot',
+      chat_step: "audioPrompt",
+      message_sequence_number: this.getNextSequenceNumber(),
+      message_delay_ms: audioDelay
+    }).catch(err => console.error('Failed to save audio prompt:', err));
+
+    // Task 5.3: Ask "What do you want to learn about?" with buttons
+    const choiceDelay = audioDelay + 800;
+    const choiceMessage = this.createChatBotMessage(
+      "What do you want to learn about?",
+      { 
+        delay: choiceDelay,
+        widget: 'productDetailOptions'
+      }
+    );
+    messages.push(choiceMessage);
+
+    await this.api.createConversation({
+      message_text: choiceMessage.message,
+      message_type: 'bot',
+      chat_step: "productDetailChoice",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: 'productDetailOptions',
+      message_delay_ms: choiceDelay
+    }).catch(err => console.error('Failed to save choice prompt:', err));
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, ...messages],
-      currentStep: "methodDetails",
+      currentStep: "productDetailChoice",
     }));
     
     await this.api.createResponse({
@@ -960,11 +1209,314 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       response_type: "user",
       question_asked: "Which family planning method do you want to know about",
       user_response: method,
-      widget_used:"learnMoreMethods",
-      available_options: Object.keys(this.getAllMethodOptions?.() ?? {}),
+      widget_used:"methodOptions",
+      available_options: Object.keys(PRODUCT_DATA),
       step_in_flow: "methodOptionsSelection",
-
     })
+  };
+
+  // =============================================================================
+  // PRODUCT DETAIL SELECTION HANDLER (Task 5: Advantages/Disadvantages OR Who Can Use)
+  // =============================================================================
+
+  handleProductDetailSelection = async(choice: string): Promise<void> => {
+    await this.ensureChatSession();
+    
+    const userMessage = this.createUserMessage(choice);
+    
+    // Track user choice
+    await this.api.createConversation({
+      message_text: choice,
+      message_type: 'user',
+      chat_step: "productDetailSelection",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: "productDetailOptions"
+    }).catch(err => console.error('Failed to save detail choice:', err));
+
+    // Get the selected product from state
+    const selectedProduct = this.state.preventPregnancy?.selectedProduct;
+    if (!selectedProduct) {
+      const errorMessage = this.createChatBotMessage(
+        "Sorry, I couldn't find the product information. Please select a method again.",
+        { delay: 500 }
+      );
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, errorMessage]
+      }));
+      return;
+    }
+
+    const productInfo = getProductInfo(selectedProduct);
+    if (!productInfo) {
+      const errorMessage = this.createChatBotMessage(
+        "Sorry, I couldn't find the product information. Please select a method again.",
+        { delay: 500 }
+      );
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, errorMessage]
+      }));
+      return;
+    }
+
+    const messages: ChatMessage[] = [userMessage];
+
+    if (choice === 'Advantages and dis-') {
+      // Task 5.4: Display advantages
+      const advantagesText = `*ADVANTAGES*\n\n${productInfo.advantages.map((adv, idx) => `${idx + 1}. ${adv}`).join('\n')}`;
+      const advantagesDelay = 600;
+      const advantagesMessage = this.createChatBotMessage(advantagesText, { delay: advantagesDelay });
+      messages.push(advantagesMessage);
+
+      await this.api.createConversation({
+        message_text: advantagesMessage.message,
+        message_type: 'bot',
+        chat_step: "advantages",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: advantagesDelay
+      }).catch(err => console.error('Failed to save advantages:', err));
+
+      // Task 5.5: Display disadvantages
+      const disadvantagesText = `*DISADVANTAGES*\n\n${productInfo.disadvantages.map((dis, idx) => `${idx + 1}. ${dis}`).join('\n')}`;
+      const disadvantagesDelay = advantagesDelay + 1000;
+      const disadvantagesMessage = this.createChatBotMessage(disadvantagesText, { delay: disadvantagesDelay });
+      messages.push(disadvantagesMessage);
+
+      await this.api.createConversation({
+        message_text: disadvantagesMessage.message,
+        message_type: 'bot',
+        chat_step: "disadvantages",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: disadvantagesDelay
+      }).catch(err => console.error('Failed to save disadvantages:', err));
+
+    } else if (choice === 'Who can(not) use it') {
+      // Task 5.6: Display who can use
+      if (productInfo.whoCanUse && productInfo.whoCanUse.length > 0) {
+        const whoCanUseText = `*WHO CAN USE ${productInfo.name.toUpperCase()}*\n\n${productInfo.whoCanUse.map((who, idx) => `${idx + 1}. ${who}`).join('\n')}`;
+        const whoCanUseDelay = 600;
+        const whoCanUseMessage = this.createChatBotMessage(whoCanUseText, { delay: whoCanUseDelay });
+        messages.push(whoCanUseMessage);
+
+        await this.api.createConversation({
+          message_text: whoCanUseMessage.message,
+          message_type: 'bot',
+          chat_step: "whoCanUse",
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: whoCanUseDelay
+        }).catch(err => console.error('Failed to save who can use:', err));
+      }
+
+      // Task 5.7: Display who cannot use
+      if (productInfo.whoCannotUse && productInfo.whoCannotUse.length > 0) {
+        const whoCannotUseText = `*WHO CANNOT USE ${productInfo.name.toUpperCase()}*\n\n${productInfo.whoCannotUse.map((who, idx) => `${idx + 1}. ${who}`).join('\n')}`;
+        const whoCannotUseDelay = (productInfo.whoCanUse && productInfo.whoCanUse.length > 0) ? 1600 : 600;
+        const whoCannotUseMessage = this.createChatBotMessage(whoCannotUseText, { delay: whoCannotUseDelay });
+        messages.push(whoCannotUseMessage);
+
+        await this.api.createConversation({
+          message_text: whoCannotUseMessage.message,
+          message_type: 'bot',
+          chat_step: "whoCannotUse",
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: whoCannotUseDelay
+        }).catch(err => console.error('Failed to save who cannot use:', err));
+      }
+    }
+
+    // Task 5.8: Display additional info if present
+    if (productInfo.additionalInfo) {
+      const additionalDelay = 2000;
+      const additionalMessage = this.createChatBotMessage(productInfo.additionalInfo, { delay: additionalDelay });
+      messages.push(additionalMessage);
+
+      await this.api.createConversation({
+        message_text: additionalMessage.message,
+        message_type: 'bot',
+        chat_step: "additionalInfo",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: additionalDelay
+      }).catch(err => console.error('Failed to save additional info:', err));
+    }
+
+    // Task 5.9: Display videos if available
+    if (productInfo.videos && productInfo.videos.length > 0) {
+      const videosText = `Here are some helpful videos:\n\n${productInfo.videos.map((video, idx) => `${idx + 1}. ${video}`).join('\n')}`;
+      const videosDelay = 2500;
+      const videosMessage = this.createChatBotMessage(videosText, { delay: videosDelay });
+      messages.push(videosMessage);
+
+      await this.api.createConversation({
+        message_text: videosMessage.message,
+        message_type: 'bot',
+        chat_step: "videos",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: videosDelay
+      }).catch(err => console.error('Failed to save videos:', err));
+    }
+
+    // Task 5.10: Display purchase info if available
+    if (productInfo.purchaseInfo) {
+      const purchaseDelay = 3000;
+      const purchaseMessage = this.createChatBotMessage(productInfo.purchaseInfo, { delay: purchaseDelay });
+      messages.push(purchaseMessage);
+
+      await this.api.createConversation({
+        message_text: purchaseMessage.message,
+        message_type: 'bot',
+        chat_step: "purchaseInfo",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: purchaseDelay
+      }).catch(err => console.error('Failed to save purchase info:', err));
+    }
+
+    // Task 5.11: Ask "Do you want to learn about other family planning methods?"
+    const learnMoreDelay = 3500;
+    const learnMoreMessage = this.createChatBotMessage(
+      "Do you want to learn about other family planning methods?",
+      { 
+        delay: learnMoreDelay,
+        widget: 'learnOtherMethods'
+      }
+    );
+    messages.push(learnMoreMessage);
+
+    await this.api.createConversation({
+      message_text: learnMoreMessage.message,
+      message_type: 'bot',
+      chat_step: "learnOtherMethods",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: 'learnOtherMethods',
+      message_delay_ms: learnMoreDelay
+    }).catch(err => console.error('Failed to save learn more prompt:', err));
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, ...messages],
+      currentStep: "learnOtherMethods",
+    }));
+  };
+
+  // =============================================================================
+  // LEARN OTHER METHODS HANDLER (Task 5: Navigation after product details)
+  // =============================================================================
+
+  handleLearnOtherMethods = async(answer: string): Promise<void> => {
+    await this.ensureChatSession();
+    
+    const userMessage = this.createUserMessage(answer);
+    
+    // Track user answer
+    await this.api.createConversation({
+      message_text: answer,
+      message_type: 'user',
+      chat_step: "learnOtherMethodsResponse",
+      message_sequence_number: this.getNextSequenceNumber(),
+      widget_name: "learnOtherMethods"
+    }).catch(err => console.error('Failed to save response:', err));
+
+    if (answer.toLowerCase() === 'yes') {
+      // Return to duration selection to explore more methods
+      const returnMessage = this.createChatBotMessage(
+        "Great! For how long do you want to prevent pregnancy?",
+        { 
+          delay: 500,
+          widget: 'preventionDurationOptions'
+        }
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, returnMessage],
+        currentStep: "preventionDuration",
+        preventPregnancy: {
+          ...prev.preventPregnancy,
+          selectedProduct: undefined // Clear selected product
+        }
+      }));
+
+      await this.api.createConversation({
+        message_text: returnMessage.message,
+        message_type: 'bot',
+        chat_step: "preventionDuration",
+        message_sequence_number: this.getNextSequenceNumber(),
+        widget_name: 'preventionDurationOptions',
+        message_delay_ms: 500
+      }).catch(err => console.error('Failed to save return message:', err));
+
+    } else {
+      // End of product flow, show flow end options
+      const endMessage = this.createChatBotMessage(
+        "Allright 👌 What would you like to do next?",
+        { 
+          delay: 500,
+          widget: 'flowEndOptions'
+        }
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, endMessage],
+        currentStep: "flowEnd",
+        preventPregnancy: {
+          ...prev.preventPregnancy,
+          selectedProduct: undefined // Clear selected product
+        }
+      }));
+
+      await this.api.createConversation({
+        message_text: endMessage.message,
+        message_type: 'bot',
+        chat_step: "flowEnd",
+        message_sequence_number: this.getNextSequenceNumber(),
+        widget_name: 'flowEndOptions',
+        message_delay_ms: 500
+      }).catch(err => console.error('Failed to save end message:', err));
+    }
+  };
+
+  // =============================================================================
+  // MEDICAL CONDITIONS SCREENING RESPONSE
+  // =============================================================================
+  handleMedicalConditionsResponse = async(answer: string): Promise<void> => {
+    const normalized = answer.trim().toLowerCase();
+    const userMessage = this.createUserMessage(answer);
+
+    // Record user response in FpmInteraction
+    try {
+      await this.api.createFpmInteraction({
+        has_medical_conditions: normalized === 'yes' ? 'yes' : (normalized === 'no' ? 'no' : 'unknown'),
+        requires_clinic_referral: normalized === 'yes' || normalized === "i don't know"
+      } as any);
+    } catch (error) {
+      console.error('Failed to record medical conditions response:', error);
+    }
+
+    if (normalized === 'yes' || normalized === "i don't know") {
+      const referralMsg = this.createChatBotMessage(
+        "⚠️ It looks like you might need to consult a healthcare professional before using this method. Would you like me to find a clinic near you or connect you with a clinician?",
+        { delay: 600, widget: 'flowEndOptions' }
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, referralMsg],
+        currentStep: 'clinicReferral',
+      }));
+    } else {
+      const proceedMsg = this.createChatBotMessage(
+        "Great — this method is likely safe for you. Would you like to learn how to use it, or explore other methods?",
+        { delay: 600, widget: 'flowEndOptions' }
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, proceedMsg],
+        // reuse existing step to avoid type mismatch
+        currentStep: 'methodDetails',
+      }));
+    }
   };
 
   // =============================================================================
@@ -979,13 +1531,13 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     audioPrompt?: string;
   } | null => {
     // Using a record to store method information for better maintainability
-    const methodData: Partial<Record<ContraceptiveMethod, {
+    const methodData: Record<string, {
       description: string;
       imageWidget?: string;
       imagePrompt?: string;
       audioWidget?: string;
       audioPrompt?: string;
-    }>>= {
+    }> = {
       "Daily pills": {
         description: "Daily pills are combined oral contraceptive pills for pregnancy prevention, dermatological and gynecological benefits. They work by making the sperm difficult to enter the womb.\n\nDaily pills are either a 21-day pack (Dianofem and Desofem) or a 28-day pack (Levofem). One pill is taken each day at about the same time for 21 days. Depending on your pack, you will either have a 7-day break (as in the 21-day pack) or you will take the pill that contains Iron for 7 days (the 28-day pack).\n\nThey are very effective (99%) when used correctly. They must be taken daily at the same time. They can help regulate menstrual cycles and reduce menstrual cramps.",
         imageWidget: "dailyPillsAudio",

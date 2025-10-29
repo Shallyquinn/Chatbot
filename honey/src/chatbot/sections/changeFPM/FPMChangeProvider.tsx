@@ -37,7 +37,16 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     apiClient: ApiService,
     userSessionId?: string,
   ) {
-    this.createChatBotMessage = createChatBotMessage;
+    // Wrap createChatBotMessage to automatically add timestamps
+    const originalCreateChatBotMessage = createChatBotMessage;
+    this.createChatBotMessage = (message: string, options?: Record<string, unknown>) => {
+      const msg = originalCreateChatBotMessage(message, options);
+      return {
+        ...msg,
+        timestamp: new Date().toISOString(),
+      };
+    };
+    
     this.setState = setStateFunc;
     this.state = state;
     this.api = apiClient;
@@ -96,6 +105,16 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     this.messageSequenceNumber = 1;
   }
 
+  // Helper method to create user messages with automatic timestamp
+  private createUserMessage = (message: string): ChatMessage => {
+    return {
+      message,
+      type: 'user',
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+    };
+  };
+
   // FIXED: Handler for selecting current FPM method
   handleCurrentFPMSelection = async (method: string): Promise<void> => {
     await this.ensureChatSession();
@@ -103,11 +122,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     console.log('🔍 handleCurrentFPMSelection called with:', method);
     console.log('🔍 Current state before update:', this.state.currentFPMMethod);
 
-    const userMessage: ChatMessage = {
-      message: method,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(method);
     
     // Track user FPM selection
     await this.api.createConversation({
@@ -162,11 +177,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.ensureChatSession();
     
     console.log('handleFPMConcernTypeSelection called with:', concernType);
-    const userMessage: ChatMessage = {
-      message: concernType,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(concernType);
 
     // Track user concern type selection
     await this.api.createConversation({
@@ -226,11 +237,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleFPMConcernSelection = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option);
 
     // Track user concern selection
     await this.api.createConversation({
@@ -348,11 +355,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleSwitchCurrentFPMSelection = async (method: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: method,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(method);
 
     // Track user method selection
     await this.api.createConversation({
@@ -419,11 +422,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleStopFPMSelection = async (method: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: method,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(method);
     
     // Track user method selection for stop flow
     await this.api.createConversation({
@@ -477,11 +476,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleFPMChangeSelection = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option);
 
     // Track user change selection
     await this.api.createConversation({
@@ -534,11 +529,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   ): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: satisfaction,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(satisfaction);
 
     // Track user satisfaction response
     await this.api.createConversation({
@@ -597,11 +588,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleSwitchReason = async (reason: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: reason,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(reason);
 
     // Track user switch reason
     await this.api.createConversation({
@@ -661,11 +648,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   ): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: response,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(response);
 
     // Track user recommendation response
     await this.api.createConversation({
@@ -755,11 +738,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleKidsInFuture = async (response: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: response,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(response);
 
     // Track user kids response
     await this.api.createConversation({
@@ -820,11 +799,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleTimingSelection = async (timing: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: timing,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(timing);
 
     // Track user timing selection
     await this.api.createConversation({
@@ -901,11 +876,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleImportantFactors = async (factor: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: factor,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(factor);
 
     // Track user factor selection
     await this.api.createConversation({
@@ -1059,11 +1030,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleMenstrualFlowPreference = async (preference: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: preference,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(preference);
 
     // Track user preference
     await this.api.createConversation({
@@ -1138,11 +1105,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleStopReason = async (reason: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: reason,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(reason);
 
     // Track user stop reason
     await this.api.createConversation({
@@ -1202,11 +1165,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleFPMSideEffectSelection = async (sideEffect: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: sideEffect,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(sideEffect);
 
     // Track user side effect selection
     await this.api.createConversation({
@@ -1261,11 +1220,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleFinalFeedback = async (feedback: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: feedback,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(feedback);
 
     // Track user feedback
     await this.api.createConversation({
@@ -1408,11 +1363,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   handleFPMNextAction = async (action: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: action,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(action);
 
     // Track user action selection
     await this.api.createConversation({

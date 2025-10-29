@@ -62,4 +62,21 @@ export class ConversationsController {
       Number(limit),
     );
   }
+
+  // Escalate conversation to human agent
+  @Post('escalate')
+  async escalateToHuman(
+    @Body() body: { conversationId: string; userId: string },
+  ) {
+    return this.conversationsService.escalateToHuman(
+      body.conversationId,
+      body.userId,
+    );
+  }
+
+  // Get queue status for conversation
+  @Get('queue-status/:conversationId')
+  async getQueueStatus(@Param('conversationId') conversationId: string) {
+    return this.conversationsService.getQueueStatus(conversationId);
+  }
 }

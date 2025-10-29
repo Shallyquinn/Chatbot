@@ -248,20 +248,25 @@ export class AdminDashboardController {
   async createAgent(
     @Body()
     createAgentDto: {
-      name: string;
+      firstName: string;
+      lastName: string;
       email: string;
       status?: string;
       maxChats?: number;
       password?: string;
     },
   ) {
+    // Combine firstName and lastName into name
+    const fullName =
+      `${createAgentDto.firstName} ${createAgentDto.lastName}`.trim();
+
     return await this.prisma.agent.create({
       data: {
-        name: createAgentDto.name,
+        name: fullName,
         email: createAgentDto.email,
         status: (createAgentDto.status as AgentStatus) || AgentStatus.OFFLINE,
         maxChats: createAgentDto.maxChats || 5,
-        password: createAgentDto.password || 'temp123',
+        password: createAgentDto.password || 'Temp123!',
       },
     });
   }

@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AgentEscalationService } from '../admin/services/agent-escalation.service';
 import { WebSocketService } from '../services/websocket.service';
@@ -23,14 +24,24 @@ export class AgentController {
     private prisma: PrismaService,
   ) {}
 
+  // Helper method to get agent ID from request or throw error
+  private getAgentId(req: unknown): string {
+    const agentId = (req as any).user?.agentId;
+    if (!agentId) {
+      throw new UnauthorizedException(
+        'Agent not authenticated. Please log in.',
+      );
+    }
+    return agentId;
+  }
+
   // =============================================================================
   // AGENT DASHBOARD & PROFILE
   // =============================================================================
 
   @Get('profile')
   async getAgentProfile(@Request() req) {
-    // Mock agent ID for now - replace with actual JWT payload when auth is implemented
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     return await this.prisma.agent.findUnique({
       where: { id: agentId },
@@ -50,7 +61,7 @@ export class AgentController {
 
   @Put('profile')
   async updateAgentProfile(@Body() updateDto: any, @Request() req) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     return await this.prisma.agent.update({
       where: { id: agentId },
@@ -63,7 +74,7 @@ export class AgentController {
     @Body() statusDto: { status: AgentStatus },
     @Request() req,
   ) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     const updatedAgent = await this.prisma.agent.update({
       where: { id: agentId },
@@ -91,7 +102,12 @@ export class AgentController {
 
   @Get('assigned-users')
   async getAssignedUsers(@Request() req) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = req.user?.agentId;
+
+    // If no agentId, return empty array instead of using mock-agent-id
+    if (!agentId) {
+      return [];
+    }
 
     const assignments = await this.prisma.conversationAssignment.findMany({
       where: {
@@ -138,7 +154,7 @@ export class AgentController {
     @Param('id') conversationId: string,
     @Request() req,
   ) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     // Verify agent has access to this conversation
     const assignment = await this.prisma.conversationAssignment.findFirst({
@@ -218,7 +234,7 @@ export class AgentController {
     },
     @Request() req,
   ) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     // Verify agent has access to this conversation
     const assignment = await this.prisma.conversationAssignment.findFirst({
@@ -277,7 +293,7 @@ export class AgentController {
     @Body() completionDto: { satisfaction?: number; notes?: string },
     @Request() req,
   ) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     // Complete current assignment
     await this.prisma.conversationAssignment.updateMany({
@@ -346,7 +362,7 @@ export class AgentController {
 
   @Get('stats')
   async getAgentStats(@Request() req) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
@@ -410,7 +426,7 @@ export class AgentController {
 
   @Post('activity/heartbeat')
   async sendHeartbeat(@Request() req) {
-    const agentId = req.user?.agentId || 'mock-agent-id';
+    const agentId = this.getAgentId(req);
 
     await this.prisma.agent.update({
       where: { id: agentId },

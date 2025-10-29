@@ -42,7 +42,16 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     apiClient: ApiService,
     userSessionId?: string,
   ) {
-    this.createChatBotMessage = createChatBotMessage;
+    // Wrap createChatBotMessage to automatically add timestamps
+    const originalCreateChatBotMessage = createChatBotMessage;
+    this.createChatBotMessage = (message: string, options?: Record<string, unknown>) => {
+      const msg = originalCreateChatBotMessage(message, options);
+      return {
+        ...msg,
+        timestamp: new Date().toISOString(),
+      };
+    };
+    
     this.setState = setStateFunc;
     this.state = state;
     this.api = apiClient;
@@ -52,11 +61,23 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     this.setState = (
       newState: ChatbotState | ((prev: ChatbotState) => ChatbotState),
     ) => {
+      // Ensure state has messages array initialized
+      const safeState = {
+        ...this.state,
+        messages: this.state.messages || [],
+      };
+
       const updatedState =
-        typeof newState === 'function' ? newState(this.state) : newState;
+        typeof newState === 'function' ? newState(safeState) : newState;
+
+      // Ensure updated state also has messages array
+      const finalState = {
+        ...updatedState,
+        messages: updatedState.messages || [],
+      };
 
       // Primary: Save to server for cross-device sync
-      this.saveStateToServer(updatedState).catch((error) => {
+      this.saveStateToServer(finalState).catch((error) => {
         console.warn(
           'Failed to save get pregnant state to server, using localStorage fallback:',
           error,
@@ -64,11 +85,11 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       });
 
       // Secondary: Always save to localStorage as backup
-      localStorage.setItem('chat_state', JSON.stringify(updatedState));
+      localStorage.setItem('chat_state', JSON.stringify(finalState));
 
       // Update component state
-      setStateFunc(updatedState);
-      this.state = updatedState;
+      setStateFunc(finalState);
+      this.state = finalState;
     };
   }
 
@@ -86,6 +107,16 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       console.error('Failed to save get pregnant chat state to server:', error);
       throw error;
     }
+  }
+
+  // Helper method to create user messages with timestamps
+  private createUserMessage(message: string): ChatMessage {
+    return {
+      message,
+      type: 'user',
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+    };
   }
 
   // Ensure chat session is initialized before API calls
@@ -107,11 +138,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     // Reset sequence number for new conversation
     this.resetSequenceNumber();
 
-    const userMessage: ChatMessage = {
-      message: 'How to get pregnant',
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage('How to get pregnant');
 
     // Ensure session is initialized
     await this.ensureChatSession();
@@ -199,11 +226,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle FPM selection for get pregnant flow
   handleGetPregnantFPMSelection = async (selection: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: selection,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(selection);
 
     // Store the current method
     this.currentFPMMethod = selection;
@@ -453,11 +476,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle trying duration selection (No FPM branch)
   handleGetPregnantTryingDuration = async (duration: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: duration,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(duration);
 
     // Store the trying duration
     this.tryingDuration = duration;
@@ -575,11 +594,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle IUD removal status
   handleGetPregnantIUDRemoval = async (status: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getIUDRemovalResponse(status),
@@ -690,11 +705,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle Implant removal status
   handleGetPregnantImplantRemoval = async (status: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getImplantRemovalResponse(status),
@@ -805,11 +816,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle injection stopping status
   handleGetPregnantInjectionStop = async (status: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getInjectionStopResponse(status),
@@ -912,11 +919,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle pills stopping status
   handleGetPregnantPillsStop = async (status: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getPillsStopResponse(status),
@@ -1020,11 +1023,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle next action selection
   handleGetPregnantNextAction = async (action: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: action,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(action);
 
     if (action === 'Ask more questions') {
       const moreQuestionsMessage = this.createChatBotMessage(
@@ -1324,11 +1323,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
   // Handle user questions in get pregnant flow
   handleGetPregnantUserQuestion = async (question: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: question,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(question);
 
     // Get response based on question content
     const responseMessage = this.createChatBotMessage(

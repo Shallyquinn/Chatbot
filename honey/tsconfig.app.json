@@ -21,9 +21,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "ignoreDeprecations": "6.0",
 
-
-    /* na shadcn say make we add am*/
+    /* Path aliases configuration */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

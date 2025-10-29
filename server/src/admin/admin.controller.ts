@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -10,7 +12,13 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
-import type { ConfigUpdateDto } from './admin.service';
+import type {
+  ConfigUpdateDto,
+  CreateAgentDto,
+  UpdateAgentDto,
+  AssignConversationDto,
+  UpdateAdminProfileDto,
+} from './admin.service';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -42,6 +50,39 @@ export class AdminController {
     return this.adminService.getAllAgents();
   }
 
+  @Get('agents/:id')
+  async getAgentById(@Param('id') agentId: string) {
+    return this.adminService.getAgentById(agentId);
+  }
+
+  @Post('agents')
+  async createAgent(@Body() createAgentDto: CreateAgentDto) {
+    return this.adminService.createAgent(createAgentDto);
+  }
+
+  @Put('agents/:id')
+  async updateAgent(
+    @Param('id') agentId: string,
+    @Body() updateAgentDto: UpdateAgentDto,
+  ) {
+    return this.adminService.updateAgent(agentId, updateAgentDto);
+  }
+
+  @Delete('agents/:id')
+  async deleteAgent(@Param('id') agentId: string) {
+    return this.adminService.deleteAgent(agentId);
+  }
+
+  @Post('conversations/assign')
+  async assignConversation(@Body() assignDto: AssignConversationDto) {
+    return this.adminService.reassignConversation(assignDto);
+  }
+
+  @Get('agents/dummy')
+  async getDummyAgent() {
+    return this.adminService.getDummyAgent();
+  }
+
   @Get('queue')
   async getQueuedConversations() {
     return this.adminService.getQueuedConversations();
@@ -51,5 +92,18 @@ export class AdminController {
   async getAnalytics(@Query('days') days?: string) {
     const analyticsDays = days ? parseInt(days) : 7;
     return this.adminService.getConversationAnalytics(analyticsDays);
+  }
+
+  @Get('profile')
+  async getAdminProfile(@Request() req: any) {
+    return this.adminService.getAdminProfile(req.user.adminId);
+  }
+
+  @Put('profile')
+  async updateAdminProfile(
+    @Request() req: any,
+    @Body() updateDto: UpdateAdminProfileDto,
+  ) {
+    return this.adminService.updateAdminProfile(req.user.adminId, updateDto);
   }
 }

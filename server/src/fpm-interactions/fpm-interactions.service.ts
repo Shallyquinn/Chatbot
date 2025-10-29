@@ -8,6 +8,19 @@ export class FpmInteractionsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateFpmInteractionDto) {
+    // Validate that session exists if session_id is provided
+    if (dto.session_id) {
+      const sessionExists = await this.prisma.chatSession.findUnique({
+        where: { session_id: dto.session_id },
+      });
+
+      if (!sessionExists) {
+        throw new NotFoundException(
+          `Chat session ${dto.session_id} not found. Please ensure session is created first.`,
+        );
+      }
+    }
+
     return this.prisma.fpmInteraction.create({ data: dto });
   }
 

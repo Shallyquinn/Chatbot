@@ -3,6 +3,8 @@ export interface FpmInteraction {
 
   session_id?: string;
 
+  user_session_id?: string;
+
   fpm_flow_type?: string;
 
   current_fpm_method?: string;
@@ -10,6 +12,8 @@ export interface FpmInteraction {
   interested_fpm_method?: string;
 
   fpm_duration_preference?: string;
+
+  main_menu_option?: string;
 
   contraception_type?: string;
 
@@ -32,6 +36,35 @@ export interface FpmInteraction {
   timing_preference?: string;
 
   menstrual_flow_preference?: string;
+
+  // Phase 4.2: Extended FPM tracking fields
+  fpm_concern_type?: string;
+
+  pregnancy_trial?: string;
+
+  iud_removal_duration?: string;
+
+  implant_removal_duration?: string;
+
+  injection_stop_period?: string;
+
+  dailypills_stop_period?: string;
+
+  contraception_choice?: string;
+
+  improve_intimacy_choice?: string;
+
+  other_method_choices?: string;
+
+  side_effects?: string;
+
+  switch_method?: string;
+
+  prevention_choice?: string;
+
+  emergency_prevention_choice?: string;
+
+  gel_lubricant_choice?: string;
 
   provided_information?: string;
 

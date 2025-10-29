@@ -15,9 +15,15 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { AgentsModule } from './agents/agents.module';
 import { ChatModule } from './chat/chat.module';
+import { RedisModule } from './redis/redis.module';
+import { StorageModule } from './storage/storage.module';
+import { AgentAssignmentModule } from './agent-assignment/agent-assignment.module';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
   imports: [
+    RedisModule,
+    StorageModule,
     UserModule,
     ChatSessionsModule,
     ConversationsModule,
@@ -31,6 +37,8 @@ import { ChatModule } from './chat/chat.module';
     AdminModule,
     AgentsModule,
     ChatModule,
+    AgentAssignmentModule,
+    ChannelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

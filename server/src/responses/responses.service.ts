@@ -8,7 +8,20 @@ import { UpdateResponseDto } from './update-response.dto';
 export class ResponsesService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateResponseDto) {
+  async create(dto: CreateResponseDto) {
+    // Validate that session exists if session_id is provided
+    if (dto.session_id) {
+      const sessionExists = await this.prisma.chatSession.findUnique({
+        where: { session_id: dto.session_id },
+      });
+
+      if (!sessionExists) {
+        throw new NotFoundException(
+          `Chat session ${dto.session_id} not found. Please ensure session is created first.`,
+        );
+      }
+    }
+
     return this.prisma.userResponse.create({ data: dto });
   }
 

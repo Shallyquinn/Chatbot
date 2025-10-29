@@ -4,7 +4,7 @@ import { createChatBotMessage } from 'react-chatbot-kit';
 import OptionButtons from '../components/OptionButtons';
 import ChatMessage from '../components/ChatMessage';
 import { ActionProviderInterface } from '../chatbot/ActionProvider';
-import { ChatbotState } from './types';
+import { ChatbotState, ChatMessage as ChatMessageType } from './types';
 import {
   fpmChangeStopWidgets,
   FPMWidgetProps,
@@ -29,6 +29,7 @@ export interface MessageBoxProps {
   message?: string;
   state: ChatbotState;
   type: 'bot' | 'user';
+  timestamp?: string; // ISO timestamp for message
 }
 
 export interface AvatarProps {
@@ -48,18 +49,27 @@ export interface MediaWidgetProps {
   alt?: string;
 }
 
-// Synchronous localStorage loading (enhanced version will load from server in ActionProvider)
+// Synchronous localStorage loading with proper message restoration
 const loadState = (): ChatbotState => {
   try {
     const saved = localStorage.getItem('chat_state');
-    return saved
-      ? JSON.parse(saved)
-      : {
-          messages: [],
-          currentStep: 'language',
-          greetingStep: 'initial_welcome',
-        };
-  } catch {
+    if (saved) {
+      const parsedState = JSON.parse(saved);
+      console.log('✅ Restored state from localStorage:', parsedState);
+      // Ensure messages array exists and has proper structure
+      if (parsedState.messages && Array.isArray(parsedState.messages)) {
+        return parsedState;
+      }
+    }
+    // Return fresh state only if no saved state exists
+    console.log('ℹ️ No saved state found, starting fresh');
+    return {
+      messages: [],
+      currentStep: 'language',
+      greetingStep: 'initial_welcome',
+    };
+  } catch (error) {
+    console.error('❌ Failed to load state from localStorage:', error);
     return {
       messages: [],
       currentStep: 'language',
@@ -92,27 +102,60 @@ export const loadStateFromServer = async (): Promise<ChatbotState | null> => {
 
 const botName = 'Honey';
 
+// Helper to convert saved messages to react-chatbot-kit format
+const convertSavedMessages = (messages: ChatMessageType[]) => {
+  return messages.map((msg, index) => ({
+    ...msg,
+    id: index, // Convert string ID to number for react-chatbot-kit
+    loading: msg.loading || false,
+    timestamp: msg.timestamp || new Date().toISOString(), // Ensure timestamp exists
+  }));
+};
+
 const config = {
-  initialMessages: [
-    createChatBotMessage(`Hello, my name is ${botName}.`, {
-      delay: 500,
-    }),
-    createChatBotMessage('Please choose the language you want to chat with.', {
-      delay: 1000,
-      widget: 'languageOptions',
-    }),
-  ],
+  // Use saved messages if they exist, otherwise show welcome messages
+  initialMessages: initialState.messages.length > 0 
+    ? convertSavedMessages(initialState.messages) // Convert and restore saved messages
+    : [
+        createChatBotMessage(`Hello, my name is ${botName}.`, {
+          delay: 500,
+        }),
+        createChatBotMessage('Please choose the language you want to chat with.', {
+          delay: 1000,
+          widget: 'languageOptions',
+        }),
+      ].map(msg => ({ ...msg, timestamp: new Date().toISOString() })),
   botName: botName,
   initialState,
   customComponents: {
     botAvatar: () => <BotAvatar />,
     userAvatar: () => <></>,
-    botMessageBox: (props: MessageBoxProps) => (
-      <ChatMessage {...props} type="bot" />
-    ),
-    userMessageBox: (props: MessageBoxProps) => (
-      <ChatMessage {...props} type="user" />
-    ),
+    botMessageBox: (props: MessageBoxProps) => {
+      // Find the message in state to get the timestamp
+      const messageWithTimestamp = props.state.messages.find(
+        (msg) => msg.message === props.message
+      );
+      return (
+        <ChatMessage 
+          {...props} 
+          type="bot" 
+          timestamp={messageWithTimestamp?.timestamp || new Date().toISOString()} 
+        />
+      );
+    },
+    userMessageBox: (props: MessageBoxProps) => {
+      // Find the message in state to get the timestamp
+      const messageWithTimestamp = props.state.messages.find(
+        (msg) => msg.message === props.message && msg.type === 'user'
+      );
+      return (
+        <ChatMessage 
+          {...props} 
+          type="user" 
+          timestamp={messageWithTimestamp?.timestamp || new Date().toISOString()} 
+        />
+      );
+    },
   },
   customStyles: {
     botMessageBox: {
@@ -255,6 +298,22 @@ const config = {
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     },
+    // Phase 3.4: Resume Session Widget
+    {
+      widgetName: 'resumeOptions',
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={['✅ Yes, Continue', '🔄 Start Fresh']}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) => {
+            const resume = option.includes('Continue');
+            props.actionProvider.handleResumeSession(resume);
+          }}
+        />
+      ),
+      props: {},
+      mapStateToProps: ['messages', 'currentStep'],
+    },
     {
       widgetName: 'sexEnhancementOptions',
       widgetFunc: (props: WidgetProps) => (
@@ -262,7 +321,7 @@ const config = {
           options={["Gels and Lubricants", "Hard Erection"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.handleSexEnhancementOptions(option)
+            props.actionProvider.sexEnhancementActionProvider.handleSexEnhancementChoice(option)
           }
         />
       ),
@@ -273,10 +332,10 @@ const config = {
       widgetName: 'lubricantOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Water-based', 'Silicone-based', 'Natural options', "Fiesta Intim Gel", "KY Jelly"]}
+          options={["Fiesta Intim Gel", "KY Jelly"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.handleLubricantOptions(option)
+            props.actionProvider.sexEnhancementActionProvider.handleLubricantSelection(option)
           }
         />
       ),
@@ -312,13 +371,13 @@ const config = {
       mapStateToProps: ['messages', 'currentStep'],
     },
     {
-      widgetName: 'sexEnhancementNextActionOptions',
+      widgetName: 'sexEnhancementNextActions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Ask another question', 'End conversation']}
+          options={['Chat with AI /Human', 'Learn other methods', 'Back to main menu']}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.handleSexEnhancementNextAction(option)
+            props.actionProvider.sexEnhancementActionProvider.handleSexEnhancementNextAction(option)
           }
         />
       ),
@@ -390,6 +449,13 @@ const config = {
       mapStateToProps: ['messages', 'currentStep'],
     })),
   ],
+  
+  // Validator to ensure all messages are accepted
+  validator: () => {
+    // Always return true to accept the message
+    return true;
+  },
 };
 
 export default config;
+

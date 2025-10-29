@@ -3,8 +3,7 @@
 /* ... */
 * {
   box-sizing: border-box;
-  margin: auto;
-  padding: 5px;
+  padding: 3px;
 }
 
 html {

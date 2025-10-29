@@ -76,6 +76,71 @@ export class CreateFpmInteractionDto {
   @IsString()
   menstrual_flow_preference?: string;
 
+  // Phase 4.2: Extended FPM tracking fields
+  @IsOptional()
+  @IsString()
+  user_session_id?: string;
+
+  @IsOptional()
+  @IsString()
+  main_menu_option?: string;
+
+  @IsOptional()
+  @IsString()
+  fpm_concern_type?: string;
+
+  @IsOptional()
+  @IsString()
+  pregnancy_trial?: string;
+
+  @IsOptional()
+  @IsString()
+  iud_removal_duration?: string;
+
+  @IsOptional()
+  @IsString()
+  implant_removal_duration?: string;
+
+  @IsOptional()
+  @IsString()
+  injection_stop_period?: string;
+
+  @IsOptional()
+  @IsString()
+  dailypills_stop_period?: string;
+
+  @IsOptional()
+  @IsString()
+  contraception_choice?: string;
+
+  @IsOptional()
+  @IsString()
+  improve_intimacy_choice?: string;
+
+  @IsOptional()
+  @IsString()
+  other_method_choices?: string;
+
+  @IsOptional()
+  @IsString()
+  side_effects?: string;
+
+  @IsOptional()
+  @IsString()
+  switch_method?: string;
+
+  @IsOptional()
+  @IsString()
+  prevention_choice?: string;
+
+  @IsOptional()
+  @IsString()
+  emergency_prevention_choice?: string;
+
+  @IsOptional()
+  @IsString()
+  gel_lubricant_choice?: string;
+
   @IsOptional()
   @IsString()
   provided_information?: string;

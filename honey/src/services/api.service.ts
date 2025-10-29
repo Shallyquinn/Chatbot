@@ -41,6 +41,7 @@ interface MessageData {
 }
 
 class ApiService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private api: any; // AxiosInstance type not available
   private baseURL: string;
 
@@ -56,20 +57,24 @@ class ApiService {
 
     // Add request interceptor to include auth token
     this.api.interceptors.request.use(
-      (config: any) => { // AxiosRequestConfig type not available
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (config: any) => {
         const token = localStorage.getItem("token");
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      (error: any) => Promise.reject(error) // AxiosError type not available
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error: any) => Promise.reject(error)
     );
 
     // Add response interceptor for error handling
     this.api.interceptors.response.use(
-      (response: any) => response, // AxiosResponse type not available
-      (error: any) => { // AxiosError type not available
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (response: any) => response,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error: any) => {
         if (error.response?.status === 401) {
           // Clear invalid token
           localStorage.removeItem("token");
@@ -98,7 +103,8 @@ class ApiService {
       email,
       password,
     });
-    return response.data;
+    // Backend wraps response in { success: true, data: {...} }
+    return response.data.data || response.data;
   }
 
   // =============================================================================
@@ -289,6 +295,35 @@ class ApiService {
 
   async sendHeartbeat() {
     const response = await this.api.post("/agent/activity/heartbeat");
+    return response.data;
+  }
+
+  // =============================================================================
+  // GENERIC HTTP METHODS (for flexible API calls)
+  // =============================================================================
+
+  // Generic HTTP methods - using 'any' for maximum flexibility with different API responses
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async get(url: string, config?: any): Promise<any> {
+    const response = await this.api.get(url, config);
+    return response.data;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async post(url: string, data?: any, config?: any): Promise<any> {
+    const response = await this.api.post(url, data, config);
+    return response.data;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async put(url: string, data?: any, config?: any): Promise<any> {
+    const response = await this.api.put(url, data, config);
+    return response.data;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async delete(url: string, config?: any): Promise<any> {
+    const response = await this.api.delete(url, config);
     return response.data;
   }
 }

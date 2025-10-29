@@ -51,7 +51,7 @@ const StateSearchWidget: React.FC<StateSearchWidgetProps> = ({
       <div className="search-filter-container">
         <div className="mb-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Please select a state first to see .
+            Please select a state first to see.
           </label>
           <div className="mt-3 text-xs text-gray-500">
             💡 You can type the full name or part of your state name to find it

@@ -32,6 +32,34 @@ async function main() {
     console.log('ℹ️  Admin already exists:', adminExists.email);
   }
 
+  // Create default dummy/system agent
+  const dummyAgentExists = await prisma.agent.findUnique({
+    where: { email: 'dummy@honeychatbot.com' },
+  });
+
+  if (!dummyAgentExists) {
+    const hashedDummyPassword = await bcrypt.hash('dummy123', 10);
+
+    const dummyAgent = await prisma.agent.create({
+      data: {
+        name: 'System Agent (Default)',
+        email: 'dummy@honeychatbot.com',
+        password: hashedDummyPassword,
+        status: 'ONLINE',
+        maxChats: 999,
+        isOnline: true,
+      },
+    });
+
+    console.log('✅ Created dummy/default agent:', {
+      email: dummyAgent.email,
+      password: 'dummy123',
+      role: 'SYSTEM_DEFAULT',
+    });
+  } else {
+    console.log('ℹ️  Dummy agent already exists:', dummyAgentExists.email);
+  }
+
   // Create default agents
   const agents = [
     {
@@ -92,6 +120,9 @@ async function main() {
   console.log('\n🔐 ADMIN:');
   console.log('   Email: admin@honeychatbot.com');
   console.log('   Password: admin123');
+  console.log('\n🤖 DUMMY/SYSTEM AGENT (Auto-assigned):');
+  console.log('   Email: dummy@honeychatbot.com');
+  console.log('   (This agent receives unassigned conversations)');
   console.log('\n👥 AGENTS:');
   console.log('   1. Email: sarah@honeychatbot.com | Password: agent123');
   console.log('   2. Email: michael@honeychatbot.com | Password: agent123');

@@ -233,4 +233,128 @@ export class ConversationsService {
       },
     });
   }
+
+  // Escalate conversation to human agent
+  async escalateToHuman(conversationId: string, userId: string) {
+    // Find an available agent
+    const availableAgent = await this.prisma.agent.findFirst({
+      where: {
+        isOnline: true,
+        currentChats: {
+          lt: this.prisma.agent.fields.maxChats,
+        },
+      },
+      orderBy: {
+        currentChats: 'asc', // Assign to agent with least chats
+      },
+    });
+
+    if (availableAgent) {
+      // Assign directly to available agent
+      await this.prisma.$transaction([
+        // Create assignment
+        this.prisma.conversationAssignment.create({
+          data: {
+            conversationId,
+            agentId: availableAgent.id,
+            status: 'ACTIVE',
+            priority: 'NORMAL',
+          },
+        }),
+        // Update agent's current chat count
+        this.prisma.agent.update({
+          where: { id: availableAgent.id },
+          data: {
+            currentChats: {
+              increment: 1,
+            },
+          },
+        }),
+        // Update conversation status
+        this.prisma.conversation.update({
+          where: { conversation_id: conversationId },
+          data: {
+            status: 'AGENT_ASSIGNED',
+            assignedAgentId: availableAgent.id,
+            assignedAt: new Date(),
+            escalatedAt: new Date(),
+            escalationReason: 'User requested human agent',
+          },
+        }),
+      ]);
+
+      return {
+        status: 'ASSIGNED',
+        agentId: availableAgent.id,
+        agentName: availableAgent.name,
+      };
+    } else {
+      // No available agents, add to queue
+      const queueEntry = await this.prisma.conversationQueue.create({
+        data: {
+          conversationId,
+          userId,
+          priority: 'NORMAL',
+          status: 'WAITING',
+          estimatedWait: 15, // 15 minutes estimate
+        },
+      });
+
+      // Update conversation status
+      await this.prisma.conversation.update({
+        where: { conversation_id: conversationId },
+        data: {
+          status: 'WAITING_FOR_AGENT',
+          escalatedAt: new Date(),
+          escalationReason: 'User requested human agent',
+        },
+      });
+
+      // Calculate queue position
+      const position = await this.prisma.conversationQueue.count({
+        where: {
+          status: 'WAITING',
+          queuedAt: {
+            lte: queueEntry.queuedAt,
+          },
+        },
+      });
+
+      return {
+        status: 'QUEUED',
+        position,
+        estimatedWaitTime: `${queueEntry.estimatedWait} minutes`,
+      };
+    }
+  }
+
+  // Get queue status for a conversation
+  async getQueueStatus(conversationId: string) {
+    const queueEntry = await this.prisma.conversationQueue.findFirst({
+      where: {
+        conversationId,
+        status: 'WAITING',
+      },
+    });
+
+    if (!queueEntry) {
+      return { status: 'NOT_IN_QUEUE' };
+    }
+
+    const position = await this.prisma.conversationQueue.count({
+      where: {
+        status: 'WAITING',
+        queuedAt: {
+          lte: queueEntry.queuedAt,
+        },
+      },
+    });
+
+    return {
+      status: 'QUEUED',
+      position,
+      estimatedWaitTime: `${queueEntry.estimatedWait} minutes`,
+      queuedAt: queueEntry.queuedAt,
+    };
+  }
 }
