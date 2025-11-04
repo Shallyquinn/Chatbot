@@ -38,8 +38,9 @@ class AdminApiService {
         statusCode: response.status,
       };
 
+      let errorData: any = null;
       try {
-        const errorData = await response.json();
+        errorData = await response.json();
         error.message = errorData.message || error.message;
         error.details = errorData;
       } catch {
@@ -48,17 +49,44 @@ class AdminApiService {
 
       // Handle specific error cases
       if (response.status === 401) {
-        // Unauthorized - clear token and redirect to login
+        // Unauthorized - clear token and let React Router handle redirect
+        console.error("❌ 401 Unauthorized - Token invalid or expired");
+        console.error("Response data:", errorData);
+        console.error("Response URL:", response.url);
+        console.error("Response status:", response.status, response.statusText);
+
         localStorage.removeItem("token");
         localStorage.removeItem("adminToken");
-        window.location.href = "/login";
+        localStorage.removeItem("user");
+
+        // Only redirect if we're not already on a login page
+        if (!window.location.pathname.includes("/login")) {
+          console.log(
+            "⏰ Redirecting to admin login in 60 seconds... Copy the console messages now!"
+          );
+          // Wait 60 seconds to give time to copy console messages
+          setTimeout(() => {
+            window.location.href = "/admin/login";
+          }, 60000); // 60 seconds delay
+        }
       }
 
       throw error;
     }
 
     try {
-      return await response.json();
+      const json = await response.json();
+      // Backend wraps all responses with {success: true, data: ...}
+      // Extract the data property if it exists, otherwise return the whole response
+      if (
+        json &&
+        typeof json === "object" &&
+        "success" in json &&
+        "data" in json
+      ) {
+        return json.data as T;
+      }
+      return json as T;
     } catch {
       return {} as T;
     }
@@ -145,6 +173,24 @@ class AdminApiService {
     });
   }
 
+  async bulkCreateAgents(agents: Array<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    state?: string;
+    lga?: string;
+    languages?: string;
+    maxChats?: number;
+  }>): Promise<{
+    success: Array<{ id: string; name: string; email: string }>;
+    failed: Array<{ row: number; email: string; error: string }>;
+  }> {
+    return await this.fetchWithRetry(`${API_BASE_URL}/admin/agents/bulk-upload`, {
+      method: "POST",
+      body: JSON.stringify({ agents }),
+    });
+  }
+
   async updateAgent(
     agentId: string,
     updateData: Partial<Agent>
@@ -181,12 +227,51 @@ class AdminApiService {
     agentId: string
   ): Promise<{ success: boolean; message: string }> {
     return await this.fetchWithRetry<{ success: boolean; message: string }>(
-      `${API_BASE_URL}/admin/assign-conversation`,
+      `${API_BASE_URL}/admin/conversations/assign`,
       {
         method: "POST",
         body: JSON.stringify({ conversationId, agentId }),
       }
     );
+  }
+
+  async bulkAssignConversations(
+    conversationIds: string[],
+    agentId?: string,
+    strategy?: 'AUTO' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY'
+  ): Promise<{
+    success: boolean;
+    message: string;
+    results: {
+      success: string[];
+      failed: { conversationId: string; error: string }[];
+    };
+  }> {
+    return await this.fetchWithRetry<{
+      success: boolean;
+      message: string;
+      results: {
+        success: string[];
+        failed: { conversationId: string; error: string }[];
+      };
+    }>(`${API_BASE_URL}/admin/conversations/bulk-assign`, {
+      method: "POST",
+      body: JSON.stringify({ conversationIds, agentId, strategy }),
+    });
+  }
+
+  async triggerAutoAssignment(): Promise<{
+    success: boolean;
+    message: string;
+    results: { assigned: number; failed: number };
+  }> {
+    return await this.fetchWithRetry<{
+      success: boolean;
+      message: string;
+      results: { assigned: number; failed: number };
+    }>(`${API_BASE_URL}/admin/conversations/auto-assign`, {
+      method: "POST",
+    });
   }
 
   // Admin Profile

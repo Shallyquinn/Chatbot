@@ -13,6 +13,7 @@ import ActionProvider from './chatbot/ActionProvider';
 import ChatbotWithDividers from './components/ChatbotWithDividers';
 import { ChatbotState, ChatMessage } from './chatbot/types';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Header from './components/Header';
 import AdminLogin from './pages/AdminLogin';
 import AgentLogin from './pages/AgentLogin';
@@ -164,44 +165,46 @@ const ChatbotApp: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <Router>
-        <Routes>
-          {/* Main chatbot route (default) */}
-          <Route path="/" element={<ChatbotApp />} />
-          <Route path="/chat" element={<ChatbotApp />} />
+      <NotificationProvider position="top-right" maxNotifications={3}>
+        <Router>
+          <Routes>
+            {/* Main chatbot route (default) */}
+            <Route path="/" element={<ChatbotApp />} />
+            <Route path="/chat" element={<ChatbotApp />} />
 
-          {/* Authentication routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/agent/login" element={<AgentLogin />} />
-          
-          {/* Shorthand routes for convenience */}
-          <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-          <Route path="/agent" element={<Navigate to="/agent/login" replace />} />
+            {/* Authentication routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/agent/login" element={<AgentLogin />} />
+            
+            {/* Shorthand routes for convenience */}
+            <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+            <Route path="/agent" element={<Navigate to="/agent/login" replace />} />
 
-          {/* Protected admin routes */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected admin routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Protected agent routes */}
-          <Route
-            path="/agent/dashboard"
-            element={
-              <ProtectedRoute requiredRole="agent">
-                <AgentInterface />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected agent routes */}
+            <Route
+              path="/agent/dashboard"
+              element={
+                <ProtectedRoute requiredRole="agent">
+                  <AgentInterface />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Redirect unknown routes to chatbot */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+            {/* Redirect unknown routes to chatbot */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </ThemeProvider>
   );
 };

@@ -5,16 +5,20 @@ import {
   IsArray,
   IsInt,
   IsIn,
+  IsNotEmpty,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateConversationDto {
-  @IsOptional()
+  @IsNotEmpty({ message: 'session_id is required' })
+  @IsUUID('4', { message: 'session_id must be a valid UUID' })
   @IsString()
-  session_id?: string;
+  session_id: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'user_id is required' })
+  @IsUUID('4', { message: 'user_id must be a valid UUID' })
   @IsString()
-  user_id?: string;
+  user_id: string;
 
   @IsString()
   message_text: string;

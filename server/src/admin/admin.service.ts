@@ -30,10 +30,39 @@ export interface UpdateAgentDto {
   maxChats?: number;
 }
 
+export interface BulkAgentDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  state?: string;
+  lga?: string;
+  languages?: string;
+  maxChats?: number;
+}
+
+export interface BulkAgentResult {
+  success: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
+  failed: Array<{
+    row: number;
+    email: string;
+    error: string;
+  }>;
+}
+
 export interface AssignConversationDto {
   conversationId: string;
   agentId: string;
   priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+}
+
+export interface BulkAssignConversationsDto {
+  conversationIds: string[];
+  agentId?: string; // Optional: if not provided, use auto-assignment
+  strategy?: 'AUTO' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY';
 }
 
 export interface UpdateAdminProfileDto {
@@ -187,18 +216,8 @@ export class AdminService {
     const queueItems = await this.prisma.conversationQueue.findMany({
       include: {
         conversation: {
-          select: {
-            conversation_id: true,
-            escalatedAt: true,
-          },
           include: {
-            user: {
-              select: {
-                user_session_id: true,
-                selected_language: true,
-                selected_state: true,
-              },
-            },
+            user: true,
           },
         },
       },
@@ -318,6 +337,76 @@ export class AdminService {
       },
       temporaryPassword: agentPassword,
     };
+  }
+
+  async bulkCreateAgents(agents: BulkAgentDto[]): Promise<BulkAgentResult> {
+    const result: BulkAgentResult = {
+      success: [],
+      failed: [],
+    };
+
+    for (let i = 0; i < agents.length; i++) {
+      const agent = agents[i];
+      const rowNumber = i + 2; // Account for header row
+
+      try {
+        // Validate required fields
+        if (!agent.firstName || !agent.lastName || !agent.email) {
+          result.failed.push({
+            row: rowNumber,
+            email: agent.email || 'N/A',
+            error: 'Missing required fields (firstName, lastName, email)',
+          });
+          continue;
+        }
+
+        // Check if email already exists
+        const existingAgent = await this.prisma.agent.findUnique({
+          where: { email: agent.email },
+        });
+
+        if (existingAgent) {
+          result.failed.push({
+            row: rowNumber,
+            email: agent.email,
+            error: 'Email already exists',
+          });
+          continue;
+        }
+
+        // Create agent with default password
+        const defaultPassword = 'agent123';
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+        const createdAgent = await this.prisma.agent.create({
+          data: {
+            name: `${agent.firstName} ${agent.lastName}`,
+            email: agent.email,
+            password: hashedPassword,
+            status: 'OFFLINE',
+            maxChats: agent.maxChats || 5,
+            isOnline: false,
+            state: agent.state || null,
+            lga: agent.lga || null,
+            languages: agent.languages || null,
+          },
+        });
+
+        result.success.push({
+          id: createdAgent.id,
+          name: createdAgent.name,
+          email: createdAgent.email,
+        });
+      } catch (error) {
+        result.failed.push({
+          row: rowNumber,
+          email: agent.email,
+          error: error.message || 'Failed to create agent',
+        });
+      }
+    }
+
+    return result;
   }
 
   async updateAgent(agentId: string, updateAgentDto: UpdateAgentDto) {
@@ -555,6 +644,236 @@ export class AdminService {
     }
 
     return { success: true, message: 'Conversation assigned successfully' };
+  }
+
+  /**
+   * Bulk assign conversations to agents
+   * Supports manual assignment to specific agent or automatic smart assignment
+   */
+  async bulkAssignConversations(bulkAssignDto: BulkAssignConversationsDto) {
+    const { conversationIds, agentId, strategy = 'AUTO' } = bulkAssignDto;
+
+    if (conversationIds.length === 0) {
+      throw new BadRequestException('No conversations provided for assignment');
+    }
+
+    const results = {
+      success: [] as string[],
+      failed: [] as { conversationId: string; error: string }[],
+    };
+
+    if (strategy === 'MANUAL' && agentId) {
+      // Manual bulk assignment to specific agent
+      for (const conversationId of conversationIds) {
+        try {
+          await this.reassignConversation({ conversationId, agentId });
+          results.success.push(conversationId);
+        } catch (error) {
+          results.failed.push({
+            conversationId,
+            error: error.message || 'Failed to assign conversation',
+          });
+        }
+      }
+    } else {
+      // Automatic smart assignment
+      for (const conversationId of conversationIds) {
+        try {
+          const assignedAgentId = await this.autoAssignConversation(
+            conversationId,
+            strategy,
+          );
+          if (assignedAgentId) {
+            results.success.push(conversationId);
+          } else {
+            results.failed.push({
+              conversationId,
+              error: 'No available agents found',
+            });
+          }
+        } catch (error) {
+          results.failed.push({
+            conversationId,
+            error: error.message || 'Failed to auto-assign conversation',
+          });
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: `Assigned ${results.success.length} of ${conversationIds.length} conversations`,
+      results,
+    };
+  }
+
+  /**
+   * Automatically assign a conversation to the best available agent
+   * Based on: online status, capacity, location, language
+   */
+  async autoAssignConversation(
+    conversationId: string,
+    strategy: 'AUTO' | 'ROUND_ROBIN' | 'LEAST_BUSY' = 'AUTO',
+  ): Promise<string | null> {
+    // Get conversation details with user info
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { conversation_id: conversationId },
+      include: {
+        user: {
+          select: {
+            selected_state: true,
+            selected_lga: true,
+            selected_language: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    // Get all available online agents with capacity
+    const availableAgents = await this.prisma.agent.findMany({
+      where: {
+        isOnline: true,
+        status: 'ONLINE',
+        currentChats: {
+          lt: this.prisma.agent.fields.maxChats,
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            assignedConversations: {
+              where: { status: 'ACTIVE' },
+            },
+          },
+        },
+      },
+    });
+
+    if (availableAgents.length === 0) {
+      // No agents available
+      return null;
+    }
+
+    let selectedAgent: (typeof availableAgents)[0] | null = null;
+
+    if (strategy === 'LEAST_BUSY') {
+      // Assign to agent with least active chats
+      selectedAgent = availableAgents.reduce((prev, current) => {
+        return current.currentChats < prev.currentChats ? current : prev;
+      });
+    } else if (strategy === 'ROUND_ROBIN') {
+      // Simple round-robin: find agent with oldest last assignment
+      selectedAgent = availableAgents.sort(
+        (a, b) =>
+          (a.lastActiveAt?.getTime() || 0) - (b.lastActiveAt?.getTime() || 0),
+      )[0];
+    } else {
+      // AUTO: Smart assignment based on location, language, and capacity
+      const userState = conversation.user?.selected_state;
+      const userLga = conversation.user?.selected_lga;
+      const userLanguage = conversation.user?.selected_language;
+
+      // Score each agent
+      const scoredAgents = availableAgents.map((agent) => {
+        let score = 0;
+
+        // Location match (highest priority)
+        if (userState && agent.state === userState) {
+          score += 50;
+          if (userLga && agent.lga === userLga) {
+            score += 30; // Same LGA is even better
+          }
+        }
+
+        // Language match
+        if (userLanguage && (agent as any).languages) {
+          const agentLanguages = ((agent as any).languages as string)
+            .split(',')
+            .map((l) => l.trim().toLowerCase());
+          if (agentLanguages.includes(userLanguage.toLowerCase())) {
+            score += 40;
+          }
+        }
+
+        // Capacity (prefer agents with more available slots)
+        const availableSlots = agent.maxChats - agent.currentChats;
+        score += availableSlots * 5;
+
+        // Penalize busy agents
+        const utilizationRate = agent.currentChats / agent.maxChats;
+        score -= utilizationRate * 20;
+
+        return { agent, score };
+      });
+
+      // Sort by score and pick the best
+      scoredAgents.sort((a, b) => b.score - a.score);
+      selectedAgent = scoredAgents[0]?.agent || null;
+    }
+
+    if (!selectedAgent) {
+      return null;
+    }
+
+    // Assign the conversation
+    try {
+      await this.reassignConversation({
+        conversationId,
+        agentId: selectedAgent.id,
+      });
+      return selectedAgent.id;
+    } catch (error) {
+      console.error('Error auto-assigning conversation:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Background service to auto-assign queued conversations when admin is offline
+   * This should be called periodically (e.g., every 30 seconds)
+   */
+  async autoAssignQueuedConversations() {
+    // Get all waiting conversations
+    const queuedConversations = await this.prisma.conversationQueue.findMany({
+      where: { status: 'WAITING' },
+      orderBy: [{ priority: 'desc' }, { queuedAt: 'asc' }],
+      take: 10, // Process 10 at a time to avoid overload
+    });
+
+    const results = {
+      assigned: 0,
+      failed: 0,
+    };
+
+    for (const queueItem of queuedConversations) {
+      try {
+        const agentId = await this.autoAssignConversation(
+          queueItem.conversationId,
+          'AUTO',
+        );
+        if (agentId) {
+          results.assigned++;
+        } else {
+          results.failed++;
+        }
+      } catch (error) {
+        console.error(
+          `Failed to auto-assign conversation ${queueItem.conversationId}:`,
+          error,
+        );
+        results.failed++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Auto-assigned ${results.assigned} conversations, ${results.failed} failed`,
+      results,
+    };
   }
 
   async getDummyAgent() {

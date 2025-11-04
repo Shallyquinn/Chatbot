@@ -13,11 +13,16 @@ export class ConversationsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateConversationDto) {
+    // Validate required fields
+    if (!dto.session_id || !dto.user_id) {
+      throw new BadRequestException('session_id and user_id are required fields');
+    }
+
     try {
       return await this.prisma.conversation.create({
         data: {
-          session_id: dto.session_id ?? null,
-          user_id: dto.user_id ?? null,
+          session_id: dto.session_id,
+          user_id: dto.user_id,
           message_text: dto.message_text,
           message_type: dto.message_type,
           message_source: dto.message_source ?? 'typed',

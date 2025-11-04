@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import type { AdminLoginDto, AgentLoginDto } from './auth.service';
@@ -24,7 +31,11 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
-  getProfile() {
-    return { message: 'Authentication successful' };
+  getProfile(@Request() req: any) {
+    console.log('Profile request - user:', JSON.stringify(req.user, null, 2));
+    return {
+      message: 'Authentication successful',
+      user: req.user,
+    };
   }
 }

@@ -83,6 +83,13 @@ async function main() {
       status: 'OFFLINE' as const,
       maxChats: 3,
     },
+    {
+      name: 'David Martinez',
+      email: 'david@honeychatbot.com',
+      password: 'agent123',
+      status: 'ONLINE' as const,
+      maxChats: 5,
+    },
   ];
 
   for (const agentData of agents) {
@@ -127,6 +134,7 @@ async function main() {
   console.log('   1. Email: sarah@honeychatbot.com | Password: agent123');
   console.log('   2. Email: michael@honeychatbot.com | Password: agent123');
   console.log('   3. Email: aisha@honeychatbot.com | Password: agent123');
+  console.log('   4. Email: david@honeychatbot.com | Password: agent123');
   console.log('\n🚀 You can now login at:');
   console.log('   Admin: http://localhost:5173/admin/login');
   console.log('   Agent: http://localhost:5173/agent/login');

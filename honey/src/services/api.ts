@@ -341,9 +341,10 @@ export class ApiService {
           ...payload,
         }),
       });
-    } catch (error: any) {
+    } catch (error) {
       // If foreign key constraint error (session doesn't exist), reset and retry once
-      if (error.message?.includes("Invalid session_id or user_id")) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Invalid session_id or user_id")) {
         console.warn("⚠️ Session expired or invalid, creating new session...");
         // Clear stale session IDs
         localStorage.removeItem("chat_session_id");
@@ -389,11 +390,12 @@ export class ApiService {
           ...payload,
         }),
       });
-    } catch (error: any) {
+    } catch (error) {
       // If session invalid, recreate and retry
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (
-        error.message?.includes("Invalid session_id") ||
-        error.message?.includes("Internal server error")
+        errorMessage.includes("Invalid session_id") ||
+        errorMessage.includes("Internal server error")
       ) {
         console.warn("⚠️ Session issue in createResponse, recreating...");
         localStorage.removeItem("chat_session_id");
@@ -430,11 +432,12 @@ export class ApiService {
           ...payload,
         }),
       });
-    } catch (error: any) {
+    } catch (error) {
       // If session invalid, recreate and retry
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (
-        error.message?.includes("Invalid session_id") ||
-        error.message?.includes("Internal server error")
+        errorMessage.includes("Invalid session_id") ||
+        errorMessage.includes("Internal server error")
       ) {
         console.warn("⚠️ Session issue in createFpmInteraction, recreating...");
         localStorage.removeItem("chat_session_id");
@@ -549,13 +552,24 @@ export class ApiService {
   async createReferral(
     referralData: Partial<ReferralData>
   ): Promise<ReferralData> {
+    await this.initializeUser();
+    await this.ensureChatSession();
+
+    // Validate required fields
+    if (!referralData.clinic_id) {
+      throw new Error("clinic_id is required for creating a referral");
+    }
+
     return this.request(`${this.baseUrl}/referrals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        user_id: this.userId, // Required by backend DTO
+        session_id: this.chatSessionId, // Required by backend DTO
+        clinic_id: referralData.clinic_id, // Required by backend DTO
         ...referralData,
-        user_session_id: this.sessionId,
-        chat_session_id: this.chatSessionId,
+        user_session_id: this.sessionId, // Keep for backwards compatibility
+        chat_session_id: this.chatSessionId, // Keep for backwards compatibility
       }),
     });
   }

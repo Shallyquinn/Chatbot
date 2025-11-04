@@ -5,20 +5,21 @@ import {
   IsUUID,
   IsArray,
   MaxLength,
+  IsNotEmpty,
 } from 'class-validator';
 
 export class CreateResponseDto {
-  @IsOptional()
-  @IsUUID()
-  user_id?: string;
+  @IsNotEmpty({ message: 'user_id is required' })
+  @IsUUID('4', { message: 'user_id must be a valid UUID' })
+  user_id: string;
 
-  @IsOptional()
-  @IsUUID()
-  session_id?: string;
+  @IsNotEmpty({ message: 'session_id is required' })
+  @IsUUID('4', { message: 'session_id must be a valid UUID' })
+  session_id: string;
 
-  @IsOptional()
-  @IsUUID()
-  conversation_id?: string;
+  @IsNotEmpty({ message: 'conversation_id is required' })
+  @IsUUID('4', { message: 'conversation_id must be a valid UUID' })
+  conversation_id: string;
 
   @IsOptional()
   @IsUUID()

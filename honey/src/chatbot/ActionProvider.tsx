@@ -560,7 +560,7 @@ class ActionProvider implements ActionProviderInterface {
 
     switch (lowercaseKeyword) {
       case 'menu': {
-        // Show main menu options
+        // Show main menu options - PRESERVE CONVERSATION BUT UPDATE STEP
         const menuMessage = this.createChatBotMessage(
           'Here are the main options available:\n\n' +
             '1. Get information about family planning methods\n' +
@@ -574,7 +574,24 @@ class ActionProvider implements ActionProviderInterface {
             widget: 'planningMethodOptions',
           },
         );
-        this.addMessageToState(menuMessage);
+        
+        // Update state with both message AND currentStep to route correctly
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          messages: [...prev.messages, menuMessage],
+          currentStep: 'fpm', // Set to main menu step so selections work properly
+        }));
+        
+        // Save to database
+        this.api.createConversation({
+          message_text: menuMessage.message,
+          message_type: 'bot',
+          chat_step: 'menu_navigation',
+          message_sequence_number: this.getNextSequenceNumber(),
+          widget_name: 'planningMethodOptions',
+          message_delay_ms: 0
+        }).catch(err => console.error('Failed to save menu navigation:', err));
+        
         break;
       }
 
@@ -901,11 +918,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleLocationInput = async (location: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: location,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(location, 'location_input');
 
     const confirmLocation = this.createChatBotMessage(
       `Please confirm your local government area is ${location}`,
@@ -1054,11 +1067,7 @@ class ActionProvider implements ActionProviderInterface {
   // FAMILY PLANNING CORE HANDLER IMPLEMENTATIONS
 
   handlePlanningMethodSelection = async (method: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: method,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(method, 'planning_method_selection');
 
     // Save to API but don't block on failure
     this.api.createOrUpdateUser({ main_menu_option: method }).catch((error) => {
@@ -1219,11 +1228,7 @@ class ActionProvider implements ActionProviderInterface {
   handleSexEnhancementOptions = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option, 'sex_enhancement_option');
 
     // Track user option selection
     await this.api.createConversation({
@@ -1294,11 +1299,7 @@ class ActionProvider implements ActionProviderInterface {
   handleLubricantOptions = async (lubricant: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: lubricant,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(lubricant, 'lubricant_selection');
 
     // Track user lubricant selection
     await this.api.createConversation({
@@ -1366,11 +1367,7 @@ class ActionProvider implements ActionProviderInterface {
   handleFlowEndOption = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option, 'flow_end_option');
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
@@ -2383,11 +2380,7 @@ class ActionProvider implements ActionProviderInterface {
   handleNextAction = async (action: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: action,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(action, 'next_action');
 
     // Track user action selection
     await this.api.createConversation({
@@ -2480,11 +2473,7 @@ class ActionProvider implements ActionProviderInterface {
   handleErectileDysfunctionOptions = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option, 'erectile_dysfunction_option');
 
     // Track user ED option selection
     await this.api.createConversation({
@@ -2519,11 +2508,7 @@ class ActionProvider implements ActionProviderInterface {
   handleSexEnhancementNextAction = async (option: string): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage: ChatMessage = {
-      message: option,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(option, 'sex_enhancement_next_action');
 
     // Track user next action selection
     await this.api.createConversation({
@@ -2579,22 +2564,33 @@ class ActionProvider implements ActionProviderInterface {
       messages: [...prev.messages, responseMessage, agentMessage],
       currentStep: 'agentTypeSelection',
     }));
+    
     await this.ensureChatSession();
-    await this.api.createConversation({
-      message_text: responseMessage.message,
-      message_type: 'bot',
-      chat_step: 'agentTypeSelection',
-      message_sequence_number: 1,
-      widget_name: 'agentTypeOptions',
-    });
+    
+    // Create conversation and store the conversation ID
+    try {
+      const conversation = await this.api.createConversation({
+        message_text: responseMessage.message,
+        message_type: 'bot',
+        chat_step: 'agentTypeSelection',
+        message_sequence_number: 1,
+        widget_name: 'agentTypeOptions',
+      });
+      
+      // Store the conversation ID in state for later use in escalation
+      if (conversation && conversation.conversation_id) {
+        this.setState((prev: ChatbotState) => ({
+          ...prev,
+          conversationId: conversation.conversation_id,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+    }
   };
 
   handleAgentTypeSelection = async (type: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: type,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(type, 'agent_type_selection');
 
     if (type === 'Human Agent') {
       try {
@@ -2899,11 +2895,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleMoreHelp = (answer: string): void => {
-    const userMessage: ChatMessage = {
-      message: answer,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(answer, 'more_help_selection');
 
     if (answer === 'Yes') {
       const helpOptions = this.createChatBotMessage(
@@ -2939,11 +2931,7 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleUserQuestion = async (question: string): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: question,
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage(question, 'user_question');
 
     // Add user message immediately
     this.setState((prev) => ({
@@ -3215,11 +3203,7 @@ class ActionProvider implements ActionProviderInterface {
 
   // DEMOGRAPHICS UPDATE HANDLER
   handleDemographicsUpdate = (): void => {
-    const userMessage: ChatMessage = {
-      message: 'demographics',
-      type: 'user',
-      id: uuidv4(),
-    };
+    const userMessage = this.createUserMessage('demographics', 'demographics_update');
 
     // Get current demographic information for display
     const currentInfo = this.getDemographicSummary();

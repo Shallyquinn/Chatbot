@@ -26,7 +26,7 @@ export class AgentController {
 
   // Helper method to get agent ID from request or throw error
   private getAgentId(req: unknown): string {
-    const agentId = (req as any).user?.agentId;
+    const agentId = (req as any).user?.id;
     if (!agentId) {
       throw new UnauthorizedException(
         'Agent not authenticated. Please log in.',
@@ -102,7 +102,7 @@ export class AgentController {
 
   @Get('assigned-users')
   async getAssignedUsers(@Request() req) {
-    const agentId = req.user?.agentId;
+    const agentId = req.user?.id;
 
     // If no agentId, return empty array instead of using mock-agent-id
     if (!agentId) {

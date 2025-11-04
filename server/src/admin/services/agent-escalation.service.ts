@@ -5,6 +5,7 @@ import { ConversationStatus, AgentStatus } from '@prisma/client';
 export interface EscalationRequest {
   conversationId: string;
   userId: string;
+  sessionId: string;
   conversationSummary: {
     userId: string;
     conversationId: string;
@@ -22,7 +23,7 @@ export interface EscalationRequest {
       selectedAge?: string;
       selectedMaritalStatus?: string;
     };
-    fpmData: Record<string, any>;
+    fpmData: Record<string, unknown>;
   };
 }
 
@@ -53,8 +54,12 @@ export class AgentEscalationService {
       // Create a new conversation entry for the escalation
       const conversation = await this.prisma.conversation.create({
         data: {
-          conversation_id: request.conversationId,
-          user_id: request.userId,
+          session: {
+            connect: { session_id: request.sessionId },
+          },
+          user: {
+            connect: { user_id: request.userId },
+          },
           message_text: 'User requested human agent assistance',
           message_type: 'system',
           chat_step: 'agent_escalation',

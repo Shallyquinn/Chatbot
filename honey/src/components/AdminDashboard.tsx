@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Users, UserCheck, Smile, Clock, Download, User, Search, ChevronLeft, ChevronRight, X, CheckCircle, Edit2, Camera, UserPlus } from 'lucide-react';
+import { RefreshCw, Users, UserCheck, Smile, Clock, Download, User, Search, ChevronLeft, ChevronRight, X, Edit2, Camera, UserPlus, Upload } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -18,7 +18,9 @@ import {
   Cell,
 } from 'recharts';
 import Header from './Header';
-import OnboardAgentModal, { AgentFormData } from './OnboardAgentModal';
+import AgentManagementModal, { AgentFormData } from './AgentManagementModal';
+import BulkAgentOnboardModal, { BulkAgentData, BulkAgentResult } from './BulkAgentOnboardModal';
+import { useNotification } from '../contexts/NotificationContext';
 import { MetricCard, ChartCard } from './dashboard';
 
 // Types and services
@@ -37,7 +39,10 @@ import {
 } from '../utils/mockData';
 
 const AdminDashboard: React.FC = () => {
-  // Use centralized data-fetching hook for modularity and auto-refresh
+  // Use notification context
+  const { showSuccess, showError, showWarning, showInfo } = useNotification();
+
+  // Use centralized data-fetching hook for modularity and auto-refresh (10 second interval)
   const {
     metrics,
     agents,
@@ -46,7 +51,7 @@ const AdminDashboard: React.FC = () => {
     loading,
     refetchAgents,
     refetchQueue,
-  } = useDashboardData(30000);
+  } = useDashboardData(10000); // Changed from 30000 to 10000 (10 seconds)
 
   // Local admin profile state (for editing before save)
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(hookAdminProfile || {
@@ -90,10 +95,15 @@ const AdminDashboard: React.FC = () => {
   const [requestSortField, setRequestSortField] = useState<'waitTime' | 'position' | null>(null);
   const [requestSortDirection, setRequestSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
   const [showOnboardModal, setShowOnboardModal] = useState(false);
+  
+  // Bulk assignment states
+  const [selectedRequests, setSelectedRequests] = useState<Set<string>>(new Set());
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [bulkAssignStrategy, setBulkAssignStrategy] = useState<'AUTO' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY'>('AUTO');
+  
+  // Bulk upload state
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   
   // Debounced search
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -112,16 +122,6 @@ const AdminDashboard: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-  
-  // Auto-hide notification
-  useEffect(() => {
-    if (showNotification) {
-      const timer = setTimeout(() => {
-        setShowNotification(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showNotification]);
 
   // Mock data is provided by centralized utilities in src/utils/mockData
 
@@ -132,13 +132,6 @@ const AdminDashboard: React.FC = () => {
   const recurringUsersData = generateMockRecurringUsersData();
   const performanceData = generateMockPerformanceData();
   const engagementData = generateMockEngagementData();
-
-  // Show notification helper
-  const showNotificationMessage = (message: string, type: 'success' | 'error') => {
-    setNotificationMessage(message);
-    setNotificationType(type);
-    setShowNotification(true);
-  };
 
   // Handle onboard agent
   const handleOnboardAgent = async (agentData: AgentFormData) => {
@@ -152,17 +145,58 @@ const AdminDashboard: React.FC = () => {
         maxChats: 5, // Default max chats
       });
       
-      showNotificationMessage(
-        `Agent ${agentData.firstName} ${agentData.lastName} has been onboarded successfully!`,
-        'success'
-      );
+      showSuccess(`Agent ${agentData.firstName} ${agentData.lastName} has been onboarded successfully!`);
+      
+      // Refresh agents list
+      await refetchAgents();
+      setShowOnboardModal(false);
+    } catch (error) {
+      console.error('Error onboarding agent:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to onboard agent. Please try again.';
+      showError(errorMessage, 'Onboarding Error');
+    }
+  };
+
+  // Handle bulk agent upload
+  const handleBulkUpload = async (agents: BulkAgentData[]): Promise<BulkAgentResult> => {
+    try {
+      const response = await adminApi.bulkCreateAgents(agents);
+      
+      if (response.success.length > 0) {
+        showSuccess(`Successfully onboarded ${response.success.length} agent(s)`);
+        await refetchAgents();
+      }
+      
+      if (response.failed.length > 0) {
+        showWarning(`${response.failed.length} agent(s) failed to onboard. Check the details.`);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error bulk uploading agents:', error);
+      showError('Failed to process bulk upload', 'Upload Error');
+      throw error;
+    }
+  };
+
+  // Handle delete agent
+  const handleDeleteAgent = async (agentId: string) => {
+    try {
+      // Find agent info for notification
+      const agentList = Array.isArray(agents) ? agents : [];
+      const agent = agentList.find(a => a.id === agentId);
+      
+      // Call real API endpoint
+      await adminApi.deleteAgent(agentId);
+      
+      showSuccess(`Agent ${agent?.name || 'User'} has been removed successfully!`);
       
       // Refresh agents list
       await refetchAgents();
     } catch (error) {
-      console.error('Error onboarding agent:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to onboard agent. Please try again.';
-      showNotificationMessage(errorMessage, 'error');
+      console.error('Error deleting agent:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete agent. Please try again.';
+      showError(errorMessage, 'Delete Error');
     }
   };
 
@@ -178,7 +212,10 @@ const AdminDashboard: React.FC = () => {
 
   // Filter and sort agents
   const filteredAndSortedAgents = useMemo(() => {
-    let filtered = agents.filter(agent => {
+    // Ensure agents is an array
+    const agentList = Array.isArray(agents) ? agents : [];
+    
+    let filtered = agentList.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                            agent.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       return matchesSearch;
@@ -205,7 +242,10 @@ const AdminDashboard: React.FC = () => {
 
   // Filter and sort requests
   const filteredAndSortedRequests = useMemo(() => {
-    let filtered = conversationQueue.filter(request =>
+    // Ensure conversationQueue is an array
+    const queueList = Array.isArray(conversationQueue) ? conversationQueue : [];
+    
+    let filtered = queueList.filter(request =>
       debouncedSearchTerm
         ? (request.user?.name || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         : true
@@ -257,17 +297,81 @@ const AdminDashboard: React.FC = () => {
     try {
       const res: { success: boolean; message: string } = await adminApi.assignConversation(selectedRequest.conversationId, agentId);
       if (res && res.success) {
-        showNotificationMessage('Agent assigned successfully!', 'success');
+        showSuccess('Agent assigned successfully!');
         setShowAssignModal(false);
         setSelectedRequest(null);
         await refetchQueue();
         await refetchAgents();
       } else {
-        showNotificationMessage(res?.message || 'Failed to assign agent', 'error');
+        showError(res?.message || 'Failed to assign agent', 'Assignment Failed');
       }
     } catch (error) {
       console.error('Assignment failed:', error);
-      showNotificationMessage('Error assigning agent', 'error');
+      showError('Error assigning agent', 'Assignment Error');
+    }
+  };
+
+  // Bulk assignment handlers
+  const toggleRequestSelection = (conversationId: string) => {
+    const newSelection = new Set(selectedRequests);
+    if (newSelection.has(conversationId)) {
+      newSelection.delete(conversationId);
+    } else {
+      newSelection.add(conversationId);
+    }
+    setSelectedRequests(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRequests.size === paginatedRequests.length) {
+      setSelectedRequests(new Set());
+    } else {
+      setSelectedRequests(new Set(paginatedRequests.map(r => r.conversationId)));
+    }
+  };
+
+  const handleBulkAssign = async (agentId?: string) => {
+    if (selectedRequests.size === 0) {
+      showWarning('No requests selected');
+      return;
+    }
+
+    try {
+      const result = await adminApi.bulkAssignConversations(
+        Array.from(selectedRequests),
+        agentId,
+        agentId ? 'MANUAL' : bulkAssignStrategy
+      );
+
+      if (result.success) {
+        const message = `${result.message}. ${result.results.success.length} assigned, ${result.results.failed.length} failed.`;
+        if (result.results.failed.length > 0) {
+          showWarning(message);
+        } else {
+          showSuccess(message);
+        }
+        setSelectedRequests(new Set());
+        setShowBulkAssignModal(false);
+        await refetchQueue();
+        await refetchAgents();
+      }
+    } catch (error) {
+      console.error('Bulk assignment failed:', error);
+      showError('Error performing bulk assignment', 'Assignment Error');
+    }
+  };
+
+  const handleAutoAssignAll = async () => {
+    try {
+      const result = await adminApi.triggerAutoAssignment();
+      if (result.success) {
+        showSuccess(result.message);
+        await refetchQueue();
+        await refetchAgents();
+      }
+    } catch (error) {
+      console.error('Auto assignment failed:', error);
+      showError('Error triggering auto assignment', 'Auto-Assignment Error');
     }
   };
 
@@ -288,7 +392,7 @@ const AdminDashboard: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        showNotificationMessage('Image size must be less than 2MB', 'error');
+        showError('Image size must be less than 2MB', 'Image Too Large');
         return;
       }
       const reader = new FileReader();
@@ -305,19 +409,19 @@ const AdminDashboard: React.FC = () => {
   const handleUpdateProfile = async () => {
     // Validation
     if (!profileEditData.name.trim()) {
-      showNotificationMessage('Name is required', 'error');
+      showError('Name is required', 'Validation Error');
       return;
     }
     if (!profileEditData.email.trim()) {
-      showNotificationMessage('Email is required', 'error');
+      showError('Email is required', 'Validation Error');
       return;
     }
     if (profileEditData.newPassword && profileEditData.newPassword !== profileEditData.confirmPassword) {
-      showNotificationMessage('Passwords do not match', 'error');
+      showError('Passwords do not match', 'Validation Error');
       return;
     }
     if (profileEditData.newPassword && !profileEditData.currentPassword) {
-      showNotificationMessage('Current password is required to set new password', 'error');
+      showError('Current password is required to set new password', 'Validation Error');
       return;
     }
 
@@ -339,18 +443,18 @@ const AdminDashboard: React.FC = () => {
       if (result && result.success) {
         setAdminProfile(result.admin);
         setShowProfileModal(false);
-        showNotificationMessage('Profile updated successfully!', 'success');
+        showSuccess('Profile updated successfully!');
 
         // If email changed, inform user they may need to re-login
         if (profileEditData.email !== adminProfile.email) {
-          showNotificationMessage('Login email updated. You may need to re-login.', 'success');
+          showInfo('Login email updated. You may need to re-login.');
         }
       } else {
-        showNotificationMessage(result?.message || 'Failed to update profile', 'error');
+        showError(result?.message || 'Failed to update profile', 'Update Failed');
       }
     } catch (error) {
       console.error('Profile update failed:', error);
-      showNotificationMessage('Error updating profile', 'error');
+      showError('Error updating profile', 'Update Error');
     }
   };
 
@@ -410,11 +514,13 @@ const AdminDashboard: React.FC = () => {
     : '2.5s';
 
   // Agent tab metrics - graceful degradation
-  const hasAgentData = agents.length > 0;
-  const agentRequests = hasAgentData ? conversationQueue.length : 5;
-  const agentTotalAgents = hasAgentData ? agents.length : 20;
+  const agentList = Array.isArray(agents) ? agents : [];
+  const queueList = Array.isArray(conversationQueue) ? conversationQueue : [];
+  const hasAgentData = agentList.length > 0;
+  const agentRequests = hasAgentData ? queueList.length : 5;
+  const agentTotalAgents = hasAgentData ? agentList.length : 20;
   const agentActiveChats = hasAgentData 
-    ? agents.reduce((sum, agent) => sum + (agent._count?.assignedConversations || 0), 0)
+    ? agentList.reduce((sum, agent) => sum + (agent._count?.assignedConversations || 0), 0)
     : 15;
   const agentResponseTime = hasRealData 
     ? (metrics?.overview?.avgResponseTime || '2.5s')
@@ -681,41 +787,41 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'agents' && (
             <>
               {/* Header */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
                 <div className="flex-1">
-                  <h1 className="font-semibold text-[#1e1e1e] text-[32px] leading-normal">Agent Dashboard</h1>
-                  <p className="font-normal text-[#383838] text-[20px] leading-normal mt-1.5">
+                  <h1 className="font-semibold text-[#1e1e1e] text-[22px] leading-tight">Agent Dashboard</h1>
+                  <p className="font-normal text-[#383838] text-[14px] leading-normal mt-1">
                     Keep track of agent activity, performance, and availability.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button 
                     onClick={() => setShowOnboardModal(true)}
-                    className="bg-[#006045] flex items-center gap-3 px-6 py-5 rounded-[10px] hover:bg-[#005038] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                    className="bg-[#006045] flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-[#005038] active:scale-95 transition-all shadow-sm hover:shadow-md"
                   >
-                    <UserPlus className="w-6 h-6 text-white" strokeWidth={2} />
-                    <span className="font-bold text-[20px] leading-normal text-white">Onboard Agent</span>
+                    <UserPlus className="w-4 h-4 text-white" strokeWidth={2} />
+                    <span className="font-semibold text-[14px] leading-normal text-white">Onboard Agent</span>
                   </button>
                   <button 
                     onClick={exportAgentsToCSV}
-                    className="bg-white border-2 border-[#006045] flex items-center gap-3 px-6 py-5 rounded-[10px] hover:bg-[#f5f5f5] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                    className="bg-white border-2 border-[#006045] flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-[#f5f5f5] active:scale-95 transition-all shadow-sm hover:shadow-md"
                   >
-                    <Download className="w-6 h-6 text-[#006045]" strokeWidth={2} />
-                    <span className="font-bold text-[20px] leading-normal text-[#006045]">Export</span>
+                    <Download className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                    <span className="font-semibold text-[14px] leading-normal text-[#006045]">Export</span>
                   </button>
                 </div>
               </div>
               {/* Agent Demo Data Banner - Only shown when no agents exist */}
               {!hasAgentData && (
-                <div className="w-full bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3 mb-4">
-                  <div className="bg-amber-100 rounded-full p-1.5 shrink-0 mt-0.5">
-                    <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-full bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-start gap-2 mb-3">
+                  <div className="bg-amber-100 rounded-full p-1 shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-amber-900 text-sm">Demo Agent Data Active</h4>
-                    <p className="text-amber-800 text-xs mt-1">
+                    <h4 className="font-semibold text-amber-900 text-xs">Demo Agent Data Active</h4>
+                    <p className="text-amber-800 text-[11px] mt-0.5">
                       The agent metrics are displaying sample data because no agents have been added yet. 
                       Real data will automatically appear once you add agents to the system.
                     </p>
@@ -724,75 +830,75 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {/* Agent Metrics Cards */}
-              <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white border border-[#e0e0e0] rounded-[10px] p-5 flex flex-col gap-2.5">
-                  <div className="flex gap-6 items-start w-full">
-                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-2 shrink-0">
-                      <Users className="w-6 h-6 text-[#006045]" strokeWidth={2} />
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+                <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
+                  <div className="flex gap-3 items-start w-full">
+                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
+                      <Users className="w-4 h-4 text-[#006045]" strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <p className="font-normal text-[#7b7b7b] text-lg leading-normal">Requests</p>
-                      <p className="font-bold text-[#1e1e1e] text-4xl leading-normal">{agentRequests}</p>
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Requests</p>
+                      <p className="font-bold text-[#1e1e1e] text-2xl leading-tight">{agentRequests}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 items-center w-full">
-                    <p className="font-light text-[#e7473b] text-base leading-normal">-2% from yesterday</p>
-                    <ChevronRight className="w-6 h-6 text-[#e7473b] transform rotate-90" />
+                    <p className="font-light text-[#e7473b] text-[11px] leading-normal">-2% from yesterday</p>
+                    <ChevronRight className="w-4 h-4 text-[#e7473b] transform rotate-90" />
                   </div>
                 </div>
 
-                <div className="bg-white border border-[#e0e0e0] rounded-[10px] p-5 flex flex-col gap-2.5">
-                  <div className="flex gap-6 items-start w-full">
-                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-2 shrink-0">
-                      <UserCheck className="w-6 h-6 text-[#006045]" strokeWidth={2} />
+                <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
+                  <div className="flex gap-3 items-start w-full">
+                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
+                      <UserCheck className="w-4 h-4 text-[#006045]" strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <p className="font-normal text-[#7b7b7b] text-lg leading-normal">Total Agents</p>
-                      <p className="font-bold text-[#1e1e1e] text-4xl leading-normal">{agentTotalAgents}</p>
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Total Agents</p>
+                      <p className="font-bold text-[#1e1e1e] text-2xl leading-tight">{agentTotalAgents}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 items-center w-full">
-                    <p className="font-light text-[#e7473b] text-base leading-normal">-5% from yesterday</p>
-                    <ChevronRight className="w-6 h-6 text-[#e7473b] transform rotate-90" />
+                    <p className="font-light text-[#e7473b] text-[11px] leading-normal">-5% from yesterday</p>
+                    <ChevronRight className="w-4 h-4 text-[#e7473b] transform rotate-90" />
                   </div>
                 </div>
 
-                <div className="bg-white border border-[#e0e0e0] rounded-[10px] p-5 flex flex-col gap-2.5">
-                  <div className="flex gap-6 items-start w-full">
-                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-2 shrink-0">
-                      <User className="w-6 h-6 text-[#006045]" strokeWidth={2} />
+                <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
+                  <div className="flex gap-3 items-start w-full">
+                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
+                      <User className="w-4 h-4 text-[#006045]" strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <p className="font-normal text-[#7b7b7b] text-lg leading-normal">Active Chats</p>
-                      <p className="font-bold text-[#1e1e1e] text-4xl leading-normal">{agentActiveChats}</p>
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Active Chats</p>
+                      <p className="font-bold text-[#1e1e1e] text-2xl leading-tight">{agentActiveChats}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 items-center w-full">
-                    <p className="font-light text-[#32bf4e] text-base leading-normal">+12.7% from yesterday</p>
-                    <ChevronRight className="w-6 h-6 text-[#32bf4e] transform -rotate-90" />
+                    <p className="font-light text-[#32bf4e] text-[11px] leading-normal">+12.7% from yesterday</p>
+                    <ChevronRight className="w-4 h-4 text-[#32bf4e] transform -rotate-90" />
                   </div>
                 </div>
 
-                <div className="bg-white border border-[#e0e0e0] rounded-[10px] p-5 flex flex-col gap-2.5">
-                  <div className="flex gap-6 items-start w-full">
-                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-2 shrink-0">
-                      <Clock className="w-6 h-6 text-[#006045]" strokeWidth={2} />
+                <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
+                  <div className="flex gap-3 items-start w-full">
+                    <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
+                      <Clock className="w-4 h-4 text-[#006045]" strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <p className="font-normal text-[#7b7b7b] text-lg leading-normal">Response Time</p>
-                      <p className="font-bold text-[#1e1e1e] text-4xl leading-normal">{agentResponseTime}</p>
+                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                      <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Response Time</p>
+                      <p className="font-bold text-[#1e1e1e] text-2xl leading-tight">{agentResponseTime}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 items-center w-full">
-                    <p className="font-light text-[#e7473b] text-base leading-normal">-3% from yesterday</p>
-                    <ChevronRight className="w-6 h-6 text-[#e7473b] transform rotate-90" />
+                    <p className="font-light text-[#e7473b] text-[11px] leading-normal">-3% from yesterday</p>
+                    <ChevronRight className="w-4 h-4 text-[#e7473b] transform rotate-90" />
                   </div>
                 </div>
               </div>
 
               {/* Sub-Tab Navigation */}
-              <div className="flex flex-col items-start w-full mb-6">
-                <div className="flex gap-4 items-center">
+              <div className="flex flex-col items-start w-full mb-4">
+                <div className="flex gap-3 items-center">
                   <div className="flex flex-col items-center">
                     <button 
                       onClick={() => {
@@ -800,11 +906,11 @@ const AdminDashboard: React.FC = () => {
                         setCurrentPage(1);
                         setSearchTerm('');
                       }}
-                      className={`px-4 py-3 flex gap-2.5 items-center justify-center transition-colors ${
+                      className={`px-3 py-2 flex gap-2 items-center justify-center transition-colors ${
                         agentSubTab === 'agents' ? '' : ''
                       }`}
                     >
-                      <p className={`text-lg leading-normal ${
+                      <p className={`text-sm leading-normal ${
                         agentSubTab === 'agents'
                           ? 'font-medium text-[#006045]'
                           : 'font-normal text-[#989898]'
@@ -813,7 +919,7 @@ const AdminDashboard: React.FC = () => {
                       </p>
                     </button>
                     {agentSubTab === 'agents' && (
-                      <div className="bg-[#006045] h-1.5 w-[85px] rounded-full" />
+                      <div className="bg-[#006045] h-1 w-[60px] rounded-full" />
                     )}
                   </div>
                   <div className="flex flex-col items-center">
@@ -823,11 +929,11 @@ const AdminDashboard: React.FC = () => {
                         setCurrentPage(1);
                         setSearchTerm('');
                       }}
-                      className={`px-4 py-3 flex gap-2.5 items-center justify-center transition-colors ${
+                      className={`px-3 py-2 flex gap-2 items-center justify-center transition-colors ${
                         agentSubTab === 'requests' ? '' : ''
                       }`}
                     >
-                      <p className={`text-lg leading-normal ${
+                      <p className={`text-sm leading-normal ${
                         agentSubTab === 'requests'
                           ? 'font-medium text-[#006045]'
                           : 'font-normal text-[#989898]'
@@ -836,7 +942,7 @@ const AdminDashboard: React.FC = () => {
                       </p>
                     </button>
                     {agentSubTab === 'requests' && (
-                      <div className="bg-[#006045] h-1.5 w-[85px] rounded-full" />
+                      <div className="bg-[#006045] h-1 w-[60px] rounded-full" />
                     )}
                   </div>
                 </div>
@@ -846,10 +952,10 @@ const AdminDashboard: React.FC = () => {
               {agentSubTab === 'agents' && (
                 <>
                   {/* Search Bar and Controls */}
-                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-4">
                     {/* Search Input */}
-                    <div className="relative w-full lg:w-[384px]">
-                      <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-[#636363]" />
+                    <div className="relative w-full lg:w-[300px]">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#636363]" />
                       <input
                         type="text"
                         placeholder="Search Agents.."
@@ -858,16 +964,16 @@ const AdminDashboard: React.FC = () => {
                           setSearchTerm(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full pl-14 pr-5 py-4 border-[0.75px] border-[#bbbbbb] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-[#006045] focus:border-transparent text-base font-medium text-[#636363]"
+                        className="w-full pl-10 pr-3 py-2 border border-[#bbbbbb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045] focus:border-transparent text-sm font-medium text-[#636363]"
                       />
                     </div>
 
                     {/* Right Controls */}
-                    <div className="flex items-center gap-12 w-full lg:w-auto justify-between lg:justify-end">
+                    <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
                       {/* Showing Dropdown */}
-                      <div className="flex items-center gap-3">
-                        <span className="text-[#7b7b7b] text-xl font-medium leading-normal">Showing:</span>
-                        <div className="bg-[#f3f3f3] border border-[#dedede] rounded-[5px] px-2.5 py-2 flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#7b7b7b] text-sm font-medium leading-normal">Showing:</span>
+                        <div className="bg-[#f3f3f3] border border-[#dedede] rounded px-2 py-1 flex items-center gap-1.5">
                           <select
                             value={itemsPerPage}
                             onChange={(e) => {
@@ -875,111 +981,111 @@ const AdminDashboard: React.FC = () => {
                               setCurrentPage(1);
                             }}
                             aria-label="Number of items to show per page"
-                            className="bg-transparent text-[#404c61] text-xl font-semibold leading-normal focus:outline-none cursor-pointer appearance-none pr-6"
+                            className="bg-transparent text-[#404c61] text-sm font-semibold leading-normal focus:outline-none cursor-pointer appearance-none pr-4"
                           >
                             <option value={6}>6</option>
                             <option value={10}>10</option>
                             <option value={12}>12</option>
                             <option value={24}>24</option>
                           </select>
-                          <ChevronRight className="w-4 h-4 text-[#404c61] transform rotate-90 pointer-events-none -ml-5" />
+                          <ChevronRight className="w-3 h-3 text-[#404c61] transform rotate-90 pointer-events-none -ml-3" />
                         </div>
                       </div>
 
                       {/* Filter and Export Buttons */}
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
                         {/* Filter Button */}
                         <button
                           onClick={() => setShowFilterModal(!showFilterModal)}
-                          className="bg-white border border-[#989898] rounded-[7px] p-4 flex items-center gap-3 cursor-pointer hover:bg-[#f5f5f5] transition-colors"
+                          className="bg-white border border-[#989898] rounded px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-[#f5f5f5] transition-colors"
                           aria-label="Filter agents"
                           title="Filter agents"
                         >
-                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                             <path d="M5.4 2.1H18.6C19.7 2.1 20.6 3 20.6 4.1V6.3C20.6 7.1 20.2 8.1 19.7 8.6L15.3 12.4C14.7 12.9 14.3 13.9 14.3 14.7V19.1C14.3 19.7 13.9 20.5 13.4 20.8L12 21.7C10.7 22.5 8.9 21.6 8.9 20V14.6C8.9 13.9 8.5 13 8.1 12.5L4.3 8.5C3.8 8 3.5 7.1 3.5 6.5V4.2C3.4 3 4.3 2.1 5.4 2.1Z" stroke="#7b7b7b" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
-                          <p className="text-[#7b7b7b] text-xl font-medium leading-normal">Filter</p>
+                          <p className="text-[#7b7b7b] text-sm font-medium leading-normal">Filter</p>
                         </button>
                         
                         {/* Export Button */}
                         <button 
                           onClick={exportAgentsToCSV}
-                          className="bg-white border border-[#989898] rounded-[7px] p-4 flex items-center gap-3 cursor-pointer hover:bg-[#f5f5f5] transition-colors"
+                          className="bg-white border border-[#989898] rounded px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-[#f5f5f5] transition-colors"
                           aria-label="Export agents to CSV"
                           title="Export agents to CSV"
                         >
-                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                             <path d="M13 11L21.2 2.79999" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M22 6.8V2H17.2" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M11 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22H15C20 22 22 20 22 15V13" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
-                          <p className="text-[#7b7b7b] text-xl font-medium leading-normal">Export</p>
-                          <ChevronRight className="w-6 h-6 text-[#7b7b7b]" />
+                          <p className="text-[#7b7b7b] text-sm font-medium leading-normal">Export</p>
+                          <ChevronRight className="w-4 h-4 text-[#7b7b7b]" />
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Agent Table */}
-                  <div className="bg-white border-[0.75px] border-[#d2ddf5] rounded-[16px] p-2 mb-6">
+                  <div className="bg-white border border-[#d2ddf5] rounded-lg p-1.5 mb-4">
                     <div className="flex flex-col">
                       {/* Table Header */}
-                      <div className="bg-[#efefef] flex items-center rounded-tl-[12px] rounded-tr-[12px] min-h-[72px]">
-                        <div className="flex-1 px-5 py-6 border-b border-[#949494] min-w-[204px]">
-                          <p className="font-semibold text-[#595959] text-lg leading-normal">Agent Name</p>
+                      <div className="bg-[#efefef] flex items-center rounded-tl-lg rounded-tr-lg min-h-[48px]">
+                        <div className="flex-1 px-3 py-3 border-b border-[#949494] min-w-[180px]">
+                          <p className="font-semibold text-[#595959] text-sm leading-normal">Agent Name</p>
                         </div>
-                        <div className="flex-1 px-5 py-6 border-b border-[#949494] min-w-[230px]">
-                          <p className="font-semibold text-[#595959] text-lg leading-normal">Email</p>
+                        <div className="flex-1 px-3 py-3 border-b border-[#949494] min-w-[200px]">
+                          <p className="font-semibold text-[#595959] text-sm leading-normal">Email</p>
                         </div>
-                        <div className="flex-1 px-5 py-6 border-b border-[#949494] min-w-[186px]">
-                          <p className="font-semibold text-[#595959] text-lg leading-normal">Availability</p>
+                        <div className="flex-1 px-3 py-3 border-b border-[#949494] min-w-[140px]">
+                          <p className="font-semibold text-[#595959] text-sm leading-normal">Availability</p>
                         </div>
-                        <div className="flex-1 px-5 py-6 border-b border-[#949494] min-w-[205px]">
-                          <p className="font-semibold text-[#595959] text-lg leading-normal">Avg. Response</p>
+                        <div className="flex-1 px-3 py-3 border-b border-[#949494] min-w-[160px]">
+                          <p className="font-semibold text-[#595959] text-sm leading-normal">Avg. Response</p>
                         </div>
-                        <div className="flex-1 px-5 py-6 border-b border-[#949494] min-w-[180px]">
-                          <p className="font-semibold text-[#595959] text-lg leading-normal">Chats</p>
+                        <div className="flex-1 px-3 py-3 border-b border-[#949494] min-w-[120px]">
+                          <p className="font-semibold text-[#595959] text-sm leading-normal">Chats</p>
                         </div>
                       </div>
 
                       {/* Table Body */}
                       {paginatedAgents.length > 0 ? (
                         paginatedAgents.map((agent) => (
-                          <div key={agent.id} className="bg-[#fdfdfd] flex items-center min-h-[72px] hover:bg-gray-50 transition-colors">
-                            <div className="flex-1 px-5 py-6 border-b-[0.75px] border-[#d2d2d2] min-w-[204px]">
-                              <p className="font-normal text-[#848595] text-base leading-normal truncate">{agent.name}</p>
+                          <div key={agent.id} className="bg-[#fdfdfd] flex items-center min-h-[48px] hover:bg-gray-50 transition-colors">
+                            <div className="flex-1 px-3 py-3 border-b border-[#d2d2d2] min-w-[180px]">
+                              <p className="font-normal text-[#848595] text-sm leading-normal truncate">{agent.name}</p>
                             </div>
-                            <div className="flex-1 px-5 py-6 border-b-[0.75px] border-[#d2d2d2] min-w-[230px]">
-                              <p className="font-normal text-[#848595] text-base leading-normal truncate">{agent.email}</p>
+                            <div className="flex-1 px-3 py-3 border-b border-[#d2d2d2] min-w-[200px]">
+                              <p className="font-normal text-[#848595] text-sm leading-normal truncate">{agent.email}</p>
                             </div>
-                            <div className="flex-1 px-5 py-4 border-b-[0.75px] border-[#d2d2d2] min-w-[186px]">
+                            <div className="flex-1 px-3 py-2 border-b border-[#d2d2d2] min-w-[140px]">
                               {agent.status === 'ONLINE' ? (
-                                <div className="bg-[#d5ece5] border border-[#006045] rounded-full px-3.5 py-2.5 flex items-center gap-2.5 w-fit">
-                                  <div className="bg-[#006045] rounded-full w-2 h-2" />
-                                  <p className="font-medium text-[#006045] text-sm leading-normal">Online</p>
+                                <div className="bg-[#d5ece5] border border-[#006045] rounded-full px-2.5 py-1.5 flex items-center gap-1.5 w-fit">
+                                  <div className="bg-[#006045] rounded-full w-1.5 h-1.5" />
+                                  <p className="font-medium text-[#006045] text-xs leading-normal">Online</p>
                                 </div>
                               ) : (
-                                <div className="bg-[#e0e0e0] rounded-full px-3.5 py-2.5 flex items-center justify-center w-fit">
-                                  <p className="font-medium text-[#7a7a7a] text-sm leading-normal">Offline</p>
+                                <div className="bg-[#e0e0e0] rounded-full px-2.5 py-1.5 flex items-center justify-center w-fit">
+                                  <p className="font-medium text-[#7a7a7a] text-xs leading-normal">Offline</p>
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 px-5 py-6 border-b-[0.75px] border-[#d2d2d2] min-w-[205px]">
-                              <p className="font-normal text-[#848595] text-base leading-normal text-center">1mins 2sec</p>
+                            <div className="flex-1 px-3 py-3 border-b border-[#d2d2d2] min-w-[160px]">
+                              <p className="font-normal text-[#848595] text-sm leading-normal text-center">1mins 2sec</p>
                             </div>
-                            <div className="flex-1 px-5 py-6 border-b-[0.75px] border-[#d2d2d2] min-w-[180px] flex justify-center">
-                              <p className="font-normal text-[#848595] text-base leading-normal">{agent._count?.assignedConversations || 0}</p>
+                            <div className="flex-1 px-3 py-3 border-b border-[#d2d2d2] min-w-[120px] flex justify-center">
+                              <p className="font-normal text-[#848595] text-sm leading-normal">{agent._count?.assignedConversations || 0}</p>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="bg-[#fdfdfd] flex items-center justify-center py-16 border-b-[0.75px] border-[#d2d2d2]">
+                        <div className="bg-[#fdfdfd] flex items-center justify-center py-12 border-b border-[#d2d2d2]">
                           <div className="text-center">
-                            <div className="bg-[#f8f9fa] rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                              <Search className="h-8 w-8 text-[#949494] opacity-50" />
+                            <div className="bg-[#f8f9fa] rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                              <Search className="h-6 w-6 text-[#949494] opacity-50" />
                             </div>
-                            <p className="text-base font-semibold text-[#7b7b7b]">No agents found</p>
-                            <p className="text-sm text-[#949494] mt-1">Try adjusting your search term</p>
+                            <p className="text-sm font-semibold text-[#7b7b7b]">No agents found</p>
+                            <p className="text-xs text-[#949494] mt-1">Try adjusting your search term</p>
                           </div>
                         </div>
                       )}
@@ -988,23 +1094,23 @@ const AdminDashboard: React.FC = () => {
 
                   {/* Pagination Controls */}
                   {filteredAndSortedAgents.length > itemsPerPage && (
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4">
                       {/* Previous Button */}
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className={`flex items-center gap-2 text-base font-medium transition-colors ${
+                        className={`flex items-center gap-1 text-sm font-medium transition-colors ${
                           currentPage === 1
                             ? 'text-[#949494] cursor-not-allowed'
                             : 'text-[#949494] hover:text-[#383838]'
                         }`}
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-3 h-3" />
                         <span>Previous</span>
                       </button>
                       
                       {/* Page Numbers */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {Array.from({ length: Math.min(4, totalPages) }, (_, i) => {
                           let pageNum;
                           if (totalPages <= 4) {
@@ -1021,10 +1127,10 @@ const AdminDashboard: React.FC = () => {
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`min-w-[36px] h-10 px-2 rounded-[3px] text-base font-semibold transition-colors ${
+                              className={`min-w-[32px] h-8 px-2 rounded text-sm font-semibold transition-colors ${
                                 currentPage === pageNum
                                   ? 'bg-[#006045] text-white'
-                                  : 'border-[0.5px] border-[#949494] text-[#a2a2a2] hover:bg-[#f5f5f5]'
+                                  : 'border border-[#949494] text-[#a2a2a2] hover:bg-[#f5f5f5]'
                               }`}
                             >
                               {pageNum}
@@ -1033,10 +1139,10 @@ const AdminDashboard: React.FC = () => {
                         })}
                         {totalPages > 4 && currentPage < totalPages - 1 && (
                           <>
-                            <span className="text-[#a2a2a2] text-base font-medium">...</span>
+                            <span className="text-[#a2a2a2] text-sm font-medium">...</span>
                             <button
                               onClick={() => setCurrentPage(totalPages)}
-                              className="min-w-[36px] h-10 px-2 rounded-[3px] border-[0.5px] border-[#949494] text-[#a2a2a2] hover:bg-[#f5f5f5] text-base font-medium"
+                              className="min-w-[32px] h-8 px-2 rounded border border-[#949494] text-[#a2a2a2] hover:bg-[#f5f5f5] text-sm font-medium"
                             >
                               {totalPages}
                             </button>
@@ -1048,14 +1154,14 @@ const AdminDashboard: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className={`flex items-center gap-2 text-base font-medium transition-colors ${
+                        className={`flex items-center gap-1 text-sm font-medium transition-colors ${
                           currentPage === totalPages
                             ? 'text-[#949494] cursor-not-allowed'
                             : 'text-[#383838] hover:text-[#006045]'
                         }`}
                       >
                         <span>Next</span>
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-3 h-3" />
                       </button>
                     </div>
                   )}
@@ -1082,8 +1188,37 @@ const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 
-                {/* Sort and Items Per Page */}
-                <div className="flex items-center gap-4">
+                {/* Actions and Controls */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Bulk Actions */}
+                  {selectedRequests.size > 0 && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <span className="text-sm font-medium text-blue-900">
+                        {selectedRequests.size} selected
+                      </span>
+                      <button
+                        onClick={() => setShowBulkAssignModal(true)}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
+                      >
+                        Bulk Assign
+                      </button>
+                      <button
+                        onClick={() => setSelectedRequests(new Set())}
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Auto Assign All Button */}
+                  <button
+                    onClick={handleAutoAssignAll}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    Auto-Assign All
+                  </button>
+                  
                   {/* Sort Dropdown */}
                   <select
                     onChange={(e) => {
@@ -1120,6 +1255,21 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
               
+              {/* Select All Checkbox */}
+              {paginatedRequests.length > 0 && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedRequests.size === paginatedRequests.length && paginatedRequests.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-[#006045] border-gray-300 rounded focus:ring-[#006045]"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Select All ({paginatedRequests.length})</span>
+                  </label>
+                </div>
+              )}
+              
               {/* Results Count */}
               {debouncedSearchTerm && (
                 <p className="text-sm text-gray-600 mb-4">
@@ -1134,13 +1284,21 @@ const AdminDashboard: React.FC = () => {
                     {paginatedRequests.map((request) => (
                       <div key={request.id} className="bg-white border border-[#e0e0e0] rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-[#1e1e1e] text-base">
-                              {request.user?.name || 'Unknown User'}
-                            </h3>
-                            <p className="text-[#7b7b7b] text-xs mt-1">
-                              Position: #{request.position}
-                            </p>
+                          <div className="flex items-start gap-3 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedRequests.has(request.conversationId)}
+                              onChange={() => toggleRequestSelection(request.conversationId)}
+                              className="mt-1 w-4 h-4 text-[#006045] border-gray-300 rounded focus:ring-[#006045]"
+                            />
+                            <div className="flex-1">
+                              <h3 className="font-bold text-[#1e1e1e] text-base">
+                                {request.user?.name || 'Unknown User'}
+                              </h3>
+                              <p className="text-[#7b7b7b] text-xs mt-1">
+                                Position: #{request.position}
+                              </p>
+                            </div>
                           </div>
                           <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                             Waiting
@@ -1229,7 +1387,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   )}
                 </>
-              ) : conversationQueue.length === 0 ? (
+              ) : (Array.isArray(conversationQueue) ? conversationQueue : []).length === 0 ? (
                 <div className="bg-white border-2 border-dashed border-[#e0e0e0] rounded-lg text-center py-16">
                   <div className="bg-[#f8f9fa] rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                     <Users className="h-8 w-8 opacity-50 text-[#7b7b7b]" />
@@ -1258,10 +1416,10 @@ const AdminDashboard: React.FC = () => {
                 showSearch={true}
                 onSearchClick={() => console.log('Search functionality')}
               />
-              <h2 className="text-lg font-semibold text-[#1e1e1e]">Conversation Queue ({conversationQueue.length})</h2>
+              <h2 className="text-lg font-semibold text-[#1e1e1e]">Conversation Queue ({(Array.isArray(conversationQueue) ? conversationQueue : []).length})</h2>
 
               <div className="grid grid-cols-1 gap-3">
-                {conversationQueue.map((item) => (
+                {(Array.isArray(conversationQueue) ? conversationQueue : []).map((item) => (
                   <div key={item.id} className="bg-white border border-[#e0e0e0] rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
@@ -1275,7 +1433,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
 
-                {conversationQueue.length === 0 && (
+                {(Array.isArray(conversationQueue) ? conversationQueue : []).length === 0 && (
                   <div className="bg-white border-2 border-dashed border-[#e0e0e0] rounded-lg text-center py-16">
                     <div className="bg-[#eaf3f1] rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                       <RefreshCw className="h-8 w-8 text-[#006045] opacity-50" />
@@ -1289,32 +1447,6 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
       </main>
-      
-      {/* Notification Toast */}
-      {showNotification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in ${
-          notificationType === 'success' 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-red-50 border border-red-200'
-        }`}>
-          {notificationType === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          ) : (
-            <X className="w-5 h-5 text-red-600" />
-          )}
-          <span className={`font-medium ${
-            notificationType === 'success' ? 'text-green-800' : 'text-red-800'
-          }`}>
-            {notificationMessage}
-          </span>
-          <button
-            onClick={() => setShowNotification(false)}
-            className="ml-2 text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Assign Agent Modal */}
       {showAssignModal && selectedRequest && (
@@ -1368,7 +1500,7 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   ))}
                 
-                {agents.filter(agent => agent.status === 'ONLINE' && (agent._count?.assignedConversations || 0) < agent.maxChats).length === 0 && (
+                {(Array.isArray(agents) ? agents : []).filter(agent => agent.status === 'ONLINE' && (agent._count?.assignedConversations || 0) < agent.maxChats).length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No available agents at the moment</p>
@@ -1387,6 +1519,96 @@ const AdminDashboard: React.FC = () => {
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Assign Modal */}
+      {showBulkAssignModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-[#1e1e1e]">Bulk Assign Conversations</h3>
+              <button
+                onClick={() => setShowBulkAssignModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-4 max-h-96 overflow-y-auto">
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-900 font-medium">
+                  {selectedRequests.size} conversation{selectedRequests.size !== 1 ? 's' : ''} selected
+                </p>
+              </div>
+
+              {/* Assignment Strategy */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assignment Strategy:
+                </label>
+                <select
+                  value={bulkAssignStrategy}
+                  onChange={(e) => setBulkAssignStrategy(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
+                >
+                  <option value="AUTO">Auto (Smart - Location + Language)</option>
+                  <option value="LEAST_BUSY">Least Busy Agent</option>
+                  <option value="ROUND_ROBIN">Round Robin</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto mode considers agent location, language skills, and current workload
+                </p>
+              </div>
+
+              {/* Option: Assign to Specific Agent */}
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">
+                  Or assign all to a specific agent:
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {(Array.isArray(agents) ? agents : [])
+                    .filter(agent => agent.status === 'ONLINE')
+                    .map((agent) => (
+                      <button
+                        key={agent.id}
+                        onClick={() => handleBulkAssign(agent.id)}
+                        className="w-full p-3 border border-gray-200 rounded-lg hover:border-[#006045] hover:bg-[#f0f8f6] transition-all flex justify-between items-center"
+                      >
+                        <div className="text-left">
+                          <p className="font-medium text-[#1e1e1e] text-sm">{agent.name}</p>
+                          <p className="text-xs text-gray-500">{agent.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">
+                            {agent._count?.assignedConversations || 0}/{agent.maxChats} chats
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                onClick={() => setShowBulkAssignModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleBulkAssign()}
+                className="px-4 py-2 bg-[#006045] text-white rounded-lg hover:bg-[#005038] transition-colors"
+              >
+                Auto-Assign
               </button>
             </div>
           </div>
@@ -1534,11 +1756,20 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Onboard Agent Modal */}
-      <OnboardAgentModal
+      {/* Agent Management Modal */}
+      <AgentManagementModal
         isOpen={showOnboardModal}
         onClose={() => setShowOnboardModal(false)}
-        onSubmit={handleOnboardAgent}
+        onAddAgent={handleOnboardAgent}
+        onDeleteAgent={handleDeleteAgent}
+        agents={(Array.isArray(agents) ? agents : []).map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          email: agent.email,
+          status: agent.status,
+          currentChats: agent._count?.assignedConversations || 0,
+          maxChats: agent.maxChats || 5,
+        }))}
       />
     </div>
   );

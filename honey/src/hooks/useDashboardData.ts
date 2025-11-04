@@ -50,6 +50,7 @@ export const useDashboardData = (
           ? err.message
           : "Failed to fetch dashboard metrics";
       setError(errorMessage);
+      // Don't throw - let component handle gracefully
     }
   }, []);
 
@@ -63,6 +64,7 @@ export const useDashboardData = (
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch agents";
       setError(errorMessage);
+      // Don't throw - let component handle gracefully
     }
   }, []);
 
@@ -78,6 +80,7 @@ export const useDashboardData = (
           ? err.message
           : "Failed to fetch conversation queue";
       setError(errorMessage);
+      // Don't throw - let component handle gracefully
     }
   }, []);
 
@@ -91,6 +94,7 @@ export const useDashboardData = (
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch admin profile";
       setError(errorMessage);
+      // Don't throw - let component handle gracefully
     }
   }, []);
 

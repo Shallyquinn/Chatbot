@@ -1,0 +1,56 @@
+{
+  "total_messages": 50,
+  "categories": {
+    "general_question": {
+      "count": 8,
+      "priority": "MEDIUM",
+      "handler": "handleGeneralQuestion"
+    },
+    "instruction": {
+      "count": 2,
+      "priority": "LOW",
+      "handler": "sendInstructionMessage"
+    },
+    "general_info": {
+      "count": 23,
+      "priority": "LOW",
+      "handler": "sendGeneralMessage"
+    },
+    "method_info": {
+      "count": 2,
+      "priority": "MEDIUM",
+      "handler": "getMethodAdvantagesDisadvantages"
+    },
+    "eligibility_info": {
+      "count": 2,
+      "priority": "HIGH",
+      "handler": "getMethodEligibility"
+    },
+    "demographic_question": {
+      "count": 1,
+      "priority": "MEDIUM",
+      "handler": "handleDemographicQuestion"
+    },
+    "stop_switch_question": {
+      "count": 1,
+      "priority": "HIGH",
+      "handler": "handleStopSwitchQuestion"
+    },
+    "side_effect_question": {
+      "count": 1,
+      "priority": "HIGH",
+      "handler": "handleSideEffectQuestion"
+    },
+    "fertility_info": {
+      "count": 10,
+      "priority": "HIGH",
+      "handler": "getFertilityTimelineMessage"
+    }
+  },
+  "files_generated": [
+    "generated-message-constants.ts",
+    "generated-handler-methods.ts",
+    "generated-widget-config.ts",
+    "MESSAGE_UPDATE_IMPLEMENTATION_GUIDE.md"
+  ]
+}

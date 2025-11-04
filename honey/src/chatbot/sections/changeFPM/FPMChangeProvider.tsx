@@ -372,7 +372,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.updateUser({ current_fpm_method: method }).catch(err => console.error('Failed to update user:', err));
     // Ask about satisfaction with the current method
     const satisfactionQuestion = this.createChatBotMessage(
-      'How has the method been working for you? Would you say you are somewhat satisfied, or not at all satisfied with your method?',
+      'How has the method been working for you? Please rate your satisfaction level.',
       {
         widget: 'satisfactionOptions',
         delay: 500,
@@ -912,7 +912,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     let responseMessage: ChatMessage;
     let nextStep = 'fpmNextAction';
 
-    if (factor === 'No effect on menstrual🩸') {
+    if (factor === 'No effect on menstrual🩸flow') {
       responseMessage = this.createChatBotMessage(
         'When you are picking a contraceptive method, what are the things that are important to you?',
         {
@@ -1101,6 +1101,44 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     );
   }
 
+  // Helper for method-specific fertility timeline information (from flowchart analysis)
+  private getFertilityTimelineMessage(method: string): string {
+    const methodLower = method.toLowerCase();
+    
+    // IUD - Return to fertility
+    if (methodLower.includes('iud') || methodLower.includes('copper') || methodLower.includes('hormonal coil')) {
+      return 'Important: If you stop using the IUD, return to fertility happens immediately after removal, or it can take 1-2 weeks. In most cases, you can become pregnant in the first cycle after removal. Visit the clinic where you adopted the method or a nearby clinic to have it removed.';
+    }
+    
+    // Implants - Return to fertility
+    if (methodLower.includes('implant') || methodLower.includes('rod') || methodLower.includes('jadelle') || methodLower.includes('implanon')) {
+      return 'Important: After stopping the implant, the earliest possible time to get pregnant is within 1 week of having the rod removed, but usually within 1 month. You will need to visit a clinic to have the implant removed by a healthcare provider.';
+    }
+    
+    // Injectables - Return to fertility
+    if (methodLower.includes('inject') || methodLower.includes('depo') || methodLower.includes('sayana')) {
+      return 'Important: After stopping injectables, it usually takes several months for the complete effect of the hormones to disappear. In most cases, it is possible to become pregnant after 6 months. You can simply stop taking the injections without needing a clinic visit.';
+    }
+    
+    // Pills - Return to fertility
+    if (methodLower.includes('pill') || methodLower.includes('oral contraceptive') || methodLower.includes('combined pill') || methodLower.includes('progestin-only')) {
+      return 'Important: The pill stops your body from ovulating, but as soon as you stop taking the pill, your ovulation will start again. So, it is possible to get pregnant as soon as you stop the pill. You can stop at any time without needing a clinic visit.';
+    }
+    
+    // Condoms - No fertility delay
+    if (methodLower.includes('condom')) {
+      return 'Important: Condoms have no effect on your fertility. You can get pregnant immediately after stopping their use. No clinic visit needed.';
+    }
+    
+    // Emergency contraception (Postpill)
+    if (methodLower.includes('postpill') || methodLower.includes('emergency') || methodLower.includes('postinor')) {
+      return 'Important: Emergency contraception does not affect your long-term fertility. Your normal fertility returns immediately. It only prevents pregnancy from the specific act of unprotected sex.';
+    }
+    
+    // Default message for other methods
+    return 'Important: Different methods have different timelines for return to fertility. Please call 7790 to speak with a healthcare professional about your specific method and when you can expect to be able to get pregnant after stopping.';
+  }
+
   // Handler for stop reason
   handleStopReason = async (reason: string): Promise<void> => {
     await this.ensureChatSession();
@@ -1116,28 +1154,43 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       widget_name: "stopReasonOptions"
     }).catch(err => console.error('Failed to save stop reason:', err));
 
+    // Track interaction with all relevant data
+    await this.api.createFpmInteraction({ 
+      stop_reason: reason,
+      current_fpm_method: this.state.currentFPMMethod,
+      fpm_flow_type: 'stop_reason_selection'
+    }).catch(err => console.error('Failed to save FPM interaction:', err));
+
     const counselingResponse = this.createChatBotMessage(
       'Okay, I understand and I am sorry you are experiencing these issues.\n\nPlease call 7790 and request to speak to a nurse counsellor to direct and counsel you on better options for you.',
       { delay: 500 },
     );
+
+    // Add method-specific fertility timeline information
+    const currentMethod = this.state.currentFPMMethod || '';
+    const fertilityTimeline = this.getFertilityTimelineMessage(currentMethod);
     
-    await this.api.createFpmInteraction({ stop_reason: reason }).catch(err => console.error('Failed to save FPM interaction:', err));
+    const fertilityMessage = fertilityTimeline 
+      ? this.createChatBotMessage(fertilityTimeline, { delay: 1000 })
+      : null;
     
     const nextActions = this.createChatBotMessage(
       'What would you like to do next?',
       {
         widget: 'fpmNextActionOptions',
-        delay: 1000,
+        delay: fertilityMessage ? 1500 : 1000,
       },
     );
+
+    const messagesToAdd = fertilityMessage 
+      ? [userMessage, counselingResponse, fertilityMessage, nextActions]
+      : [userMessage, counselingResponse, nextActions];
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [
         ...prev.messages,
-        userMessage,
-        counselingResponse,
-        nextActions,
+        ...messagesToAdd,
       ],
       currentStep: 'fpmNextAction',
     }));
@@ -1151,13 +1204,24 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       message_delay_ms: 500
     }).catch(err => console.error('Failed to save counseling:', err));
     
+    // Track fertility timeline message if provided
+    if (fertilityMessage) {
+      await this.api.createConversation({
+        message_text: fertilityMessage.message,
+        message_type: 'bot',
+        chat_step: "fertilityTimeline",
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 1000
+      }).catch(err => console.error('Failed to save fertility timeline:', err));
+    }
+    
     await this.api.createConversation({
       message_text: nextActions.message,
       message_type: 'bot',
       chat_step: "fpmNextAction",
       message_sequence_number: this.getNextSequenceNumber(),
       widget_name: "fpmNextActionOptions",
-      message_delay_ms: 1000
+      message_delay_ms: fertilityMessage ? 1500 : 1000
     }).catch(err => console.error('Failed to save next actions:', err));
   };
 
@@ -1181,7 +1245,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       { delay: 500 },
     );
 
-    await this.api.createFpmInteraction({}).catch(err => console.error('Failed to save FPM interaction:', err));
+    // Track interaction with side effect and current method
+    await this.api.createFpmInteraction({
+      side_effects: sideEffect,
+      current_fpm_method: this.state.currentFPMMethod,
+      fpm_flow_type: 'side_effect_reported'
+    }).catch(err => console.error('Failed to save FPM interaction:', err));
     
     const nextActions = this.createChatBotMessage(
       'What would you like to do next?',
@@ -1251,7 +1320,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (feedback === 'Yes') {
       const thankYou = this.createChatBotMessage(
-        "Thank you for your feedback! I am happy that I was of great service to you. Your input helps us improve our service. If you need any additional information on family planning and contraception, I'm available 24/7!. I look forward to chatting with you again soon. 👍",
+        "Thank you for your feedback👍! I am happy that I was of great service to you. Your input helps us improve our service. If you need any additional information on family planning and contraception, I'm available 24/7! I look forward to chatting with you again soon.",
         { delay: 500 },
       );
 
@@ -1338,7 +1407,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       }).catch(err => console.error('Failed to save more help:', err));
     } else {
       const goodbye = this.createChatBotMessage(
-        "Thanks for your time. I look forward to chatting with you again soon. If you need any additional information on family planning and contraception, I'm available 24/7! 👍",
+        "Thanks for your time👍. I look forward to chatting with you again soon. If you need any additional information on family planning and contraception, I'm available 24/7!",
         { delay: 500 },
       );
 

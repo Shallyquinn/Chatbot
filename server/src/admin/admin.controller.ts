@@ -17,7 +17,9 @@ import type {
   CreateAgentDto,
   UpdateAgentDto,
   AssignConversationDto,
+  BulkAssignConversationsDto,
   UpdateAdminProfileDto,
+  BulkAgentDto,
 } from './admin.service';
 
 @Controller('admin')
@@ -60,6 +62,11 @@ export class AdminController {
     return this.adminService.createAgent(createAgentDto);
   }
 
+  @Post('agents/bulk-upload')
+  async bulkCreateAgents(@Body() body: { agents: BulkAgentDto[] }) {
+    return this.adminService.bulkCreateAgents(body.agents);
+  }
+
   @Put('agents/:id')
   async updateAgent(
     @Param('id') agentId: string,
@@ -76,6 +83,18 @@ export class AdminController {
   @Post('conversations/assign')
   async assignConversation(@Body() assignDto: AssignConversationDto) {
     return this.adminService.reassignConversation(assignDto);
+  }
+
+  @Post('conversations/bulk-assign')
+  async bulkAssignConversations(
+    @Body() bulkAssignDto: BulkAssignConversationsDto,
+  ) {
+    return this.adminService.bulkAssignConversations(bulkAssignDto);
+  }
+
+  @Post('conversations/auto-assign')
+  async autoAssignQueuedConversations() {
+    return this.adminService.autoAssignQueuedConversations();
   }
 
   @Get('agents/dummy')
@@ -96,7 +115,7 @@ export class AdminController {
 
   @Get('profile')
   async getAdminProfile(@Request() req: any) {
-    return this.adminService.getAdminProfile(req.user.adminId);
+    return this.adminService.getAdminProfile(req.user.id);
   }
 
   @Put('profile')
@@ -104,6 +123,6 @@ export class AdminController {
     @Request() req: any,
     @Body() updateDto: UpdateAdminProfileDto,
   ) {
-    return this.adminService.updateAdminProfile(req.user.adminId, updateDto);
+    return this.adminService.updateAdminProfile(req.user.id, updateDto);
   }
 }

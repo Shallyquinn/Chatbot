@@ -13,6 +13,13 @@ export interface AgentLoginDto {
   password: string;
 }
 
+export interface JwtPayload {
+  sub: string; // user ID
+  email: string;
+  role: string;
+  type: 'admin' | 'agent';
+}
+
 @Injectable()
 export class AuthService {
   constructor(

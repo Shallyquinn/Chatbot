@@ -17,9 +17,9 @@ export interface FPMWidgetProps {
   state: ChatbotState;
 }
 
-// =============================================================================
+
 // CONSTANTS - Centralized option lists for easy maintenance
-// =============================================================================
+
 
 /**
  * Family Planning Methods - All 7 methods from CSV
@@ -114,13 +114,14 @@ export const SWITCH_REASON_OPTIONS = [
  */
 export const STOP_REASON_OPTIONS = [
   'Low Effectiveness',
-  'Effect on general health',
-  'Convenience',
-  'Price',
+  'Effect on my health',
+  'Inconvenience',
+  'High price',
   'Side effects',
   'Effect on sex life',
   'Privacy in contraception',
   'I want no clinic visits',
+  'I gained weight',
   'Effect on fertility',
 ] as const;
 
@@ -196,9 +197,9 @@ export const MORE_HELP_OPTIONS = ['Yes, I want to ask', 'No'] as const;
  */
 export const HUMAN_AI_OPTIONS = ['Human agent', 'AI chatbot'] as const;
 
-// =============================================================================
+
 // WIDGET DEFINITIONS - All FPM Change/Stop related widgets
-// =============================================================================
+
 
 /**
  * FPM Initial Concern Selection Widget
@@ -490,9 +491,9 @@ export const humanAIOptionsWidget = {
   ),
 };
 
-// =============================================================================
+
 // WIDGET COLLECTION - All FPM widgets grouped for easy import
-// =============================================================================
+
 
 /**
  * Complete collection of FPM Change/Stop widgets
@@ -518,9 +519,9 @@ export const fpmChangeStopWidgets = [
   humanAIOptionsWidget,
 ];
 
-// =============================================================================
+
 // UTILITY FUNCTIONS - Helper functions for FPM operations
-// =============================================================================
+
 
 /**
  * Validates if a given method is a valid FPM method
@@ -567,9 +568,9 @@ export const getAllFPMCombinations = (): Array<{
   return combinations;
 };
 
-// =============================================================================
+
 // EXPORTS - Default export for easy importing
-// =============================================================================
+
 
 export default {
   widgets: fpmChangeStopWidgets,

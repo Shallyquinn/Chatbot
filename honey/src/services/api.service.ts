@@ -76,10 +76,21 @@ class ApiService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (error: any) => {
         if (error.response?.status === 401) {
+          console.error("🚨 401 Unauthorized Error:", error.response?.data);
+          console.error("Request URL:", error.config?.url);
+          console.error("Request headers:", error.config?.headers);
+
           // Clear invalid token
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          window.location.href = "/login";
+
+          // Wait 30 seconds before redirecting to give time to copy console messages
+          console.log(
+            "⏰ Redirecting to login in 30 seconds... Copy the console messages now!"
+          );
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 30000); // 30 seconds delay
         }
         return Promise.reject(error);
       }

@@ -1,0 +1,350 @@
+{
+  "validation_date": "2025-11-03",
+  "schema_status": "PASS",
+  "required_fields": {
+    "total_checked": 63,
+    "missing": 0,
+    "present": 63
+  },
+  "recommended_fields": {
+    "total_checked": 8,
+    "missing": 6,
+    "present": 2
+  },
+  "validation_results": {
+    "all_present": true,
+    "models": {
+      "User": {
+        "total_fields": 26,
+        "required_by_category": {
+          "session_tracking": {
+            "required": [
+              "user_session_id",
+              "last_active_at",
+              "created_at",
+              "updated_at"
+            ],
+            "missing": [],
+            "present": [
+              "user_session_id",
+              "last_active_at",
+              "created_at",
+              "updated_at"
+            ]
+          },
+          "fpm_context": {
+            "required": [
+              "current_fpm_method",
+              "current_concern_type",
+              "user_intention",
+              "current_step"
+            ],
+            "missing": [],
+            "present": [
+              "current_fpm_method",
+              "current_concern_type",
+              "user_intention",
+              "current_step"
+            ]
+          },
+          "demographics": {
+            "required": [
+              "selected_gender",
+              "selected_state",
+              "selected_lga",
+              "selected_age_group",
+              "selected_marital_status"
+            ],
+            "missing": [],
+            "present": [
+              "selected_gender",
+              "selected_state",
+              "selected_lga",
+              "selected_age_group",
+              "selected_marital_status"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      },
+      "ChatSession": {
+        "total_fields": 20,
+        "required_by_category": {
+          "session_info": {
+            "required": [
+              "session_id",
+              "user_session_id",
+              "session_start_time",
+              "session_end_time"
+            ],
+            "missing": [],
+            "present": [
+              "session_id",
+              "user_session_id",
+              "session_start_time",
+              "session_end_time"
+            ]
+          },
+          "tracking": {
+            "required": [
+              "total_messages_count",
+              "session_completed",
+              "session_outcome"
+            ],
+            "missing": [],
+            "present": [
+              "total_messages_count",
+              "session_completed",
+              "session_outcome"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      },
+      "ChatStateSession": {
+        "total_fields": 6,
+        "required_by_category": {
+          "state_management": {
+            "required": [
+              "session_id",
+              "user_session_id",
+              "chat_state",
+              "last_activity"
+            ],
+            "missing": [],
+            "present": [
+              "session_id",
+              "user_session_id",
+              "chat_state",
+              "last_activity"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      },
+      "Conversation": {
+        "total_fields": 34,
+        "required_by_category": {
+          "message_info": {
+            "required": [
+              "conversation_id",
+              "session_id",
+              "user_id",
+              "message_text",
+              "message_type"
+            ],
+            "missing": [],
+            "present": [
+              "conversation_id",
+              "session_id",
+              "user_id",
+              "message_text",
+              "message_type"
+            ]
+          },
+          "flow_tracking": {
+            "required": [
+              "chat_step",
+              "widget_name",
+              "message_sequence_number"
+            ],
+            "missing": [],
+            "present": [
+              "chat_step",
+              "widget_name",
+              "message_sequence_number"
+            ]
+          },
+          "timing": {
+            "required": [
+              "message_delay_ms",
+              "created_at"
+            ],
+            "missing": [],
+            "present": [
+              "message_delay_ms",
+              "created_at"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      },
+      "FpmInteraction": {
+        "total_fields": 44,
+        "required_by_category": {
+          "core": {
+            "required": [
+              "interaction_id",
+              "user_id",
+              "session_id",
+              "created_at"
+            ],
+            "missing": [],
+            "present": [
+              "interaction_id",
+              "user_id",
+              "session_id",
+              "created_at"
+            ]
+          },
+          "flow_type": {
+            "required": [
+              "fpm_flow_type"
+            ],
+            "missing": [],
+            "present": [
+              "fpm_flow_type"
+            ]
+          },
+          "method_tracking": {
+            "required": [
+              "current_fpm_method",
+              "interested_fpm_method",
+              "selected_method"
+            ],
+            "missing": [],
+            "present": [
+              "current_fpm_method",
+              "interested_fpm_method",
+              "selected_method"
+            ]
+          },
+          "satisfaction": {
+            "required": [
+              "satisfaction_level",
+              "switch_reason",
+              "stop_reason"
+            ],
+            "missing": [],
+            "present": [
+              "satisfaction_level",
+              "switch_reason",
+              "stop_reason"
+            ]
+          },
+          "preferences": {
+            "required": [
+              "kids_in_future",
+              "timing_preference",
+              "menstrual_flow_preference"
+            ],
+            "missing": [],
+            "present": [
+              "kids_in_future",
+              "timing_preference",
+              "menstrual_flow_preference"
+            ]
+          },
+          "side_effects": {
+            "required": [
+              "side_effects"
+            ],
+            "missing": [],
+            "present": [
+              "side_effects"
+            ]
+          },
+          "actions": {
+            "required": [
+              "next_action",
+              "clinic_referral_needed",
+              "human_agent_requested"
+            ],
+            "missing": [],
+            "present": [
+              "next_action",
+              "clinic_referral_needed",
+              "human_agent_requested"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      },
+      "UserResponse": {
+        "total_fields": 20,
+        "required_by_category": {
+          "core": {
+            "required": [
+              "response_id",
+              "user_id",
+              "session_id",
+              "conversation_id"
+            ],
+            "missing": [],
+            "present": [
+              "response_id",
+              "user_id",
+              "session_id",
+              "conversation_id"
+            ]
+          },
+          "content": {
+            "required": [
+              "response_category",
+              "response_type",
+              "user_response",
+              "question_asked"
+            ],
+            "missing": [],
+            "present": [
+              "response_category",
+              "response_type",
+              "user_response",
+              "question_asked"
+            ]
+          },
+          "flow": {
+            "required": [
+              "step_in_flow",
+              "widget_used",
+              "available_options"
+            ],
+            "missing": [],
+            "present": [
+              "step_in_flow",
+              "widget_used",
+              "available_options"
+            ]
+          }
+        },
+        "missing": [],
+        "present": []
+      }
+    },
+    "missing_fields": [],
+    "summary": {}
+  },
+  "recommendations": {
+    "models": {
+      "User": {
+        "missing": [
+          "phone_number",
+          "email"
+        ],
+        "present": []
+      },
+      "FpmInteraction": {
+        "missing": [
+          "fertility_timeline_shown",
+          "discontinuation_date",
+          "wants_pregnancy",
+          "pregnancy_timeline"
+        ],
+        "present": []
+      },
+      "ChatSession": {
+        "missing": [],
+        "present": [
+          "device_type",
+          "user_agent"
+        ]
+      }
+    },
+    "total_missing": 6
+  }
+}

@@ -16,19 +16,43 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
 
     try {
+      console.log('🔐 Admin login attempt:', email);
       const response = await ApiService.adminLogin(email, password);
+      
+      console.log('✅ Login response received:', response);
+
+      // Handle wrapped response format: { success, data: { access_token, user } }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = response as any;
+      const loginData = responseData.data || response; // Support both formats
+      const accessToken = loginData.access_token;
+      const admin = loginData.user || loginData.admin;
+
+      if (!accessToken) {
+        throw new Error('No access token received from server');
+      }
 
       // Store token and user info
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({ ...response.admin, type: 'admin' }),
-      );
+      const userData = { ...admin, type: 'admin' };
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      console.log('💾 Stored in localStorage:');
+      console.log('  - token:', accessToken);
+      console.log('  - user:', userData);
+
+      // Verify storage
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('token');
+      console.log('✅ Verification - user stored:', !!storedUser);
+      console.log('✅ Verification - token stored:', !!storedToken);
 
       // Navigate to admin dashboard
+      console.log('🚀 Navigating to /admin/dashboard');
       navigate('/admin/dashboard');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
+      console.error('❌ Login failed:', error);
       setError(
         error.response?.data?.message || 'Invalid credentials. Please try again.',
       );
