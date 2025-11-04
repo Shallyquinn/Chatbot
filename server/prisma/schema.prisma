@@ -98,6 +98,7 @@ model Conversation {
   message_sequence_number Int
   status                  ConversationStatus      @default(ACTIVE)
   escalatedAt             DateTime?               @map("escalated_at")
+  escalationStatus        String?                 @map("escalation_status") @db.VarChar(50)
   escalationReason        String?                 @map("escalation_reason")
   assignedAgentId         String?                 @map("assigned_agent_id")
   assignedAt              DateTime?               @map("assigned_at")
@@ -297,6 +298,9 @@ model Agent {
   channelAssignments    AgentChannelAssignment[]
   sentMessages          AgentMessage[]
   assignedConversations ConversationAssignment[]
+  shifts                AgentShift[]
+  availabilityWindows   AgentAvailability[]
+  agentNotifications    AgentNotification[]
 
   @@map("agents")
 }
@@ -407,6 +411,72 @@ model AgentChannelAssignment {
   @@map("agent_channel_assignments")
 }
 
+model AgentShift {
+  id        String    @id @default(uuid()) @db.Uuid
+  agentId   String    @map("agent_id") @db.Uuid
+  dayOfWeek DayOfWeek @map("day_of_week")
+  startTime String    @map("start_time") @db.VarChar(5) // HH:MM format
+  endTime   String    @map("end_time") @db.VarChar(5)   // HH:MM format
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_shifts")
+}
+
+model AgentAvailability {
+  id        String   @id @default(uuid()) @db.Uuid
+  agentId   String   @map("agent_id") @db.Uuid
+  startTime DateTime @map("start_time") @db.Timestamptz(6)
+  endTime   DateTime @map("end_time") @db.Timestamptz(6)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_availability")
+}
+
+model ConversationHandoff {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  fromAgentId    String?  @map("from_agent_id") @db.Uuid
+  toAgentId      String?  @map("to_agent_id") @db.Uuid
+  reason         String?  @db.Text
+  handoffAt      DateTime @default(now()) @map("handoff_at") @db.Timestamptz(6)
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  @@map("conversation_handoffs")
+}
+
+model AdminNotification {
+  id        String             @id @default(uuid()) @db.Uuid
+  adminId   String?            @map("admin_id") @db.Uuid
+  type      NotificationType
+  title     String             @db.VarChar(255)
+  message   String             @db.Text
+  status    NotificationStatus @default(UNREAD)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  readAt    DateTime?          @map("read_at") @db.Timestamptz(6)
+
+  @@map("admin_notifications")
+}
+
+model AgentNotification {
+  id        String             @id @default(uuid()) @db.Uuid
+  agentId   String             @map("agent_id") @db.Uuid
+  type      NotificationType
+  title     String             @db.VarChar(255)
+  message   String             @db.Text
+  status    NotificationStatus @default(UNREAD)
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  readAt    DateTime?          @map("read_at") @db.Timestamptz(6)
+  agent     Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_notifications")
+}
+
 model ChannelMessage {
   id             String        @id @default(uuid()) @db.Uuid
   channelId      String        @map("channel_id") @db.Uuid
@@ -476,6 +546,13 @@ enum Priority {
   URGENT
 }
 
+enum AssignmentStrategy {
+  AUTO
+  MANUAL
+  ROUND_ROBIN
+  LEAST_BUSY
+}
+
 enum ConversationStatus {
   ACTIVE
   WAITING_FOR_AGENT
@@ -483,6 +560,30 @@ enum ConversationStatus {
   RESOLVED
   COMPLETED
   ABANDONED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  MESSAGE
+  ESCALATION
+  SYSTEM
+  WARNING
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  DISMISSED
 }
 
 enum SatisfactionLevel {
