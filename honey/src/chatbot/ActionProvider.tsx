@@ -735,6 +735,36 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
 
+    // Redirect to language-specific chatbot if Yoruba or Hausa is selected
+    if (language === 'Yoruba') {
+      const redirectMessage = this.createChatBotMessage(
+        'E kaabo! (Welcome!) Redirecting you to Yoruba chatbot...',
+        { delay: 500 },
+      );
+      this.addMessageToState(redirectMessage);
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        window.location.href = '/chat/yoruba';
+      }, 1500);
+      return;
+    }
+
+    if (language === 'Hausa') {
+      const redirectMessage = this.createChatBotMessage(
+        'Sannu! (Welcome!) Redirecting you to Hausa chatbot...',
+        { delay: 500 },
+      );
+      this.addMessageToState(redirectMessage);
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        window.location.href = '/chat/hausa';
+      }, 1500);
+      return;
+    }
+
+    // For English, continue with normal onboarding
     // Check if this is a returning user first
     const isReturningUser = await this.checkForReturningUser();
 

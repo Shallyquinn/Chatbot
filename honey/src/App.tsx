@@ -20,6 +20,8 @@ import AgentLogin from './pages/AgentLogin';
 import AdminDashboard from './components/AdminDashboard';
 import AgentInterface from './components/AgentInterface';
 import ProtectedRoute from './components/ProtectedRoute';
+import YorubaChatbotApp from './YorubaChatbotApp';
+import HausaChatbotApp from './HausaChatbotApp';
 import './App.css';
 
 // Your existing chatbot component
@@ -168,9 +170,13 @@ const App: React.FC = () => {
       <NotificationProvider position="top-right" maxNotifications={3}>
         <Router>
           <Routes>
-            {/* Main chatbot route (default) */}
+            {/* Main chatbot route (default - English) */}
             <Route path="/" element={<ChatbotApp />} />
             <Route path="/chat" element={<ChatbotApp />} />
+            
+            {/* Language-specific chatbot routes */}
+            <Route path="/chat/yoruba" element={<YorubaChatbotApp />} />
+            <Route path="/chat/hausa" element={<HausaChatbotApp />} />
 
             {/* Authentication routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
