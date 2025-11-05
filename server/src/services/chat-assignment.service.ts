@@ -234,13 +234,7 @@ export class ChatAssignmentService {
         },
         availabilityWindows: {
           where: {
-            startDate: {
-              lte: new Date(),
-            },
-            endDate: {
-              gte: new Date(),
-            },
-            isAvailable: true,
+            isActive: true,
           },
         },
       },
@@ -469,8 +463,8 @@ export class ChatAssignmentService {
     await this.prisma.agentNotification.create({
       data: {
         agentId,
-        type: 'AGENT_ASSIGNED',
-        status: 'UNREAD',
+        type: NotificationType.AGENT_ASSIGNED,
+        status: NotificationStatus.UNREAD,
         title: 'New Chat Assigned',
         message: 'You have been assigned a new conversation.',
         conversationId,

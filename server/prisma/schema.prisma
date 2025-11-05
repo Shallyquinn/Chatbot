@@ -285,14 +285,16 @@ model Agent {
   currentChats          Int                      @default(0) @map("current_chats")
   isOnline              Boolean                  @default(false) @map("is_online")
   lastActiveAt          DateTime?                @map("last_active_at") @db.Timestamptz(6)
-  
+
   // Location fields for smart assignment
   state                 String?                  @db.VarChar(100)
   lga                   String?                  @db.VarChar(100)
-  
+  latitude              Float?
+  longitude             Float?
+
   // Languages the agent can communicate in (comma-separated)
   languages             String?                  @db.VarChar(255)
-  
+
   createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
   channelAssignments    AgentChannelAssignment[]
@@ -426,25 +428,29 @@ model AgentShift {
 }
 
 model AgentAvailability {
-  id        String   @id @default(uuid()) @db.Uuid
-  agentId   String   @map("agent_id") @db.Uuid
-  startTime DateTime @map("start_time") @db.Timestamptz(6)
-  endTime   DateTime @map("end_time") @db.Timestamptz(6)
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid()) @db.Uuid
+  agentId   String    @map("agent_id") @db.Uuid
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  startTime DateTime  @map("start_time") @db.Timestamptz(6)
+  endTime   DateTime  @map("end_time") @db.Timestamptz(6)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@map("agent_availability")
 }
 
 model ConversationHandoff {
-  id             String   @id @default(uuid()) @db.Uuid
-  conversationId String   @map("conversation_id") @db.Uuid
-  fromAgentId    String?  @map("from_agent_id") @db.Uuid
-  toAgentId      String?  @map("to_agent_id") @db.Uuid
-  reason         String?  @db.Text
-  handoffAt      DateTime @default(now()) @map("handoff_at") @db.Timestamptz(6)
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  fromAgentId    String?   @map("from_agent_id") @db.Uuid
+  toAgentId      String?   @map("to_agent_id") @db.Uuid
+  fromType       String?   @map("from_type") @db.VarChar(20)
+  toType         String?   @map("to_type") @db.VarChar(20)
+  reason         String?   @db.Text
+  handoffAt      DateTime  @default(now()) @map("handoff_at") @db.Timestamptz(6)
   completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
 
   @@map("conversation_handoffs")
@@ -576,6 +582,8 @@ enum NotificationType {
   ASSIGNMENT
   MESSAGE
   ESCALATION
+  ESCALATION_REQUEST
+  AGENT_ASSIGNED
   SYSTEM
   WARNING
 }

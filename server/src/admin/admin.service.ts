@@ -713,7 +713,7 @@ export class AdminService {
    */
   async autoAssignConversation(
     conversationId: string,
-    strategy: 'AUTO' | 'ROUND_ROBIN' | 'LEAST_BUSY' = 'AUTO',
+    strategy: 'AUTO' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY' = 'AUTO',
   ): Promise<string | null> {
     // Get conversation details with user info
     const conversation = await this.prisma.conversation.findUnique({
