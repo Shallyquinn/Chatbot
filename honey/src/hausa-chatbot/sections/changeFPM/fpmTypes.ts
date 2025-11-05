@@ -10,7 +10,7 @@ export interface FPMChangeProviderInterface {
   handleFPMChangeSelection: (option: string) => void;
   handleFPMConcernSelection: (option: string) => void;
   handleCurrentFPMSelection: (method: string) => void;
-  handleFPMConcerfpnTypeSelection: (concernType: string) => void;
+  handleFPMConcernTypeSelection: (concernType: string) => void;
   handleFPMSideEffectSelection: (sideEffect: string) => void;
   handleFPMNextAction: (action: string) => void;
   handleFinalFeedback: (feedback: string) => void;

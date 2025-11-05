@@ -11,7 +11,9 @@ export {
   extendedLongTermMethodsWidget,
   permanentMethodsWidget,
   learnMoreMethodsWidget,
-} from './preventPregnancyWidgetsConfig';
+  flowEndOptionsWidget, // Phase 3.2: Navigation widget
+  comparisonActionsWidget, // Phase 3.3: Comparison widget
+} from "./preventPregnancyWidgetsConfig";
 
 export { default as PreventPregnancyActionProvider } from './preventPregnancyActionProvider';
 export type { PreventPregnancyProviderInterface } from './preventPregnancyTypes';

@@ -2,6 +2,9 @@
 import ActionProvider from "./ActionProvider";
 import { ChatbotState, ChatMessage } from "./types";
 import { v4 as uuidv4 } from "uuid";
+// Phase 3: Import utilities for confusion detection and message formatting
+import { ConfusionDetector } from "./utils/ConfusionDetector";
+import { MessageFormatter } from "./utils/MessageFormatter";
 
 class MessageParser {
   actionProvider: ActionProvider;
@@ -138,9 +141,205 @@ class MessageParser {
     return matrix[b.length][a.length];
   }
 
+  /**
+   * Save user message with detected intent to server
+   * Tracks message parsing for analytics and debugging
+   */
+  private async saveUserMessage(
+    message: string,
+    currentStep: string,
+    detectedIntent?: string
+  ): Promise<void> {
+    try {
+      // Ensure chat session exists
+      await this.actionProvider.ensureChatSession();
+
+      // Get next sequence number from action provider
+      const messageSequenceNumber = this.actionProvider.getNextSequenceNumber();
+
+      // Log parsed message to conversations table
+      await this.actionProvider.api.createConversation({
+        message_text: message,
+        message_type: "user",
+        chat_step: `parsed_${currentStep}`,
+        message_sequence_number: messageSequenceNumber,
+        detected_intent: detectedIntent,
+        widget_name: undefined,
+        message_delay_ms: 0,
+      });
+
+      console.log(
+        `MessageParser: Saved user message for step "${currentStep}" with intent "${
+          detectedIntent || "none"
+        }"`
+      );
+    } catch (error) {
+      console.error("MessageParser: Failed to save user message:", error);
+      // Don't throw - allow parsing to continue even if logging fails
+    }
+  }
+
+  /**
+   * Send user question to AI model (Replit integration)
+   * Maps 'message' to 'text' as expected by Replit API
+   */
+  private async sendToAIModel(text: string): Promise<string> {
+    try {
+      const REPLIT_API_ENDPOINT =
+        "https://firsthand-composed-piracy-honeyandbananac.replit.app/answer/";
+
+      console.log("Sending question to AI model:", text);
+
+      const response = await fetch(REPLIT_API_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memory: {
+            user: text, // ← Using 'memory.user' as expected by Replit API
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("AI model response:", data);
+
+      // Handle special outputs from Replit API
+      const responseText =
+        data.response ||
+        "I received your question but could not generate a response.";
+
+      // Check for special outputs
+      if (responseText === "NO ANSWER") {
+        return 'I\'m sorry, I can only answer questions about family planning and sexual health. Please ask a related question or type "human" to speak with an agent.';
+      }
+
+      if (responseText === "COMPLETE") {
+        return "Thank you for chatting with me! If you have more questions later, I'm here to help. Have a great day!";
+      }
+
+      return responseText;
+    } catch (error) {
+      console.error("Failed to get AI response:", error);
+      return "I'm sorry, I'm having trouble processing your question right now. Please try again or type \"human\" to speak with an agent.";
+    }
+  }
+
+  /**
+   * Handle AI-powered questions using Replit model
+   * Creates user message, gets AI response, and updates chat
+   */
+  private async handleAIQuestion(
+    text: string,
+    currentStep: string
+  ): Promise<void> {
+    // Create user message
+    const userMessage: ChatMessage = {
+      message: text,
+      type: "user",
+      id: uuidv4(),
+    };
+
+    // Add user message to chat immediately
+    this.actionProvider.setState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, userMessage],
+    }));
+
+    // Show loading indicator
+    const loadingMessage = this.actionProvider.createChatBotMessage(
+      "Thinking...",
+      { loading: true }
+    );
+
+    this.actionProvider.setState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, loadingMessage],
+    }));
+
+    try {
+      // Log user question to database
+      await this.actionProvider.ensureChatSession();
+      await this.actionProvider.api
+        .createConversation({
+          message_text: text,
+          message_type: "user",
+          chat_step: currentStep,
+          message_sequence_number: this.actionProvider.getNextSequenceNumber(),
+          detected_intent: "ai_question",
+          widget_name: undefined,
+          message_delay_ms: 0,
+        })
+        .catch((err) => console.error("Failed to log user question:", err));
+
+      // Get AI response
+      const aiResponse = await this.sendToAIModel(text);
+
+      // Remove loading message and add AI response
+      const responseMessage =
+        this.actionProvider.createChatBotMessage(aiResponse);
+
+      this.actionProvider.setState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages.filter((m) => m !== loadingMessage),
+          responseMessage,
+        ],
+      }));
+
+      // Log AI response to database
+      await this.actionProvider.api
+        .createConversation({
+          message_text: aiResponse,
+          message_type: "bot",
+          chat_step: currentStep,
+          message_sequence_number: this.actionProvider.getNextSequenceNumber(),
+          widget_name: undefined,
+          message_delay_ms: 0,
+        })
+        .catch((err) => console.error("Failed to log AI response:", err));
+
+      // Track analytics
+      await this.actionProvider.api
+        .createResponse({
+          response_category: "AIQuestion",
+          response_type: "ai_generated",
+          question_asked: text,
+          user_response: aiResponse,
+          widget_used: "ai_model",
+          step_in_flow: currentStep,
+        })
+        .catch((err) =>
+          console.error("Failed to log response analytics:", err)
+        );
+    } catch (error) {
+      console.error("Error handling AI question:", error);
+
+      // Remove loading message and show error
+      const errorMessage = this.actionProvider.createChatBotMessage(
+        "I'm sorry, I couldn't process your question. Please try again or type \"human\" to speak with an agent."
+      );
+
+      this.actionProvider.setState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages.filter((m) => m !== loadingMessage),
+          errorMessage,
+        ],
+      }));
+    }
+  }
+
   parse(message: string): void {
+    // Map 'message' to 'text' for Replit API compatibility
+    const text = message;
+
     const lowerCase = message.toLowerCase();
-    const normalized = this.normalizeInput(message);
 
     // Get current step from the action provider's state
     const currentStep = this.actionProvider.state?.currentStep;
@@ -151,6 +350,58 @@ class MessageParser {
       "Message:",
       message
     );
+
+    // Phase 3: Confusion Detection - Check if user needs help before processing
+    if (currentStep && ConfusionDetector.isStrictButtonStep(currentStep)) {
+      const previousInputs = this.state.messages
+        .filter((msg: ChatMessage) => msg.type === 'user')
+        .slice(-3)
+        .map((msg: ChatMessage) => msg.message);
+
+      const confusionResult = ConfusionDetector.detect(
+        message,
+        currentStep,
+        'button',
+        previousInputs
+      );
+
+      if (confusionResult.isConfused && confusionResult.confidence > 0.6) {
+        // User is confused - provide contextual help
+        const helpMessage = ConfusionDetector.getHelpMessage(confusionResult, currentStep);
+        const formattedHelp = MessageFormatter.formatWarning(helpMessage);
+        
+        this.actionProvider.showHelpMessage(formattedHelp);
+        
+        // Track confusion for analytics (use userSessionId from localStorage)
+        const userSessionId = localStorage.getItem('userSessionId') || 'default-session';
+        ConfusionDetector.trackConfusion(userSessionId, confusionResult);
+        
+        console.log('Confusion detected:', confusionResult.reason, 'Confidence:', confusionResult.confidence);
+        return; // Stop processing - wait for corrected input
+      }
+    }
+
+    // Detect intent for logging purposes
+    let detectedIntent: string | undefined;
+    if (lowerCase.includes("prevent pregnancy")) {
+      detectedIntent = "prevent_pregnancy";
+    } else if (lowerCase.includes("change") && lowerCase.includes("fpm")) {
+      detectedIntent = "change_fpm";
+    } else if (lowerCase.includes("improve sex life")) {
+      detectedIntent = "sex_enhancement";
+    } else if (lowerCase === "human" || lowerCase.includes("agent")) {
+      detectedIntent = "human_agent_request";
+    } else if (lowerCase === "clinic" || lowerCase.includes("clinic")) {
+      detectedIntent = "clinic_location";
+    } else if (
+      lowerCase === "demographics" ||
+      (lowerCase.includes("update") && lowerCase.includes("info"))
+    ) {
+      detectedIntent = "demographics_update";
+    }
+
+    // Save user message with detected intent for analytics
+    this.saveUserMessage(message, currentStep || "default", detectedIntent);
 
     switch (currentStep) {
       //Demographic steps
@@ -208,10 +459,7 @@ class MessageParser {
         this.actionProvider.handleErectileDysfunctionOptions(message);
         break;
       case "nextAction":
-      case "sexEnhancementNextActionOptions":
-        this.actionProvider.handleSexEnhancementNextAction(message);
-        break;
-      case "sexEnhancementNextAction": // Deprecated but keep for backwards compatibility
+      case "sexEnhancementNextAction": // Handles both nextAction and sexEnhancementNextAction steps
         this.actionProvider.handleSexEnhancementNextAction(message);
         break;
       // New FPM Change/Stop related steps
@@ -302,7 +550,8 @@ class MessageParser {
         this.actionProvider.handleAgentTypeSelection(message);
         break;
       case "userQuestion":
-        this.actionProvider.handleUserQuestion(message);
+        // Send to AI model for free-form questions
+        this.handleAIQuestion(text, currentStep || "userQuestion");
         break;
       case "waitingForHuman": {
         // For now, just acknowledge message while waiting for human
@@ -323,15 +572,15 @@ class MessageParser {
       default:
         console.log(`Unhandled step: ${this.state.currentStep}`);
         // In default state, try to find a match for known user inputs
-        if (lowerCase.includes("inganta rayuwar jima'i (sex life)")) {
+        if (lowerCase.includes("improve sex life")) {
           this.actionProvider.handleSexLifeImprovement();
-        } else if (lowerCase.includes("yadda ake ɗaukar ciki")) {
+        } else if (lowerCase.includes("prevent pregnancy")) {
           this.actionProvider.handlePlanningMethodSelection(
-            "Yadda ake ɗaukar ciki"
+            "How to prevent pregnancy"
           );
-        } else if (lowerCase.includes("sauya") && lowerCase.includes("fpm")) {
+        } else if (lowerCase.includes("change") && lowerCase.includes("fpm")) {
           this.actionProvider.handleFPMChangeSelection(
-            "Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu "
+            "Change/stop current FPM"
           );
         } else if (lowerCase === "human" || lowerCase.includes("agent")) {
           // Handle direct request for a human agent

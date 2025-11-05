@@ -1,13 +1,12 @@
 // src/chatbot/sections/getPregnant/getPregnantActionProvider.tsx
-import { v4 as uuidv4 } from "uuid";
-import { ChatMessage, ChatbotState, ChatStep } from "../../types";
-import { ApiService } from "@/services/api";
-
+import { v4 as uuidv4 } from 'uuid';
+import { ChatMessage, ChatbotState, ChatStep } from '../../types';
+import { ApiService } from '@/services/api';
 
 // Define the types for our get pregnant provider
 type CreateChatBotMessage = (
   message: string,
-  options?: Partial<ChatMessage>
+  options?: Partial<ChatMessage>,
 ) => ChatMessage;
 type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
 
@@ -21,6 +20,7 @@ export interface GetPregnantActionProviderInterface {
   handleGetPregnantPillsStop: (status: string) => void;
   handleGetPregnantNextAction: (action: string) => void;
   handleGetPregnantUserQuestion: (question: string) => void;
+  handleLocationInput: (location: string) => void;
 }
 
 class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
@@ -28,58 +28,133 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   setState: SetStateFunc;
   state: ChatbotState;
   api: ApiService;
+  private userSessionId: string;
 
   // Store user's current selection context
-  private currentFPMMethod: string = "";
-  private tryingDuration: string = "";
-  private userFlow: string = ""; // tracks which flow path user is on
+  private currentFPMMethod: string = '';
+  private tryingDuration: string = '';
+  private messageSequenceNumber: number = 1; // Track message sequence across conversation
 
   constructor(
     createChatBotMessage: CreateChatBotMessage,
     setStateFunc: SetStateFunc,
     state: ChatbotState,
-    apiClient: ApiService
+    apiClient: ApiService,
+    userSessionId?: string,
   ) {
-    this.createChatBotMessage = createChatBotMessage;
+    // Wrap createChatBotMessage to automatically add timestamps
+    const originalCreateChatBotMessage = createChatBotMessage;
+    this.createChatBotMessage = (message: string, options?: Record<string, unknown>) => {
+      const msg = originalCreateChatBotMessage(message, options);
+      return {
+        ...msg,
+        timestamp: new Date().toISOString(),
+      };
+    };
+    
     this.setState = setStateFunc;
     this.state = state;
-    this.api = apiClient
+    this.api = apiClient;
+    this.userSessionId = userSessionId || localStorage.getItem('userSessionId') || '';
+
+    // Enhanced constructor with server-side persistence (similar to prevent pregnancy flow)
+    this.setState = (
+      newState: ChatbotState | ((prev: ChatbotState) => ChatbotState),
+    ) => {
+      // Ensure state has messages array initialized
+      const safeState = {
+        ...this.state,
+        messages: this.state.messages || [],
+      };
+
+      const updatedState =
+        typeof newState === 'function' ? newState(safeState) : newState;
+
+      // Ensure updated state also has messages array
+      const finalState = {
+        ...updatedState,
+        messages: updatedState.messages || [],
+      };
+
+      // Primary: Save to server for cross-device sync
+      this.saveStateToServer(finalState).catch((error) => {
+        console.warn(
+          'Failed to save get pregnant state to server, using localStorage fallback:',
+          error,
+        );
+      });
+
+      // Secondary: Always save to localStorage as backup
+      localStorage.setItem('chat_state', JSON.stringify(finalState));
+
+      // Update component state
+      setStateFunc(finalState);
+      this.state = finalState;
+    };
+  }
+
+  // Save complete chat state to server for WhatsApp-style cross-device sync
+  private async saveStateToServer(state: ChatbotState): Promise<void> {
+    try {
+      await this.ensureChatSession();
+
+      await this.api.saveUserSession({
+        user_session_id: this.api['sessionId'] || 'anonymous',
+        chat_state: JSON.stringify(state),
+        last_activity: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Failed to save get pregnant chat state to server:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to create user messages with timestamps
+  private createUserMessage(message: string): ChatMessage {
+    return {
+      message,
+      type: 'user',
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Ensure chat session is initialized before API calls
+  private async ensureChatSession(): Promise<void> {
+    try {
+      if (!this.api['sessionId']) {
+        console.warn('No user session ID available for get pregnant flow');
+        return;
+      }
+
+      await this.api.initializeChatSession();
+    } catch (error) {
+      console.error('Failed to initialize get pregnant session:', error);
+    }
   }
 
   // Initiate the get pregnant flow
-  handleGetPregnantInitiation =async (): Promise<void> => {
-    const userMessage: ChatMessage = {
-      message: "How to get pregnant",
-      type: "user",
-      id: uuidv4(),
-    };
-    try{
-      await this.api.createConversation({
-    message_type: "user",
-    message_text: userMessage.message,
-    message_source: "typed",
-    chat_step: "getPregnantFPMSelection",
-    widget_name: "getPregnantFPMSelection",
-    message_sequence_number:1,
-    message_delay_ms: 500,
-  })
-    } catch(error){
-      console.log('Failed')
-    }
-    
-   
+  handleGetPregnantInitiation = async (): Promise<void> => {
+    // Reset sequence number for new conversation
+    this.resetSequenceNumber();
+
+    const userMessage = this.createUserMessage('How to get pregnant');
+
+    // Ensure session is initialized
+    await this.ensureChatSession();
+
     // Use the original messages from getPregnantConfig
     const introMessage = this.createChatBotMessage(
-      "Eleyi jẹ nla! Inu mi dun lati fun ọ ni imọran lori eto idile.",
-      { delay: 500 }
+      'This is great! I am happy to give you advice on family planning.',
+      { delay: 500 },
     );
 
     const questionMessage = this.createChatBotMessage(
-      "Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options",
+      'Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options',
       {
-        widget: "getPregnantFPMSelection",
+        widget: 'getPregnantFPMSelection',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -87,30 +162,75 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       messages: userMessage
         ? [...prev.messages, userMessage, introMessage, questionMessage]
         : [...prev.messages, introMessage, questionMessage],
-      currentStep: "getPregnantFPMSelection",
-      
+      currentStep: 'getPregnantFPMSelection',
     }));
-   await this.api.createConversation({
-    message_type: "user",
-    message_text: userMessage.message,
-    chat_step: "getPregnantFPMSelection",
-    widget_name: "getPregnantFPMSelection",
-    message_sequence_number:1,
-    message_delay_ms: 500,
-  }).catch(err => console.error("Failed to save conversation:", err));
+
+    // Update User table with get pregnant intent
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantFPMSelection',
+        user_intention: 'get_pregnant',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save user message conversation
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: userMessage.message,
+        chat_step: 'getPregnantInitiation',
+        widget_name: 'getPregnantInitiation',
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    // Save bot intro message
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text:
+          'This is great! I am happy to give you advice on family planning.',
+        chat_step: 'getPregnantFPMSelection',
+        widget_name: 'getPregnantFPMSelection',
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    // Save bot question message
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text:
+          'Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options',
+        chat_step: 'getPregnantFPMSelection',
+        widget_name: 'getPregnantFPMSelection',
+        widget_options: [
+          'No FPM now or recently',
+          'IUD',
+          'Implants',
+          'Injections /Depo-provera / Sayana Press',
+          'Sayana Press',
+          'Daily Pills',
+          'Condoms',
+          'Emergency pills',
+          'Female sterilisation',
+          'Male sterilisation',
+        ],
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
   };
 
   // Handle FPM selection for get pregnant flow
-  handleGetPregnantFPMSelection = (selection: string): void => {
-    const userMessage: ChatMessage = {
-      message: selection,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantFPMSelection = async (selection: string): Promise<void> => {
+    const userMessage = this.createUserMessage(selection);
 
     // Store the current method
     this.currentFPMMethod = selection;
-    console.log("FPM Method stored:", this.currentFPMMethod); // debug log
+    console.log('FPM Method stored:', this.currentFPMMethod); // debug log
 
     // Get specific response based on the method
     const response = this.getFPMSpecificResponse(selection);
@@ -134,6 +254,82 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       messages: [...prev.messages, ...messages],
       currentStep: response.nextStep,
     }));
+
+    // Update User table with FPM selection
+    await this.api
+      .updateUser({
+        current_step: response.nextStep,
+        current_fpm_method: selection,
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save user selection conversation
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: selection,
+        chat_step: 'getPregnantFPMSelection',
+        widget_name: 'getPregnantFPMSelection',
+        message_sequence_number: 4,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    // Save bot response conversation
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: response.message,
+        chat_step: response.nextStep,
+        widget_name: response.followUpWidget || 'getPregnantNextAction',
+        message_sequence_number: 5,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    // Save follow-up question if exists
+    if (response.followUpQuestion) {
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text: response.followUpQuestion,
+          chat_step: response.nextStep,
+          widget_name: response.followUpWidget || 'getPregnantNextAction',
+          widget_options: this.getWidgetOptions(response.followUpWidget || ''),
+          message_sequence_number: 6,
+          message_delay_ms: 1000,
+        })
+        .catch((err) =>
+          console.error('Failed to save follow-up conversation:', err),
+        );
+    }
+
+    // Save user response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantFPMSelection',
+        response_type: 'user',
+        question_asked:
+          'Are you currently using a family planning method (FPM) or did you recently use one?',
+        user_response: selection,
+        widget_used: 'getPregnantFPMSelection',
+        available_options: [
+          'No FPM now or recently',
+          'IUD',
+          'Implants',
+          'Injections /Depo-provera / Sayana Press',
+          'Sayana Press',
+          'Daily Pills',
+          'Condoms',
+          'Emergency pills',
+          'Female sterilisation',
+          'Male sterilisation',
+        ],
+        step_in_flow: 'getPregnantFPMSelection',
+      })
+      .catch((err) =>
+        console.error('Failed to save FPM Selection responses:', err),
+      );
   };
 
   // Get specific response based on FPM method
@@ -143,7 +339,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     followUpWidget?: string;
     nextStep: ChatStep;
   } {
-    console.log("getFPMSpecificResponse called with:", { method }); // debug log
+    console.log('getFPMSpecificResponse called with:', { method }); // debug log
 
     const responses: Record<
       string,
@@ -154,116 +350,150 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         nextStep: ChatStep;
       }
     > = {
-      "No FPM now or recently": {
+      'No FPM now or recently': {
         message:
           "That's good to know. Since you're not using any contraceptive method, your body should be ready for pregnancy. Let me ask you about your journey so far.",
-        followUpQuestion: "How long have you been trying to conceive?",
-        followUpWidget: "getPregnantTryingDuration",
-        nextStep: "getPregnantTryingDuration",
+        followUpQuestion: 'How long have you been trying to conceive?',
+        followUpWidget: 'getPregnantTryingDuration',
+        nextStep: 'getPregnantTryingDuration',
       },
       IUD: {
         message:
           "I understand you currently have an IUD. To get pregnant, you'll need to have it removed by a healthcare provider. The IUD prevents pregnancy very effectively, so removal is necessary.",
-        followUpQuestion: "Have you had your IUD removed?",
-        followUpWidget: "getPregnantIUDRemoval",
-        nextStep: "getPregnantIUDRemoval",
+        followUpQuestion: 'Have you had your IUD removed?',
+        followUpWidget: 'getPregnantIUDRemoval',
+        nextStep: 'getPregnantIUDRemoval',
       },
       Implants: {
         message:
           "I see you have an implant. To get pregnant, you'll need to have the implant removed by a healthcare provider. The implant prevents pregnancy very effectively.",
-        followUpQuestion: "Have you had your implant removed?",
-        followUpWidget: "getPregnantImplantRemoval",
-        nextStep: "getPregnantImplantRemoval",
+        followUpQuestion: 'Have you had your implant removed?',
+        followUpWidget: 'getPregnantImplantRemoval',
+        nextStep: 'getPregnantImplantRemoval',
       },
-      "Injections /Depo-provera / Sayana Press": {
+      'Injections /Depo-provera / Sayana Press': {
         message:
           "I understand you're using injections. To get pregnant, you'll need to stop getting the injections. However, it may take some time for your fertility to return after stopping.",
-        followUpQuestion: "Have you stopped getting the injections?",
-        followUpWidget: "getPregnantInjectionStop",
-        nextStep: "getPregnantInjectionStop",
+        followUpQuestion: 'Have you stopped getting the injections?',
+        followUpWidget: 'getPregnantInjectionStop',
+        nextStep: 'getPregnantInjectionStop',
       },
-      "Sayana Press": {
+      'Sayana Press': {
         message:
           "I understand you're using Sayana Press. To get pregnant, you'll need to stop getting the injections. However, it may take some time for your fertility to return after stopping.",
         followUpQuestion:
-          "Have you stopped getting the Sayana Press injections?",
-        followUpWidget: "getPregnantInjectionStop",
-        nextStep: "getPregnantInjectionStop",
+          'Have you stopped getting the Sayana Press injections?',
+        followUpWidget: 'getPregnantInjectionStop',
+        nextStep: 'getPregnantInjectionStop',
       },
-      "Daily Pills": {
+      'Daily Pills': {
         message:
           "I see you're taking daily contraceptive pills. To get pregnant, you'll need to stop taking the pills. Your fertility should return relatively quickly after stopping.",
-        followUpQuestion: "Have you stopped taking the daily pills?",
-        followUpWidget: "getPregnantPillsStop",
-        nextStep: "getPregnantPillsStop",
+        followUpQuestion: 'Have you stopped taking the daily pills?',
+        followUpWidget: 'getPregnantPillsStop',
+        nextStep: 'getPregnantPillsStop',
       },
       Condoms: {
         message:
           "Since you're using condoms, you can start trying to conceive immediately by simply not using them during intercourse. Condoms don't affect your fertility.",
-        followUpQuestion: "What would you like to do next?",
-        followUpWidget: "getPregnantNextAction",
-        nextStep: "getPregnantNextAction",
+        followUpQuestion: 'What would you like to do next?',
+        followUpWidget: 'getPregnantNextAction',
+        nextStep: 'getPregnantNextAction',
       },
-      "Emergency pills": {
+      'Emergency pills': {
         message:
           "Emergency contraceptive pills are only meant for occasional use and don't affect your long-term fertility. You can start trying to conceive whenever you're ready.",
-        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
-        followUpWidget: "getPregnantNextAction",
-        nextStep: "getPregnantNextAction",
+        followUpQuestion: 'What would you like to do next?',
+        followUpWidget: 'getPregnantNextAction',
+        nextStep: 'getPregnantNextAction',
       },
-      "Female sterilisation": {
+      'Female sterilisation': {
         message:
-          "Sometimes female sterilisation is reversible. It can be immediately after or even several years later.Kindly visit your health provider for counselling.",
-        followUpQuestion: Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
-        followUpWidget: "getPregnantNextAction",
-        nextStep: "getPregnantNextAction",
+          "Female sterilisation is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
+        followUpQuestion: 'What would you like to do next?',
+        followUpWidget: 'getPregnantNextAction',
+        nextStep: 'getPregnantNextAction',
       },
-      "Male sterilisation": {
+      'Male sterilisation': {
         message:
-          "Nigba miiran ìlànà adena ọmọ bíbí ti  okunrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.",
-        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
-        followUpWidget: "getPregnantNextAction",
-        nextStep: "getPregnantNextAction",
+          "Male sterilisation (vasectomy) is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
+        followUpQuestion: 'What would you like to do next?',
+        followUpWidget: 'getPregnantNextAction',
+        nextStep: 'getPregnantNextAction',
       },
     };
 
     const foundResponse = responses[method];
-    console.log("Found response:", foundResponse ? "Yes" : "No", { method }); // Debug log
-
+    console.log('Found response:', foundResponse ? 'Yes' : 'No', { method }); // Debug log
     return (
       foundResponse || {
         message: `I understand you're using ${method}. For specific guidance about conception while using this method, I recommend consulting with a healthcare provider. Please call 7790 for personalized assistance.`,
-        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
-        followUpWidget: "getPregnantNextAction",
-        nextStep: "getPregnantNextAction",
+        followUpQuestion: 'What would you like to do next?',
+        followUpWidget: 'getPregnantNextAction',
+        nextStep: 'getPregnantNextAction',
       }
     );
   }
 
-  // Handle trying duration selection (No FPM branch)
-  handleGetPregnantTryingDuration = (duration: string): void => {
-    const userMessage: ChatMessage = {
-      message: duration,
-      type: "user",
-      id: uuidv4(),
+  // Helper method to get widget options for conversation tracking
+  private getWidgetOptions(widgetName: string): string[] {
+    const optionsMap: Record<string, string[]> = {
+      getPregnantTryingDuration: [
+        'Less than 6 months',
+        '6-12 months',
+        'More than 1 year',
+      ],
+      getPregnantIUDRemoval: [
+        'Yes, more than 1 year',
+        'Yes, less than 1 year',
+        "No, I didn't remove",
+      ],
+      getPregnantImplantRemoval: [
+        'Longer than 3 months',
+        'Less than 3 months',
+        "No, I didn't remove",
+      ],
+      getPregnantInjectionStop: ['Yes', 'No'],
+      getPregnantPillsStop: ['Yes', 'No'],
+      getPregnantNextAction: [
+        'Ask more questions',
+        'Find nearest clinic',
+        'Back to main menu',
+      ],
     };
+    return optionsMap[widgetName] || [];
+  }
+
+  // Get next message sequence number
+  private getNextSequenceNumber(): number {
+    return ++this.messageSequenceNumber;
+  }
+
+  // Reset message sequence for new conversation
+  private resetSequenceNumber(): void {
+    this.messageSequenceNumber = 0;
+  }
+
+  // Handle trying duration selection (No FPM branch)
+  handleGetPregnantTryingDuration = async (duration: string): Promise<void> => {
+    const userMessage = this.createUserMessage(duration);
 
     // Store the trying duration
     this.tryingDuration = duration;
-    console.log("Trying duration stored:", this.tryingDuration); // debug log
+    console.log('Trying duration stored:', this.tryingDuration); // debug log
 
     // Get specific advice based on duration
     const adviceMessage = this.createChatBotMessage(
       this.getTryingDurationAdvice(duration),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -274,46 +504,109 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         adviceMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table with trying duration
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save user duration selection
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: duration,
+        chat_step: 'getPregnantTryingDuration',
+        widget_name: 'getPregnantTryingDuration',
+        message_sequence_number: 7,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    // Save bot advice message
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getTryingDurationAdvice(duration),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 8,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    // Save next action question
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 9,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantTryingDuration',
+        response_type: 'user',
+        question_asked: 'How long have you been trying to conceive?',
+        user_response: duration,
+        widget_used: 'getPregnantTryingDuration',
+        available_options: [
+          'Less than 6 months',
+          '6-12 months',
+          'More than 1 year',
+        ],
+        step_in_flow: 'getPregnantTryingDuration',
+      })
+      .catch((err) =>
+        console.error('Failed to save trying duration response:', err),
+      );
   };
 
   // Get advice based on trying duration
   private getTryingDurationAdvice(duration: string): string {
     const adviceMap: Record<string, string> = {
-      "Less than 6 months":
+      'Less than 6 months':
         "It's still early in your conception journey. For most couples, it can take up to 6-12 months to conceive naturally. Continue with regular unprotected intercourse and maintain a healthy lifestyle with proper nutrition, exercise, and prenatal vitamins.",
-      "6-12 months":
+      '6-12 months':
         "You've been trying for a while, which is normal for many couples. Consider tracking your ovulation cycle to optimize timing. Maintain healthy habits and consider consulting a healthcare provider if you have concerns.",
-      " than 1 year":
+      ' than 1 year':
         "After trying for over a year, it may be helpful to consult with a fertility specialist or healthcare provider. They can assess both partners and provide guidance on next steps. Don't lose hope - many couples conceive with proper medical guidance.",
     };
 
     return (
       adviceMap[duration] ||
-      "Thank you for sharing that information. For personalized advice about your conception journey, I recommend consulting with a healthcare provider who can assess your specific situation."
+      'Thank you for sharing that information. For personalized advice about your conception journey, I recommend consulting with a healthcare provider who can assess your specific situation.'
     );
   }
 
   // Handle IUD removal status
-  handleGetPregnantIUDRemoval = (status: string): void => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantIUDRemoval = async (status: string): Promise<void> => {
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getIUDRemovalResponse(status),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -324,16 +617,81 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         responseMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: status,
+        chat_step: 'getPregnantIUDRemoval',
+        widget_name: 'getPregnantIUDRemoval',
+        message_sequence_number: 7,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getIUDRemovalResponse(status),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 8,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 9,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantIUDRemoval',
+        response_type: 'user',
+        question_asked: 'Have you had your IUD removed?',
+        user_response: status,
+        widget_used: 'getPregnantIUDRemoval',
+        available_options: [
+          'Yes, more than 1 year',
+          'Yes, less than 1 year',
+          "No, I didn't remove",
+        ],
+        step_in_flow: 'getPregnantIUDRemoval',
+      })
+      .catch((err) =>
+        console.error('Failed to save IUD removal response:', err),
+      );
   };
 
   // Get IUD removal specific response
   private getIUDRemovalResponse(status: string): string {
     const responses: Record<string, string> = {
-      "Yes, more than 1 year":
+      'Yes, more than 1 year':
         "Great! Since you had your IUD removed more than a year ago, your fertility should have fully returned. You can continue trying to conceive naturally. If you haven't conceived yet, consider consulting with a healthcare provider for fertility assessment.",
-      "Yes, less than 1 year":
+      'Yes, less than 1 year':
         "Good! Your IUD has been removed. Most women's fertility returns immediately after IUD removal, so you can start trying to conceive right away. It may take a few months for your cycle to regulate completely.",
       "No, I didn't remove":
         "To get pregnant, you'll need to have your IUD removed by a healthcare provider. This is a simple procedure that can be done at a clinic. Please call 7790 to schedule an appointment for IUD removal.",
@@ -341,29 +699,25 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Jọwọ kan si alagbawo pẹlu olupese ilera nipa IUD rẹ ati awọn ero inu. Pe 7790 fun iranlọwọ ti ara ẹni."
+      'Please consult with a healthcare provider about your IUD and conception plans. Call 7790 for personalized assistance.'
     );
   }
 
   // Handle Implant removal status
-  handleGetPregnantImplantRemoval = (status: string): void => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantImplantRemoval = async (status: string): Promise<void> => {
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getImplantRemovalResponse(status),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -374,46 +728,107 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         responseMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: status,
+        chat_step: 'getPregnantImplantRemoval',
+        widget_name: 'getPregnantImplantRemoval',
+        message_sequence_number: 7,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getImplantRemovalResponse(status),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 8,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 9,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantImplantRemoval',
+        response_type: 'user',
+        question_asked: 'Have you had your implant removed?',
+        user_response: status,
+        widget_used: 'getPregnantImplantRemoval',
+        available_options: [
+          'Longer than 3 months',
+          'Less than 3 months',
+          "No, I didn't remove",
+        ],
+        step_in_flow: 'getPregnantImplantRemoval',
+      })
+      .catch((err) =>
+        console.error('Failed to save implant removal response:', err),
+      );
   };
 
   // Get implant removal specific response
   private getImplantRemovalResponse(status: string): string {
     const responses: Record<string, string> = {
-      "Longer than 3 months":
-        "Excellent! Since you had your implant removed more than 3 months ago, your fertility should have fully returned. You can continue trying to conceive naturally. Most women conceive within a year of implant removal.",
-      "Less than 3 months":
+      'Longer than 3 months':
+        'Excellent! Since you had your implant removed more than 3 months ago, your fertility should have fully returned. You can continue trying to conceive naturally. Most women conceive within a year of implant removal.',
+      'Less than 3 months':
         "Good! Your implant has been removed recently. Most women's fertility returns immediately after implant removal, so you can start trying to conceive right away. It may take a few cycles for your body to fully adjust.",
       "No, I didn't remove":
-        "Lati loyun, iwọ yoo nilo lati yọ ifinu rẹ kuro nipasẹ olupese ilera kan. Eyi jẹ ilana ti o rọrun ti o le ṣee ṣe ni ile-iwosan kan. Jọwọ pe 7790 lati ṣeto ipinnu lati pade fun yiyọkuro ifinu."
-  };
+        "To get pregnant, you'll need to have your implant removed by a healthcare provider. This is a simple procedure that can be done at a clinic. Please call 7790 to schedule an appointment for implant removal.",
+    };
 
     return (
       responses[status] ||
-      "Please consult with a healthcare provider about your implant and conception plans. Call 7790 for personalized assistance."
+      'Please consult with a healthcare provider about your implant and conception plans. Call 7790 for personalized assistance.'
     );
   }
 
   // Handle injection stopping status
-  handleGetPregnantInjectionStop = (status: string): void => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantInjectionStop = async (status: string): Promise<void> => {
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getInjectionStopResponse(status),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -424,8 +839,69 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         responseMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: status,
+        chat_step: 'getPregnantInjectionStop',
+        widget_name: 'getPregnantInjectionStop',
+        message_sequence_number: 7,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getInjectionStopResponse(status),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 8,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 9,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantInjectionStop',
+        response_type: 'user',
+        question_asked: 'Have you stopped getting the injections?',
+        user_response: status,
+        widget_used: 'getPregnantInjectionStop',
+        available_options: ['Yes', 'No'],
+        step_in_flow: 'getPregnantInjectionStop',
+      })
+      .catch((err) =>
+        console.error('Failed to save injection stop response:', err),
+      );
   };
 
   // Get injection stop specific response
@@ -437,29 +913,25 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Jọwọ kan si alagbawo pẹlu olupese ilera kan nipa didaduro awọn abẹrẹ ati awọn ero ero inu rẹ. Pe 7790 fun iranlọwọ ti ara ẹni."
+      'Please consult with a healthcare provider about stopping your injections and conception plans. Call 7790 for personalized assistance.'
     );
   }
 
   // Handle pills stopping status
-  handleGetPregnantPillsStop = (status: string): void => {
-    const userMessage: ChatMessage = {
-      message: status,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantPillsStop = async (status: string): Promise<void> => {
+    const userMessage = this.createUserMessage(status);
 
     const responseMessage = this.createChatBotMessage(
       this.getPillsStopResponse(status),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -470,8 +942,70 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         responseMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: status,
+        chat_step: 'getPregnantPillsStop',
+        widget_name: 'getPregnantPillsStop',
+        message_sequence_number: 7,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getPillsStopResponse(status),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 8,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 9,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantPillsStop',
+        response_type: 'user',
+        question_asked:
+          'Have you stopped taking the daily contraceptive pills?',
+        user_response: status,
+        widget_used: 'getPregnantPillsStop',
+        available_options: ['Yes', 'No'],
+        step_in_flow: 'getPregnantPillsStop',
+      })
+      .catch((err) =>
+        console.error('Failed to save pills stop response:', err),
+      );
   };
 
   // Get pills stop specific response
@@ -483,27 +1017,23 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      "Jọwọ kan si alagbawo pẹlu olupese ilera kan nipa didaduro awọn oogun ati awọn ero ero inu rẹ. Pe 7790 fun iranlọwọ ti ara ẹni."
+      'Please consult with a healthcare provider about stopping your pills and conception plans. Call 7790 for personalized assistance.'
     );
   }
 
   // Handle next action selection
-  handleGetPregnantNextAction = (action: string): void => {
-    const userMessage: ChatMessage = {
-      message: action,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantNextAction = async (action: string): Promise<void> => {
+    const userMessage = this.createUserMessage(action);
 
-    if (action === "Ask more questions") {
+    if (action === 'Ask more questions') {
       const moreQuestionsMessage = this.createChatBotMessage(
-        "Mo wà níbí láti ràn ẹ́ lọ́wọ́ nípa gbogbo ìbéèrè tó ní ṣe pẹ̀lú bí a ṣe lè lóyún. Kí ni o fẹ́ mọ̀?",
-        { delay: 500 }
+        "I'm here to help with any questions you have about getting pregnant. What would you like to know?",
+        { delay: 500 },
       );
 
       const promptMessage = this.createChatBotMessage(
-        "Please type your question below:",
-        { delay: 1000 }
+        'Please type your question below:',
+        { delay: 1000 },
       );
 
       this.setState((prev: ChatbotState) => ({
@@ -514,56 +1044,299 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
           moreQuestionsMessage,
           promptMessage,
         ],
-        currentStep: "getPregnantUserQuestion",
+        currentStep: 'getPregnantUserQuestion',
       }));
-    } else if (action === "Find nearest clinic") {
+
+      // Update User table
+      await this.api
+        .updateUser({
+          current_step: 'getPregnantUserQuestion',
+        })
+        .catch((err) => console.error('Failed to update user:', err));
+
+      // Save conversations
+      await this.api
+        .createConversation({
+          message_type: 'user',
+          message_text: action,
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          message_sequence_number: 10,
+          message_delay_ms: 0,
+        })
+        .catch((err) =>
+          console.error('Failed to save user conversation:', err),
+        );
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text:
+            "I'm here to help with any questions you have about getting pregnant. What would you like to know?",
+          chat_step: 'getPregnantUserQuestion',
+          widget_name: 'getPregnantUserQuestion',
+          message_sequence_number: 11,
+          message_delay_ms: 500,
+        })
+        .catch((err) => console.error('Failed to save bot conversation:', err));
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text: 'Please type your question below:',
+          chat_step: 'getPregnantUserQuestion',
+          widget_name: 'getPregnantUserQuestion',
+          message_sequence_number: 12,
+          message_delay_ms: 1000,
+        })
+        .catch((err) => console.error('Failed to save conversation:', err));
+
+      await this.api
+        .createResponse({
+          response_category: 'GetPregnantNavigation',
+          response_type: 'user',
+          question_asked: 'What would you like to do next?',
+          user_response: action,
+          widget_used: 'getPregnantNextAction',
+          available_options: [
+            'Ask more questions',
+            'Find nearest clinic',
+            'Back to main menu',
+          ],
+          step_in_flow: 'getPregnantNextAction',
+        })
+        .catch((err) =>
+          console.error('Failed to save navigation response:', err),
+        );
+    } else if (action === 'Find nearest clinic') {
       const clinicMessage = this.createChatBotMessage(
-        "Láti rí ilé ìwòsàn tó súnmọ́ ọ, jọ̀wọ́ pín ipò rẹ tàbí kọ orúkọ ìlú/àgbègbè rẹ.",
-        { delay: 500 }
+        'To find the nearest clinic, please share your location or enter your city/area name.',
+        { delay: 500 },
       );
 
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, clinicMessage],
-        currentStep: "locationInput",
+        currentStep: 'locationInput',
       }));
-    } else if (action === "Back to main menu") {
+
+      // Update User table
+      await this.api
+        .updateUser({
+          current_step: 'locationInput',
+        })
+        .catch((err) => console.error('Failed to update user:', err));
+
+      // Save conversations
+      await this.api
+        .createConversation({
+          message_type: 'user',
+          message_text: action,
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          message_sequence_number: 10,
+          message_delay_ms: 0,
+        })
+        .catch((err) =>
+          console.error('Failed to save user conversation:', err),
+        );
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text:
+            'To find the nearest clinic, please share your location or enter your city/area name.',
+          chat_step: 'locationInput',
+          widget_name: 'locationInput',
+          message_sequence_number: 11,
+          message_delay_ms: 500,
+        })
+        .catch((err) => console.error('Failed to save bot conversation:', err));
+
+      await this.api
+        .createResponse({
+          response_category: 'GetPregnantNavigation',
+          response_type: 'user',
+          question_asked: 'What would you like to do next?',
+          user_response: action,
+          widget_used: 'getPregnantNextAction',
+          available_options: [
+            'Ask more questions',
+            'Find nearest clinic',
+            'Back to main menu',
+          ],
+          step_in_flow: 'locationInput',
+        })
+        .catch((err) =>
+          console.error('Failed to save clinic navigation response:', err),
+        );
+    } else if (action === 'Back to main menu') {
       const mainMenuMessage = this.createChatBotMessage(
-        "Kini iwọ yoo fẹ ki n ran ọ lọwọ?",
+        'What would you like me to help you with?',
         {
-          widget: "fpmOptions",
+          widget: 'fpmOptions',
           delay: 500,
-        }
+        },
       );
 
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, mainMenuMessage],
-        currentStep: "fpm",
+        currentStep: 'fpm',
       }));
+
+      // Update User table
+      await this.api
+        .updateUser({
+          current_step: 'fpm',
+        })
+        .catch((err) => console.error('Failed to update user:', err));
+
+      // Save conversations
+      await this.api
+        .createConversation({
+          message_type: 'user',
+          message_text: action,
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          message_sequence_number: 10,
+          message_delay_ms: 0,
+        })
+        .catch((err) =>
+          console.error('Failed to save user conversation:', err),
+        );
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text: 'What would you like me to help you with?',
+          chat_step: 'fpm',
+          widget_name: 'fpmOptions',
+          message_sequence_number: 11,
+          message_delay_ms: 500,
+        })
+        .catch((err) => console.error('Failed to save bot conversation:', err));
+
+      await this.api
+        .createResponse({
+          response_category: 'GetPregnantNavigation',
+          response_type: 'user',
+          question_asked: 'What would you like to do next?',
+          user_response: action,
+          widget_used: 'getPregnantNextAction',
+          available_options: [
+            'Ask more questions',
+            'Find nearest clinic',
+            'Back to main menu',
+          ],
+          step_in_flow: 'fpm',
+        })
+        .catch((err) =>
+          console.error('Failed to save main menu navigation response:', err),
+        );
+    } else {
+      // Handle unexpected actions - prevent dead ends
+      const errorMessage = this.createChatBotMessage(
+        "I didn't understand that option. Let me show you the available choices again.",
+        { delay: 500 },
+      );
+
+      const nextActionMessage = this.createChatBotMessage(
+        'What would you like to do next?',
+        {
+          widget: 'getPregnantNextAction',
+          delay: 1000,
+        },
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          userMessage,
+          errorMessage,
+          nextActionMessage,
+        ],
+        currentStep: 'getPregnantNextAction',
+      }));
+
+      // Save error handling conversation
+      await this.api
+        .createConversation({
+          message_type: 'user',
+          message_text: action,
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 0,
+        })
+        .catch((err) =>
+          console.error('Failed to save user conversation:', err),
+        );
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text:
+            "I didn't understand that option. Let me show you the available choices again.",
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 500,
+        })
+        .catch((err) => console.error('Failed to save bot conversation:', err));
+
+      await this.api
+        .createConversation({
+          message_type: 'bot',
+          message_text: 'What would you like to do next?',
+          chat_step: 'getPregnantNextAction',
+          widget_name: 'getPregnantNextAction',
+          widget_options: [
+            'Ask more questions',
+            'Find nearest clinic',
+            'Back to main menu',
+          ],
+          message_sequence_number: this.getNextSequenceNumber(),
+          message_delay_ms: 1000,
+        })
+        .catch((err) => console.error('Failed to save conversation:', err));
+
+      // Save error response tracking
+      await this.api
+        .createResponse({
+          response_category: 'GetPregnantNavigationError',
+          response_type: 'user',
+          question_asked: 'What would you like to do next?',
+          user_response: action,
+          widget_used: 'getPregnantNextAction',
+          available_options: [
+            'Ask more questions',
+            'Find nearest clinic',
+            'Back to main menu',
+          ],
+          step_in_flow: 'getPregnantNextAction',
+        })
+        .catch((err) => console.error('Failed to save error response:', err));
     }
   };
 
   // Handle user questions in get pregnant flow
-  handleGetPregnantUserQuestion = (question: string): void => {
-    const userMessage: ChatMessage = {
-      message: question,
-      type: "user",
-      id: uuidv4(),
-    };
+  handleGetPregnantUserQuestion = async (question: string): Promise<void> => {
+    const userMessage = this.createUserMessage(question);
 
     // Get response based on question content
     const responseMessage = this.createChatBotMessage(
       this.getQuestionResponse(question),
-      { delay: 500 }
+      { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      "What would you like to do next?",
+      'What would you like to do next?',
       {
-        widget: "getPregnantNextAction",
+        widget: 'getPregnantNextAction',
         delay: 1000,
-      }
+      },
     );
 
     this.setState((prev: ChatbotState) => ({
@@ -574,8 +1347,162 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         responseMessage,
         nextActionMessage,
       ],
-      currentStep: "getPregnantNextAction",
+      currentStep: 'getPregnantNextAction',
     }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: question,
+        chat_step: 'getPregnantUserQuestion',
+        widget_name: 'getPregnantUserQuestion',
+        message_sequence_number: 13,
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: this.getQuestionResponse(question),
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: 14,
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: 15,
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'GetPregnantUserQuestion',
+        response_type: 'user',
+        question_asked: 'What would you like to know about getting pregnant?',
+        user_response: question,
+        widget_used: 'getPregnantUserQuestion',
+        available_options: [],
+        step_in_flow: 'getPregnantUserQuestion',
+      })
+      .catch((err) =>
+        console.error('Failed to save user question response:', err),
+      );
+  };
+
+  // Handle location input for clinic finding
+  handleLocationInput = async (location: string): Promise<void> => {
+    const userMessage: ChatMessage = {
+      message: location,
+      type: 'user',
+      id: uuidv4(),
+    };
+
+    const responseMessage = this.createChatBotMessage(
+      `Thank you for providing your location: ${location}. I'm searching for clinics near you. For immediate assistance, please call 7790 to speak with our team who can provide specific clinic locations and contact information.`,
+      { delay: 500 },
+    );
+
+    const nextActionMessage = this.createChatBotMessage(
+      'What would you like to do next?',
+      {
+        widget: 'getPregnantNextAction',
+        delay: 1000,
+      },
+    );
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [
+        ...prev.messages,
+        userMessage,
+        responseMessage,
+        nextActionMessage,
+      ],
+      currentStep: 'getPregnantNextAction',
+    }));
+
+    // Update User table
+    await this.api
+      .updateUser({
+        current_step: 'getPregnantNextAction',
+      })
+      .catch((err) => console.error('Failed to update user:', err));
+
+    // Save conversations
+    await this.api
+      .createConversation({
+        message_type: 'user',
+        message_text: location,
+        chat_step: 'locationInput',
+        widget_name: 'locationInput',
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 0,
+      })
+      .catch((err) => console.error('Failed to save user conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: `Thank you for providing your location: ${location}. I'm searching for clinics near you. For immediate assistance, please call 7790 to speak with our team who can provide specific clinic locations and contact information.`,
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 500,
+      })
+      .catch((err) => console.error('Failed to save bot conversation:', err));
+
+    await this.api
+      .createConversation({
+        message_type: 'bot',
+        message_text: 'What would you like to do next?',
+        chat_step: 'getPregnantNextAction',
+        widget_name: 'getPregnantNextAction',
+        widget_options: [
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
+        ],
+        message_sequence_number: this.getNextSequenceNumber(),
+        message_delay_ms: 1000,
+      })
+      .catch((err) => console.error('Failed to save conversation:', err));
+
+    // Save response tracking
+    await this.api
+      .createResponse({
+        response_category: 'LocationInput',
+        response_type: 'user',
+        question_asked:
+          'Please share your location or enter your city/area name',
+        user_response: location,
+        widget_used: 'locationInput',
+        available_options: [],
+        step_in_flow: 'locationInput',
+      })
+      .catch((err) => console.error('Failed to save location response:', err));
   };
 
   // Get response for user questions
@@ -583,27 +1510,27 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     const lowerQuestion = question.toLowerCase();
 
     if (
-      lowerQuestion.includes("ovulation") ||
-      lowerQuestion.includes("fertile")
+      lowerQuestion.includes('ovulation') ||
+      lowerQuestion.includes('fertile')
     ) {
       return "Ovulation typically occurs around day 14 of a 28-day cycle. You're most fertile in the days leading up to and during ovulation. Consider tracking your cycle and using ovulation predictor kits to optimize timing.";
     } else if (
-      lowerQuestion.includes("nutrition") ||
-      lowerQuestion.includes("diet")
+      lowerQuestion.includes('nutrition') ||
+      lowerQuestion.includes('diet')
     ) {
-      return "A healthy diet rich in folic acid, iron, and prenatal vitamins is important when trying to conceive. Avoid alcohol, limit caffeine, and maintain a balanced diet with plenty of fruits and vegetables.";
+      return 'A healthy diet rich in folic acid, iron, and prenatal vitamins is important when trying to conceive. Avoid alcohol, limit caffeine, and maintain a balanced diet with plenty of fruits and vegetables.';
     } else if (
-      lowerQuestion.includes("exercise") ||
-      lowerQuestion.includes("activity")
+      lowerQuestion.includes('exercise') ||
+      lowerQuestion.includes('activity')
     ) {
-      return "Moderate exercise is beneficial when trying to conceive. Avoid excessive high-intensity workouts that might affect your cycle. Walking, swimming, and yoga are excellent options.";
+      return 'Moderate exercise is beneficial when trying to conceive. Avoid excessive high-intensity workouts that might affect your cycle. Walking, swimming, and yoga are excellent options.';
     } else if (
-      lowerQuestion.includes("age") ||
-      lowerQuestion.includes("older")
+      lowerQuestion.includes('age') ||
+      lowerQuestion.includes('older')
     ) {
       return "Age can affect fertility, but many women conceive naturally at various ages. If you're over 35 and have been trying for 6 months, or over 40, consider consulting a fertility specialist sooner.";
     } else {
-      return "Thank you for your question. For specific medical advice about conception, I recommend consulting with a healthcare provider who can address your individual situation. You can call 7790 to speak with a medical professional.";
+      return 'Thank you for your question. For specific medical advice about conception, I recommend consulting with a healthcare provider who can address your individual situation. You can call 7790 to speak with a medical professional.';
     }
   }
 }

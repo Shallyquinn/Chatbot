@@ -1,15 +1,66 @@
 // honey/src/chatbot/types.ts
 export interface ChatMessage {
   message: string;
-  type: 'bot' | 'user';
+  type: "bot" | "user";
   id?: string;
   widget?: string;
   delay?: number;
+  loading?: boolean;
+  withAvatar?: boolean;
+  widgetData?: Record<string, unknown>;
+  tag?: string;
+  timestamp?: string; // ISO timestamp string for when the message was sent
+}
+
+export type GreetingStep =
+  | "initial_welcome"
+  | "introduction"
+  | "capabilities"
+  | "confidentiality"
+  | "gender"
+  | "location"
+  | "location_confirmation"
+  | "age"
+  | "marital_status"
+  | "setup_complete"
+  | "main_navigation"
+  | "complete";
+
+export type EmergencyProduct = "postpill" | "postinor2";
+
+export type PreventionDuration =
+  | "short_term"
+  | "medium_term"
+  | "long_term"
+  | "extended_term"
+  | "permanent";
+
+export type ContraceptiveMethod =
+  | "daily_pills"
+  | "diaphragm"
+  | "female_condom"
+  | "male_condom"
+  | "injectables"
+  | "implants"
+  | "ius"
+  | "iud"
+  | "vasectomy"
+  | "tubal_ligation";
+
+export type ContraceptionType = "emergency" | "prevention";
+
+export interface MethodInfo {
+  description: string;
+  imageWidget?: string;
+  imagePrompt?: string;
+  audioWidget?: string;
+  audioPrompt?: string;
 }
 
 export interface ChatbotState {
   messages: ChatMessage[];
   currentStep: ChatStep;
+  greetingStep: GreetingStep;
   selectedState?: string;
   selectedLGA?: string;
   currentFPMMethod?: string;
@@ -18,66 +69,111 @@ export interface ChatbotState {
   selectedLanguage?: string;
   selectedGender?: string;
   selectedAge?: string;
+  selectedAgeGroup?: string;
+  selectedMaritalStatus?: string;
+  isSessionInitialized?: boolean;
+  isReturningUser?: boolean;
+  // Agent-related fields
+  conversationId?: string;
+  escalationStatus?: "QUEUED" | "ASSIGNED" | "COMPLETED" | null;
+  queuePosition?: number;
+  assignedAgent?: string | null;
+  agentId?: string | null;
+  agentWebSocket?: WebSocket | null;
+  queueUpdateInterval?: NodeJS.Timeout | null;
+  fpmInteractionData?: FPMInteractionData;
+  // Task 5: Prevent pregnancy flow tracking
+  preventPregnancy?: {
+    selectedProduct?: string;
+    selectedDuration?: string;
+  };
 }
 
+export type DemographicTag =
+  | "language_selection"
+  | "gender_selection"
+  | "state_selection"
+  | "lga_selection"
+  | "age_selection"
+  | "marital_status_selection";
+
 export type ChatStep =
-  | 'language'
-  | 'gender'
-  | 'stateSelection'
-  | 'lgaSelection'
-  | 'locationInput'
-  | 'locationConfirm'
-  | 'age'
-  | 'marital'
-  | 'maritalStatus'
-  | 'fpm'
-  | 'contraception'
-  | 'emergencyProduct'
-  | 'duration'
-  | 'preventionDuration'
-  | 'methodDetails'
-  | 'sexEnhancement'
-  | 'lubricantSelection'
-  | 'erectileDysfunction'
-  | 'sexEnhancementNextAction'
-  | 'nextAction'
+  | "language"
+  | "gender"
+  | "location"
+  | "location_confirmation"
+  | "location_retry"
+  | "age"
+  | "marital_status"
+  | "main_navigation"
+  | "agentTypeSelection"
+  | "contraception"
+  | "sexEnhancement"
+  | "userQuestion"
+  | "moreHelp"
+  | "waitingForHuman"
+  | "waitingForAgent"
+  | "agentActive"
+  | "agentSelection"
+  | "stateSelection"
+  | "lgaSelection"
+  | "locationInput"
+  | "locationConfirm"
+  | "marital"
+  | "maritalStatus"
+  | "fpm"
+  | "emergencyProduct"
+  | "duration"
+  | "preventionDuration"
+  | "methodDetails"
+  | "lubricantSelection"
+  | "erectileDysfunction"
+  | "sexEnhancementNextAction"
+  | "nextAction"
   // FPM Change/Stop related steps
-  | 'fpmConcern'
-  | 'currentFPM'
-  | 'fpmConcernType'
-  | 'fpmNextAction'
-  | 'feedback'
-  | 'moreHelp'
-  | 'humanAISelection'
+  | "fpmConcern"
+  | "currentFPM"
+  | "fpmConcernType"
+  | "fpmNextAction"
+  | "feedback"
+  | "humanAISelection"
   // Switch FP flow steps
-  | 'switchCurrentFPM'
-  | 'satisfactionAssessment'
-  | 'switchReason'
-  | 'methodRecommendation'
-  | 'kidsInFuture'
-  | 'timing'
-  | 'importantFactors'
-  | 'menstrualFlow'
+  | "switchCurrentFPM"
+  | "satisfactionAssessment"
+  | "switchReason"
+  | "methodRecommendation"
+  | "kidsInFuture"
+  | "timing"
+  | "importantFactors"
+  | "menstrualFlow"
   // Stop FP flow steps
-  | 'stopCurrentFPM'
-  | 'stopReason'
+  | "stopCurrentFPM"
+  | "stopReason"
   // General question related steps
-  | 'agentTypeSelection'
-  | 'generalQuestion'
-  | 'userQuestion'
-  | 'waitingForHuman'
+  | "generalQuestion"
   // Get Pregnant related steps
-  | 'getPregnantIntro'
-  | 'getPregnantFPMSelection'
-  | 'getPregnantTryingDuration'
-  | 'getPregnantIUDRemoval'
-  | 'getPregnantImplantRemoval'
-  | 'getPregnantInjectionStop'
-  | 'getPregnantPillsStop'
-  | 'getPregnantNextAction'
-  | 'getPregnantUserQuestion'
-  | 'clinicReferral'
-  | 'default';
+  | "getPregnantIntro"
+  | "getPregnantFPMSelection"
+  | "getPregnantTryingDuration"
+  | "getPregnantIUDRemoval"
+  | "getPregnantImplantRemoval"
+  | "getPregnantInjectionStop"
+  | "getPregnantPillsStop"
+  | "getPregnantNextAction"
+  | "getPregnantUserQuestion"
+  | "clinicReferral"
+  // Task 5: Product information flow steps
+  | "productDetailChoice"
+  | "learnOtherMethods"
+  | "flowEnd"
+  | "default";
+
+export interface ActionProviderInterface {
+  handleEmergencyProductSelection(product: EmergencyProduct): void;
+  handlePreventionDurationSelection(duration: string): void;
+  handleMethodOptionsSelection(method: string): void;
+  handleContraceptionTypeSelection(type: string): void;
+}
 
 // FPM-related types for better type safety
 export type FPMMethod =
@@ -205,6 +301,43 @@ export type GetPregnantRemovalStatus =
   | 'Yes, less than 1 year'
   | "No, I didn't remove";
 
+// Agent-related types
+export interface AgentMessageData {
+  type: 'AGENT_JOINED' | 'AGENT_MESSAGE' | 'AGENT_DISCONNECTED';
+  agentId?: string;
+  agentName?: string;
+  message?: string;
+}
+
+export interface QueueUpdateData {
+  position: number;
+  estimatedWaitTime: string;
+  status: string;
+}
+
+export interface EscalationResult {
+  status: 'ASSIGNED' | 'QUEUED' | 'COMPLETED';
+  agentId?: string;
+  agentName?: string;
+  position?: number;
+  estimatedWaitTime?: string;
+}
+
+export interface ConversationMessage {
+  message_text: string;
+  message_type: 'user' | 'bot' | 'agent';
+  chat_step: string;
+  message_sequence_number: number;
+  widget_name?: string;
+}
+
+export interface FPMInteractionData {
+  currentMethod?: string;
+  concernType?: string;
+  duration?: string;
+  removal?: string;
+  [key: string]: string | number | boolean | undefined;
+}
 export type GetPregnantImplantRemovalStatus =
   | 'Longer than 3 months'
   | 'Less than 3 months'

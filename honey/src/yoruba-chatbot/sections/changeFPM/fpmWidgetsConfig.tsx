@@ -17,9 +17,9 @@ export interface FPMWidgetProps {
   state: ChatbotState;
 }
 
-// =============================================================================
+
 // CONSTANTS - Centralized option lists for easy maintenance
-// =============================================================================
+
 
 /**
  * Family Planning Methods - All 7 methods from CSV
@@ -81,17 +81,17 @@ export const FPM_CONCERN_TYPES = [
  * Initial FPM Concerns - The three main paths users can take
  */
 export const FPM_INITIAL_CONCERNS = [
-  'Àníyàn nípa ètò ìdílé',
-  'Mo fe yipada eto idile',
-  'Mo fe da eto idile duro',
+  'Concerned about FP',
+  'Want to switch FP',
+  'Want to stop FP',
 ] as const;
 
 /**
  * Satisfaction Assessment Options
  */
 export const SATISFACTION_OPTIONS = [
-  'inu mi kun die',
-  'Emi ko ni itelorun',
+  'Somewhat satisfied',
+  'Not satisfied',
 ] as const;
 
 /**
@@ -114,53 +114,51 @@ export const SWITCH_REASON_OPTIONS = [
  */
 export const STOP_REASON_OPTIONS = [
   'Low Effectiveness',
-  'Effect on general health',
-  'Convenience',
-  'Price',
+  'Effect on my health',
+  'Inconvenience',
+  'High price',
   'Side effects',
   'Effect on sex life',
   'Privacy in contraception',
   'I want no clinic visits',
+  'I gained weight',
   'Effect on fertility',
 ] as const;
 
 /**
  * Method Recommendation Options
  */
-export const METHOD_RECOMMENDATION_OPTIONS = ['Beeni', 'Beeko'] as const;
+export const METHOD_RECOMMENDATION_OPTIONS = ['Yes', 'No'] as const;
 
 /**
  * Kids in Future Options
  */
-export const KIDS_IN_FUTURE_OPTIONS = [
-  'Beeni,Mo fẹ bímọ síi.',
-  'Beeko',
-] as const;
+export const KIDS_IN_FUTURE_OPTIONS = ['Yes, I want more kids', 'No'] as const;
 
 /**
  * Timing Options
  */
 export const TIMING_OPTIONS = [
-  'Kò tó ọdún kan',
-  'Ọdún kan sí méj',
-  'Ọdún mẹta sí mẹrin',
-  'ju ọdún márùn-ún lọ',
+  'Less than 1 year',
+  '1-2 years',
+  '3-5 years',
+  'More than 5 years',
 ] as const;
 
 /**
  * Important Factors Options
  */
 export const IMPORTANT_FACTORS_OPTIONS = [
-  'Mo fẹ ìlànà tí yóò dènà oyún dáadáa',
-  'Àwọn ìlànà tí lílo wọn kò léwu rárá',
-  'Àwọn ìlànà ti kò nira tó sì rọrùn láti lo',
-  'Kò sí ẹnikẹni tó mọ pé mo ń lo o',
-  'N kò fẹ́ ní iriri ìnira kankan (kò ma sì èébì, orí-fífọ àti inú rirun)',
-  'Kò mú èèyàn sànrá síi',
-  'Kò ní ipa lori ìgbádùn ibalopọ',
-  'Nígbà tí mo bá dá lílo rẹ̀ dúró, mo le bí ọmọ síi',
-  'Lè dáwọ́ lílo rẹ̀ láì lọ sí ilé-iwòsàn',
-  'Kìí dín nnkan oṣù ku tàbí dá a duro🩸',
+  'Efficiency in prevention',
+  'Should be safe to use',
+  'Be easy and convenient',
+  'Discreet from others',
+  'No pain/cramp/vomit',
+  'No weight gain',
+  'No effect on sex life',
+  'Be able have kids after',
+  'Stop without clinic',
+  'No effect on menstrual🩸',
 ] as const;
 
 /**
@@ -179,29 +177,29 @@ export const MENSTRUAL_FLOW_OPTIONS = [
  */
 export const FPM_NEXT_ACTIONS = [
   'Talk to AI / Human',
-  'Beere awọn ibeere diẹ sii',
-  'Wa ile-iwosan to sunmọ',
-  'Pari iwiregbe yii',
+  'Ask more questions',
+  'Find nearest clinic',
+  'End this chat',
 ] as const;
 
 /**
  * Feedback Options - Simple yes/no feedback
  */
-export const FEEDBACK_OPTIONS = ['Beeni', 'Beeko'] as const;
+export const FEEDBACK_OPTIONS = ['Yes', 'No'] as const;
 
 /**
  * More Help Options - Continue or end conversation
  */
-export const MORE_HELP_OPTIONS = ['Beeni, Mo fe bere', 'Beeko'] as const;
+export const MORE_HELP_OPTIONS = ['Yes, I want to ask', 'No'] as const;
 
 /**
  * Human/AI Selection Options
  */
 export const HUMAN_AI_OPTIONS = ['Human agent', 'AI chatbot'] as const;
 
-// =============================================================================
+
 // WIDGET DEFINITIONS - All FPM Change/Stop related widgets
-// =============================================================================
+
 
 /**
  * FPM Initial Concern Selection Widget
@@ -493,9 +491,9 @@ export const humanAIOptionsWidget = {
   ),
 };
 
-// =============================================================================
+
 // WIDGET COLLECTION - All FPM widgets grouped for easy import
-// =============================================================================
+
 
 /**
  * Complete collection of FPM Change/Stop widgets
@@ -521,9 +519,9 @@ export const fpmChangeStopWidgets = [
   humanAIOptionsWidget,
 ];
 
-// =============================================================================
+
 // UTILITY FUNCTIONS - Helper functions for FPM operations
-// =============================================================================
+
 
 /**
  * Validates if a given method is a valid FPM method
@@ -570,9 +568,9 @@ export const getAllFPMCombinations = (): Array<{
   return combinations;
 };
 
-// =============================================================================
+
 // EXPORTS - Default export for easy importing
-// =============================================================================
+
 
 export default {
   widgets: fpmChangeStopWidgets,

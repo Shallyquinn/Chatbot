@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import Chatbot from 'react-chatbot-kit';
 import 'react-chatbot-kit/build/main.css';
-import config from './hausa-chatbot/hausa_config';
+import config from './hausa-chatbot/config';
 import MessageParser from './hausa-chatbot/MessageParser';
 import ActionProvider from './hausa-chatbot/ActionProvider';
 import ChatbotWithDividers from './components/ChatbotWithDividers';

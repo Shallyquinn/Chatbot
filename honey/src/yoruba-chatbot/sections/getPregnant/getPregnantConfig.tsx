@@ -23,7 +23,7 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          ' Rárá, emi ko tii máa lo ọkánkán ni isisinyi àti pé mi o tii lòó ri rárá',
+          'No FPM now or recently',
           'IUD',
           'Implants',
           'Injections/ Depo-provera',
@@ -58,9 +58,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'Beeni, ju ọdun kan lọ',
-          'Rárá, tí o to ọdun kan',
-          'Rárá, mi ò yọ́',
+          'Yes, more than 1 year',
+          'Yes, less than 1 year',
+          "No, I didn't remove",
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -73,7 +73,11 @@ export const getPregnantWidgets = [
     widgetName: 'getPregnantImplantRemoval',
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={['Ju oṣù mẹta', 'Ti o to oṣù mẹta', 'Rárá, mo yin lo']}
+        options={[
+          'Longer than 3 months',
+          'Less than 3 months',
+          "No, I didn't remove",
+        ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantImplantRemoval(option)
@@ -110,9 +114,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'Béèrè ìbéèrè míì síi',
-          'Wa ile iwosan to sunmọ',
-          'Pada si akojọ aṣayan akọkọ',
+          'Ask more questions',
+          'Find nearest clinic',
+          'Back to main menu',
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -127,7 +131,7 @@ export const getPregnantWidgets = [
 export const getPregnantMessages = {
   // Initial messages
   introduction: createChatBotMessage(
-    'Eleyi jẹ nla! Inu mi dun lati fun ọ ni imọran lori eto idile.',
+    'This is great! I am happy to give you advice on family planning.',
     {
       delay: 500,
     },
@@ -143,14 +147,14 @@ export const getPregnantMessages = {
 
   // No FPM branch
   noFPMExplanation: createChatBotMessage(
-    ' Pupọ julọ awọn tọkọtaya yoo loyun laarin ọdun kan ti wọn ba ni ibalopọ deede ti wọn ko si lo idena oyun.  Ṣugbọn eyi yatọ laarin awọn ẹni-kọọkan ati pé o da lori ọpọlọpọ awọn okunfa.',
+    "Most couples will get pregnant within a year if they have regular sex and don't use contraception. But this is very individual and dependent on many factors.",
     {
       delay: 500,
     },
   ),
 
   tryingDurationQuestion: createChatBotMessage(
-    ' A ti igba wo lo ti n gbìyànjú lati loyun?',
+    'How long have you been trying to get pregnant?',
     {
       delay: 1000,
       widget: 'getPregnantTryingDuration',
@@ -158,7 +162,7 @@ export const getPregnantMessages = {
   ),
 
   generalAdvice: createChatBotMessage(
-    'O ye wa wí pé eleyi lè fa idaamu, ṣugbọn ma ṣe fòyà, o kan le pẹ diẹ lati loyun padà.O le pe asoju ìpè lórí 7790 láti gbọ alaye kikun síi. Se o fẹ béèrè àwọn ìbéèrè síi?',
+    'I see! No worries, getting pregnant might take some more time. However, I understand it might be frustrating. I recommend visiting your health care provider for proper medical assessment and guidance',
     {
       delay: 500,
     },
@@ -188,14 +192,14 @@ export const getPregnantMessages = {
   ),
 
   iudLessThanYear: createChatBotMessage(
-    'O ye wa wí pé eleyi lè fa idaamu, ṣugbọn ma ṣe fòyà, o kan le pẹ diẹ lati loyun padà. O le pe asoju ìpè lórí 7790 láti gbọ alaye kikun síi.',
+    'We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.',
     {
       delay: 500,
     },
   ),
 
   iudNotRemoved: createChatBotMessage(
-    'Jọwọ ṣabẹwo si ile-iwosan nibiti o ti gba ilana yii tabi ile-iwosan ti o wa nitosi re lati yọ kuro.',
+    'We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.',
     {
       delay: 500,
     },
@@ -210,7 +214,7 @@ export const getPregnantMessages = {
   ),
 
   implantRemovalQuestion: createChatBotMessage(
-    'Se o ti yọ ìlànà ifètò ṣọmọ bibi alapa fun osu meta oo de ti loyun?',
+    'Have you already removed the implant for more than 3 months and still can not get pregnant?',
     {
       delay: 1000,
       widget: 'getPregnantImplantRemoval',
@@ -225,14 +229,14 @@ export const getPregnantMessages = {
   ),
 
   implantLessThan3Months: createChatBotMessage(
-    'O ye mi wí pé eleyi lè fa idaamu fún ọ, o dára ki o gba imọran kíkún síi láti ọwọ ọjọgbọn oníṣègùn.',
+    'We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.',
     {
       delay: 500,
     },
   ),
 
   implantNotRemoved: createChatBotMessage(
-    'Jọwọ ṣabẹwo si ile-iwosan nibiti o ti gba ilana yii tabi ile-iwosan ti o wa nitosi re lati yọ kuro.',
+    'We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.',
     {
       delay: 500,
     },
@@ -247,7 +251,7 @@ export const getPregnantMessages = {
   ),
 
   injectionStopQuestion: createChatBotMessage(
-    'Ṣé o ti dáwọ́ lílò oògùn náà dúró ju oṣù mẹfa lọ, ṣùgbọ́n o ṣi kò lè lóyún?',
+    'Have you stopped taking the injection for more than 6 months and still can not get pregnant?',
     {
       delay: 1000,
       widget: 'getPregnantInjectionStop',
@@ -255,7 +259,7 @@ export const getPregnantMessages = {
   ),
 
   injectionStoppedYes: createChatBotMessage(
-    'O ye mi wí pé eleyi lè fa idaamu fún ọ, o dára ki o gba imọran kíkún síi láti ọwọ ọjọgbọn oníṣègùn.',
+    'I understand not being able to get pregnant might be frustrating. It is good to talk to a specialist and get more detailed advice.',
     {
       delay: 500,
     },
@@ -277,7 +281,7 @@ export const getPregnantMessages = {
   ),
 
   pillsStopQuestion: createChatBotMessage(
-    'Ṣé o ti dáwọ́ lílò oògùn náà dúró ju oṣù mẹta lọ, ṣùgbọ́n o ṣi kò lè lóyún?',
+    'Have you stopped taking the pill for more than 3 months and still can not get pregnant?',
     {
       delay: 1000,
       widget: 'getPregnantPillsStop',
@@ -309,32 +313,32 @@ export const getPregnantMessages = {
 
   // Sterilisation branches
   femaleSterilisationAdvice: createChatBotMessage(
-    'Nígbà miiran ìlànà adena oyún nini obinrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ìlera rẹ fun imọran.',
+    'Sometimes female sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation',
     {
       delay: 500,
     },
   ),
 
   maleSterilisationAdvice: createChatBotMessage(
-    'Nigba miiran ìlànà adena ọmọ bíbí ti  okunrin se e yipada. O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.',
+    'Sometimes male sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation.',
     {
       delay: 500,
     },
   ),
 
   // Next action question
-  nextActionQuestion: createChatBotMessage('Kí ni o fẹ́ ṣe ní tẹ̀síwájú?', {
+  nextActionQuestion: createChatBotMessage('What would you like to do next?', {
     delay: 1000,
     widget: 'getPregnantNextAction',
   }),
 
   // Ask more questions response
-  askMoreQuestions: createChatBotMessage('O dara!', {
+  askMoreQuestions: createChatBotMessage('Okay!', {
     delay: 500,
   }),
 
   askMoreQuestionsPrompt: createChatBotMessage(
-    'Jọwọ mọ wipe mo je Oludamọran Ifeto ṣọmọ bíbí àti pé ibeere ti o jẹ mọ Ifeto ṣọmọ bíbí nikan ni mo le dá. Kin ni ìbéèrè rẹ?',
+    'Please note that I am a family planning bot and can only respond to questions relating to family planning. What is your question?',
     {
       delay: 1000,
     },
