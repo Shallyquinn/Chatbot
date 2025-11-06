@@ -21,6 +21,10 @@ export interface CreateAgentDto {
   role?: string;
   password?: string;
   maxChats?: number;
+  state?: string;
+  lga?: string;
+  primaryLanguage?: string;
+  secondaryLanguage?: string;
 }
 
 export interface UpdateAgentDto {
@@ -300,7 +304,17 @@ export class AdminService {
 
   // Agent CRUD operations
   async createAgent(createAgentDto: CreateAgentDto) {
-    const { firstName, lastName, email, password, maxChats } = createAgentDto;
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      maxChats,
+      state,
+      lga,
+      primaryLanguage,
+      secondaryLanguage 
+    } = createAgentDto;
 
     // Check if email already exists
     const existingAgent = await this.prisma.agent.findUnique({
@@ -315,6 +329,12 @@ export class AdminService {
     const agentPassword = password || 'agent123';
     const hashedPassword = await bcrypt.hash(agentPassword, 10);
 
+    // Combine languages into a single field
+    let languagesStr = primaryLanguage || 'English';
+    if (secondaryLanguage) {
+      languagesStr += `,${secondaryLanguage}`;
+    }
+
     const agent = await this.prisma.agent.create({
       data: {
         name: `${firstName} ${lastName}`,
@@ -323,6 +343,9 @@ export class AdminService {
         status: 'OFFLINE',
         maxChats: maxChats || 5,
         isOnline: false,
+        state: state || null,
+        lga: lga || null,
+        languages: languagesStr,
       },
     });
 
@@ -333,6 +356,9 @@ export class AdminService {
         email: agent.email,
         status: agent.status,
         maxChats: agent.maxChats,
+        state: agent.state,
+        lga: agent.lga,
+        languages: agent.languages,
         createdAt: agent.createdAt,
       },
       temporaryPassword: agentPassword,

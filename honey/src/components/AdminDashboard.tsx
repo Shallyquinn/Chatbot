@@ -136,13 +136,17 @@ const AdminDashboard: React.FC = () => {
   // Handle onboard agent
   const handleOnboardAgent = async (agentData: AgentFormData) => {
     try {
-      // Call real API endpoint
+      // Call real API endpoint with all new fields
       await adminApi.createAgent({
         firstName: agentData.firstName,
         lastName: agentData.lastName,
         email: agentData.email,
-        password: 'Temp123!', // Default temporary password
+        password: agentData.password || 'Temp123!', // Use generated/provided password
         maxChats: 5, // Default max chats
+        state: agentData.state,
+        lga: agentData.lga,
+        primaryLanguage: agentData.primaryLanguage,
+        secondaryLanguage: agentData.secondaryLanguage,
       });
       
       showSuccess(`Agent ${agentData.firstName} ${agentData.lastName} has been onboarded successfully!`);

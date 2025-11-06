@@ -166,6 +166,10 @@ class AdminApiService {
     email: string;
     password?: string;
     maxChats?: number;
+    state?: string;
+    lga?: string;
+    primaryLanguage?: string;
+    secondaryLanguage?: string;
   }): Promise<Agent> {
     return await this.fetchWithRetry<Agent>(`${API_BASE_URL}/admin/agents`, {
       method: "POST",
