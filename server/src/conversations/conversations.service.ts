@@ -241,18 +241,28 @@ export class ConversationsService {
 
   // Escalate conversation to human agent
   async escalateToHuman(conversationId: string, userId: string) {
-    // Find an available agent
-    const availableAgent = await this.prisma.agent.findFirst({
+    // Find an available agent (where currentChats < maxChats)
+    // Note: Prisma doesn't support field-to-field comparison in where clauses,
+    // so we need to fetch agents and filter in memory
+    const agents = await this.prisma.agent.findMany({
       where: {
         isOnline: true,
-        currentChats: {
-          lt: this.prisma.agent.fields.maxChats,
-        },
+      },
+      select: {
+        id: true,
+        name: true,
+        maxChats: true,
+        currentChats: true,
       },
       orderBy: {
-        currentChats: 'asc', // Assign to agent with least chats
+        currentChats: 'asc', // Sort by least chats
       },
     });
+
+    // Find first agent with available capacity
+    const availableAgent = agents.find(
+      (agent) => agent.currentChats < agent.maxChats,
+    );
 
     if (availableAgent) {
       // Assign directly to available agent
