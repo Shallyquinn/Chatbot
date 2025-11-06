@@ -310,6 +310,25 @@ class ApiService {
   }
 
   // =============================================================================
+  // CONVERSATION ESCALATION (for chatbot users requesting human agents)
+  // =============================================================================
+
+  async escalateToAgent(conversationId: string, userId: string) {
+    const response = await this.api.post("/conversations/escalate", {
+      conversationId,
+      userId,
+    });
+    return response.data;
+  }
+
+  async getQueueStatus(conversationId: string) {
+    const response = await this.api.get(
+      `/conversations/queue-status/${conversationId}`
+    );
+    return response.data;
+  }
+
+  // =============================================================================
   // GENERIC HTTP METHODS (for flexible API calls)
   // =============================================================================
 

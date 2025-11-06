@@ -2743,7 +2743,10 @@ class ActionProvider implements ActionProviderInterface {
       }
 
       // Use the API service to escalate
-      const response = await this.api.escalateToAgent(currentConversationId);
+      const response = await this.api.escalateToAgent(
+        currentConversationId,
+        this.userSessionId  // Pass the user ID
+      );
       
       return response as EscalationResult | null;
     } catch (error) {

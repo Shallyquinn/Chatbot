@@ -771,7 +771,7 @@ class ActionProvider implements ActionProviderInterface {
     // Only proceed with onboarding if this is a new user
     if (!isReturningUser) {
       const greeting = this.createChatBotMessage(
-        'Hey! My name is Honey. I am a family planning and pregnancy prevention chatbot. I am here to help with information on family planning, sexual health, and intimacy.\n\n I can answer your family planning questions, refer you to a medical professional to talk to, and also refer you to a family planning clinic\n\n If you want to be connected to a medical professional agent, just type the word "human" at any time. \n\n Any communication happening in this chat is strictly confidential, so you can feel safe sharing personal information',
+      'Ẹ pẹlẹ ní bẹyẹn! Oruko mi ni Honey. Mo je Ẹrọ ibaraẹnisọrọ aládàáni fun ifetosi omobibi ati idena Oyun. Mo le fun o ni alate Lori ifetosi omobibi ati Ìlera Ibalopo.\n\n Mo lè dahun àwọn ìbéèrè rẹ lórí ìfètòsọ́mọbíbí, mo lè tọ́kà rẹ sí akọṣẹmọṣẹ oníṣègùn tí ó lè bá sọ̀rọ̀ bẹ̀ẹ̀, mo lè tọ́kà ilé ìwòsàn ìfètòsọ́mọbíbí fún ọ\n\n If you want to be connected to a medical professional agent, just type the word "human" at any time. \n\n Gbogbo ohun tí a bá sọ nínú ibaraẹnisọrọ yìí jẹ́ aṣiri patápátá, nítorína, fókan bàlẹ̀ láti bá mi sọ aṣiri rẹ.',
         { delay: 500 },
       );
       const followup1 = this.createChatBotMessage(
@@ -782,7 +782,9 @@ class ActionProvider implements ActionProviderInterface {
         'Before we continue, I would like to ask you a few questions to assist you better.',
         { delay: 1000 },
       );
-      const genderQuestion = this.createChatBotMessage('What is your gender?', {
+    const genderQuestion = this.createChatBotMessage(
+      'Obìnrin ni yín tàbí ọkùnrin?',
+      {
         widget: 'genderOptions',
         delay: 1500,
       });
@@ -885,7 +887,7 @@ class ActionProvider implements ActionProviderInterface {
       });
 
     const lgaQuestion = this.createChatBotMessage(
-      `Great! What LGA (Local Government Area) are you in within ${state} state?`,
+      `Great! E te Ijọba ìbílẹ̀ ti ẹ n  ti n bá wa sọ̀rọ̀  ninu ${state} state?`,
       {
         widget: 'lgaOptions',
         delay: 500,
@@ -934,7 +936,7 @@ class ActionProvider implements ActionProviderInterface {
       { delay: 500 },
     );
 
-    const ageQuestion = this.createChatBotMessage('What is your age group?', {
+    const ageQuestion = this.createChatBotMessage(' Kin ni ọjọ orí rẹ?', {
       widget: 'ageOptions',
       delay: 500,
     });
@@ -951,7 +953,7 @@ class ActionProvider implements ActionProviderInterface {
     const userMessage = this.createUserMessage(location, 'location_input');
 
     const confirmLocation = this.createChatBotMessage(
-      `Please confirm your local government area is ${location}`,
+      `Jọwọ, jẹrisi Ijọba Ibilẹ rẹ ${location}`,
       {
         widget: 'locationConfirmation',
         delay: 500,
@@ -968,7 +970,7 @@ class ActionProvider implements ActionProviderInterface {
     const userMessage = this.createUserMessage(locationOption);
 
     if (locationOption === "Yes, that's correct") {
-      const ageQuestion = this.createChatBotMessage('How old are you?', {
+      const ageQuestion = this.createChatBotMessage('Kin ni ọjọ orí rẹ?', {
         widget: 'ageOptions',
         delay: 500,
       });
@@ -1024,7 +1026,7 @@ class ActionProvider implements ActionProviderInterface {
       });
 
     const maritalQuestion = this.createChatBotMessage(
-      "What's your marital status?",
+      'Ṣe wúndíá tàbí àpọn ni ọ báyìí àbí o ti ṣègbéyàwó?',
       {
         widget: 'maritalStatusOptions',
         delay: 500,
@@ -1070,7 +1072,7 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
 
-    const thankYou = this.createChatBotMessage('Thank you for sharing!', {
+    const thankYou = this.createChatBotMessage('O seun fún ìdáhùn yìí!', {
       delay: 500,
     });
     const assistMsg = this.createChatBotMessage(
@@ -1078,7 +1080,7 @@ class ActionProvider implements ActionProviderInterface {
       { delay: 500 },
     );
     const fpmQuestion = this.createChatBotMessage(
-      'I can provide you with information about Family Planning Methods (FPM) or other sex-related questions. \n If you want to be connected to a human agent, just type the word "human" at any time. \n To see all the family planning clinics available, type "clinic". \n What do you want to know? \n\nFPM = Family Planning Method',
+      'Mo le fún ọ ní àlàyé lórí àwọn ìlànà Ifeto ṣọmọ bibi (FPM) tàbí àwọn ìbéère mìíràn tí o jẹ mọ ibalopọ. Kí ni nnkan tí o fẹ́ mọ? \n\nFPM = Family Planning Method',
       { widget: 'fpmOptions', delay: 500 },
     );
     this.setState((prev: ChatbotState) => ({
@@ -2452,9 +2454,9 @@ class ActionProvider implements ActionProviderInterface {
         return;
       }
 
-      case 'Back to main menu': {
+      case 'Pada  si Ibere': {
         const mainMenuMessage = this.createChatBotMessage(
-          'What would you like me to help you with?',
+          ' Kin ni ohun ti o tún fẹ se báyìí?',
           {
             widget: 'fpmOptions',
             delay: 500,
@@ -2550,7 +2552,7 @@ class ActionProvider implements ActionProviderInterface {
     }).catch(err => console.error('Failed to save sex enhancement next action:', err));
 
     const responseMessage = this.createChatBotMessage(
-      'Thank you for your interest in sexual health. Is there anything else I can help you with?',
+      'Thank you for your interest in sexual health.n jẹ o fẹ lati béèrè ohun miran?',
       {
         widget: 'moreHelpOptions',
         delay: 500,
@@ -2578,7 +2580,7 @@ class ActionProvider implements ActionProviderInterface {
 
   handleGeneralQuestion = async (): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
-      "I'd be happy to help with your questions! ",
+      'Inu mi yoo dun lati ṣe iranlọwọ pẹlu awọn ibeere rẹ! ',
       { delay: 500 },
     );
     const agentMessage = this.createChatBotMessage(
@@ -2929,7 +2931,7 @@ class ActionProvider implements ActionProviderInterface {
 
     if (answer === 'Yes') {
       const helpOptions = this.createChatBotMessage(
-        'What additional help would you like?',
+        'Se mo tun le ran ọ lọwọ fun nnkan miiran bíi?',
         {
           widget: 'moreHelpOptions',
           delay: 500,
@@ -2943,7 +2945,7 @@ class ActionProvider implements ActionProviderInterface {
       }));
     } else {
       const thankYou = this.createChatBotMessage(
-        'Thank you for using our service! Feel free to come back anytime you need help. Have a great day!',
+        'O ṣeun fun lilo iṣẹ wa! Lero ọfẹ lati pada wa nigbakugba ti o nilo iranlọwọ. Ojo re oni a dara gan ni!',
         { delay: 500 },
       );
 
@@ -3035,7 +3037,7 @@ class ActionProvider implements ActionProviderInterface {
 
       // Ask if user needs more help
       const helpMessage = this.createChatBotMessage(
-        'Is there anything else I can help you with?',
+      'Se mo tun le ran ọ lọwọ fun nnkan miiran bíi?',
         {
           widget: 'moreHelpOptions',
           delay: 1000,

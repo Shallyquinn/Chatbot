@@ -468,11 +468,6 @@ export class ChatAssignmentService {
         title: 'New Chat Assigned',
         message: 'You have been assigned a new conversation.',
         conversationId,
-        userId,
-        metadata: {
-          userLocation,
-          timestamp: new Date().toISOString(),
-        },
       },
     });
 

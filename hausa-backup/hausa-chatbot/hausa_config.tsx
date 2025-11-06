@@ -3,8 +3,8 @@ import React from 'react';
 import { createChatBotMessage } from 'react-chatbot-kit';
 import OptionButtons from '../components/OptionButtons';
 import ChatMessage from '../components/ChatMessage';
-import { ActionProviderInterface } from './ActionProvider';
-import { ChatbotState, ChatMessage as ChatMessageType } from './types';
+import { ActionProviderInterface } from '../chatbot/ActionProvider';
+import { ChatbotState } from './types';
 import {
   fpmChangeStopWidgets,
   FPMWidgetProps,
@@ -29,7 +29,6 @@ export interface MessageBoxProps {
   message?: string;
   state: ChatbotState;
   type: 'bot' | 'user';
-  timestamp?: string; // ISO timestamp for message
 }
 
 export interface AvatarProps {
@@ -49,27 +48,18 @@ export interface MediaWidgetProps {
   alt?: string;
 }
 
-// Synchronous localStorage loading with proper message restoration
+// Synchronous localStorage loading (enhanced version will load from server in ActionProvider)
 const loadState = (): ChatbotState => {
   try {
     const saved = localStorage.getItem('chat_state');
-    if (saved) {
-      const parsedState = JSON.parse(saved);
-      console.log('✅ Restored state from localStorage:', parsedState);
-      // Ensure messages array exists and has proper structure
-      if (parsedState.messages && Array.isArray(parsedState.messages)) {
-        return parsedState;
-      }
-    }
-    // Return fresh state only if no saved state exists
-    console.log('ℹ️ No saved state found, starting fresh');
-    return {
-      messages: [],
-      currentStep: 'language',
-      greetingStep: 'initial_welcome',
-    };
-  } catch (error) {
-    console.error('❌ Failed to load state from localStorage:', error);
+    return saved
+      ? JSON.parse(saved)
+      : {
+          messages: [],
+          currentStep: 'language',
+          greetingStep: 'initial_welcome',
+        };
+  } catch {
     return {
       messages: [],
       currentStep: 'language',
@@ -102,60 +92,27 @@ export const loadStateFromServer = async (): Promise<ChatbotState | null> => {
 
 const botName = 'Honey';
 
-// Helper to convert saved messages to react-chatbot-kit format
-const convertSavedMessages = (messages: ChatMessageType[]) => {
-  return messages.map((msg, index) => ({
-    ...msg,
-    id: index, // Convert string ID to number for react-chatbot-kit
-    loading: msg.loading || false,
-    timestamp: msg.timestamp || new Date().toISOString(), // Ensure timestamp exists
-  }));
-};
-
 const config = {
-  // Use saved messages if they exist, otherwise show welcome messages
-  initialMessages: initialState.messages.length > 0 
-    ? convertSavedMessages(initialState.messages) // Convert and restore saved messages
-    : [
-        createChatBotMessage(`Hello, my name is ${botName}.`, {
-          delay: 500,
-        }),
-        createChatBotMessage('Please choose the language you want to chat with.', {
-          delay: 1000,
-          widget: 'languageOptions',
-        }),
-      ].map(msg => ({ ...msg, timestamp: new Date().toISOString() })),
+  initialMessages: [
+    createChatBotMessage(`Sannu, sunana ${botName}.`, {
+      delay: 500,
+    }),
+    createChatBotMessage('Zaku iya zaben harshen da kuke so muyi hira', {
+      delay: 1000,
+      widget: 'languageOptions',
+    }),
+  ],
   botName: botName,
   initialState,
   customComponents: {
     botAvatar: () => <BotAvatar />,
     userAvatar: () => <></>,
-    botMessageBox: (props: MessageBoxProps) => {
-      // Find the message in state to get the timestamp
-      const messageWithTimestamp = props.state.messages.find(
-        (msg) => msg.message === props.message
-      );
-      return (
-        <ChatMessage 
-          {...props} 
-          type="bot" 
-          timestamp={messageWithTimestamp?.timestamp || new Date().toISOString()} 
-        />
-      );
-    },
-    userMessageBox: (props: MessageBoxProps) => {
-      // Find the message in state to get the timestamp
-      const messageWithTimestamp = props.state.messages.find(
-        (msg) => msg.message === props.message && msg.type === 'user'
-      );
-      return (
-        <ChatMessage 
-          {...props} 
-          type="user" 
-          timestamp={messageWithTimestamp?.timestamp || new Date().toISOString()} 
-        />
-      );
-    },
+    botMessageBox: (props: MessageBoxProps) => (
+      <ChatMessage {...props} type="bot" />
+    ),
+    userMessageBox: (props: MessageBoxProps) => (
+      <ChatMessage {...props} type="user" />
+    ),
   },
   customStyles: {
     botMessageBox: {
@@ -186,7 +143,7 @@ const config = {
       widgetName: 'genderOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Ọkùnrin 👨', 'Obìnrin 👩', 'Kò wù yín láti sọ ọ']}
+          options={["Namiji 👨", "Mace 👩", "Na fi son kada in faɗi"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleGenderSelection(option)
@@ -229,11 +186,11 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            "Below 18",
-            "18-24 years",
-            "25-34 years",
-            "35-44 years",
-            "45+ years",
+            "ƙasa da shekaru 18",
+            "Shekaru 18-24",
+            "Shekaru 25-34",
+            "Shekaru 35-44",
+            "Shekaru 45 da sama ",
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -248,7 +205,7 @@ const config = {
       widgetName: 'maritalStatusOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Wundia', 'Abileko ', 'Ikọsilẹ', 'Opo', ' Ninu ibatan kan']}
+          options={["Bani da aure", "​​​Ina da aure", "Bazawara (gwauruwa)", "Bazawara", "Na kusa yin aure"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMaritalStatusSelection(option)
@@ -263,11 +220,11 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            ' Bí a ṣe le loyún',
-            'Bí a ṣe lè dènà oyún',
-            'Bí ìbálòpọ̀ ṣe lè dùn síi',
-            'Yí / dá ìlànà dúró.',
-            'Ask a general question',
+            'Yadda ake ɗaukar ciki',
+            'Yadda ake rigakafin ɗaukar ciki ',
+            'Yadda za a inganta rayuwar jima’i',
+            'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu ',
+            'Yi tambaya game da duk abunda kake da buƙata',
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -278,17 +235,21 @@ const config = {
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     },
-    // Phase 3.4: Resume Session Widget
     {
-      widgetName: 'resumeOptions',
+      widgetName: 'planningMethodOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['✅ Yes, Continue', '🔄 Start Fresh']}
+          options={[
+            'Yadda ake ɗaukar ciki',
+            'Yadda ake rigakafin ɗaukar ciki ',
+            'Yadda za a inganta rayuwar jima’i',
+            'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu ',
+            'Yi tambaya game da duk abunda kake da buƙata',
+          ]}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) => {
-            const resume = option.includes('Continue');
-            props.actionProvider.handleResumeSession(resume);
-          }}
+          handleClick={(option: string) =>
+            props.actionProvider.handlePlanningMethodSelection(option)
+          }
         />
       ),
       props: {},
@@ -301,7 +262,7 @@ const config = {
           options={["Gels and Lubricants", "Hard Erection"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.sexEnhancementActionProvider.handleSexEnhancementChoice(option)
+            props.actionProvider.handleSexEnhancementOptions(option)
           }
         />
       ),
@@ -312,10 +273,10 @@ const config = {
       widgetName: 'lubricantOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Fiesta Intim Gel", "KY Jelly"]}
+          options={['Water-based', 'Silicone-based', 'Natural options', "Fiesta Intim Gel", "KY Jelly"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.sexEnhancementActionProvider.handleLubricantSelection(option)
+            props.actionProvider.handleLubricantOptions(option)
           }
         />
       ),
@@ -340,12 +301,7 @@ const config = {
       widgetName: 'nextActionOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={[
-            'Wiregbe pẹlu AI / Eniyan',
-            'Kọ nípa àwọn ìlànà miiran',
-            'Pada  si Ibere',
-            'Gba awọn imọran igbesi aye ibalopo diẹ sii',
-          ]}
+          options={['Yi wasu tambayoyin', 'Ƙare tattaunawa']}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleNextAction(option)
@@ -356,17 +312,13 @@ const config = {
       mapStateToProps: ['messages', 'currentStep'],
     },
     {
-      widgetName: 'sexEnhancementNextActions',
+      widgetName: 'sexEnhancementNextActionOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={[
-            'Wiregbe pẹlu AI / Eniyan',
-            'Kọ ẹkọ awọn ọna miiran',
-            'Pada  si Ibere',
-          ]}
+          options={['Yi wasu tambayoyin', 'Ƙare tattaunawa']}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
-            props.actionProvider.sexEnhancementActionProvider.handleSexEnhancementNextAction(option)
+            props.actionProvider.handleSexEnhancementNextAction(option)
           }
         />
       ),
@@ -391,7 +343,7 @@ const config = {
       widgetName: 'moreHelpOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Beeni', 'Beeko']}
+          options={['Ee', "A'a"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMoreHelpOptions(option)
@@ -438,13 +390,6 @@ const config = {
       mapStateToProps: ['messages', 'currentStep'],
     })),
   ],
-  
-  // Validator to ensure all messages are accepted
-  validator: () => {
-    // Always return true to accept the message
-    return true;
-  },
 };
 
 export default config;
-
