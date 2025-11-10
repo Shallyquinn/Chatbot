@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import Header from './Header';
-import ApiService from '../services/api.service';
-import WebSocketService from '../services/websocket.service';
 import { ConversationSidebar } from './agent/ConversationSidebar';
 import { ChatArea } from './agent/ChatArea';
 import { MessageInput } from './agent/MessageInput';
 import { UserInfoPanel } from './agent/UserInfoPanel';
+import ApiService from '../services/api.service';
+import WebSocketService from '../services/websocket.service';
 
 interface AssignedUser {
   id: string;
@@ -15,6 +15,7 @@ interface AssignedUser {
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
+  channel: string;
   language?: string;
 }
 
@@ -24,6 +25,7 @@ interface Message {
   timestamp: Date;
   sender: 'agent' | 'user' | 'bot';
   conversationId: string;
+  avatar?: string;  
 }
 
 interface Channel {
@@ -44,7 +46,7 @@ const AgentInterface: React.FC = () => {
   >('channels');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     // Get agent info from localStorage
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -129,28 +131,29 @@ const AgentInterface: React.FC = () => {
   }, []);
 
   const fetchAssignedUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await ApiService.getAssignedUsers();
-      const users = response.data || response;
-      
-      // Transform backend data to match interface
-      const formattedUsers: AssignedUser[] = users.map((user: any) => ({
-        id: user.id || user.userId,
-        conversationId: user.conversationId || user.id,
-        name: user.name || user.userName || 'Anonymous User',
-        lastMessage: user.lastMessage || 'No messages yet',
-        lastMessageTime: user.lastMessageTime || user.updatedAt || new Date().toISOString(),
-        unreadCount: user.unreadCount || 0,
-        language: user.language || 'en',
-      }));
-      
-      setAssignedUsers(formattedUsers);
-    } catch (error) {
-      console.error('Failed to fetch assigned users:', error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    
+    // ConversationSidebar has its own dummy data, so we'll use empty array here
+    setAssignedUsers([]);
+    setLoading(false);
+    
+    // TODO: Replace with actual API call when backend is ready
+    // try {
+    //   const response = await ApiService.getAssignedUsers();
+    //   const users = response.data || response;
+    //   const formattedUsers: AssignedUser[] = users.map((user: any) => ({
+    //     id: user.id || user.userId,
+    //     conversationId: user.conversationId || user.id,
+    //     name: user.name || user.userName || 'Anonymous User',
+    //     lastMessage: user.lastMessage || 'No messages yet',
+    //     lastMessageTime: user.lastMessageTime || user.updatedAt || new Date().toISOString(),
+    //     unreadCount: user.unreadCount || 0,
+    //     language: user.language || 'en',
+    //   }));
+    //   setAssignedUsers(formattedUsers);
+    // } catch (error) {
+    //   console.error('Failed to fetch assigned users:', error);
+    // }
   };
 
   const fetchChannels = async () => {
@@ -172,84 +175,94 @@ const AgentInterface: React.FC = () => {
   };
 
   const fetchMessages = async (conversationId: string) => {
+    setLoading(true);
+    
+    // Use dummy messages for now
+    const dummyMessages: Message[] = [
+      {
+        id: '1',
+        text: 'Hello, My name is Honey',
+        timestamp: new Date(Date.now() - 300000),
+        sender: 'bot',
+        conversationId: conversationId,
+        avatar: '/Honey_profile_pic.png'
+      },
+      {
+        id: '2',
+        text: 'Please choose the language you want to chat with',
+        timestamp: new Date(Date.now() - 240000),
+        sender: 'bot',
+        conversationId: conversationId,
+        avatar: '/Honey_profile_pic.png'
+      },
+      {
+        id: '3',
+        text: 'English',
+        timestamp: new Date(Date.now() - 180000),
+        sender: 'user',
+        conversationId: conversationId,
+        avatar: '/default-user-avatar.png'
+      }
+    ];
+    
+    setMessages(dummyMessages);
+    setLoading(false);
+    
+    // Join conversation room for real-time updates when WebSocket is available
     try {
-      setLoading(true);
-      const response = await ApiService.getConversationMessages(conversationId);
-      const messageData = response.data || response;
-      
-      const formattedMessages: Message[] = messageData.map((msg: any) => ({
-        id: msg.id,
-        text: msg.content || msg.text || msg.message,
-        timestamp: new Date(msg.createdAt || msg.timestamp),
-        sender: msg.senderType || msg.sender || (msg.isFromBot ? 'bot' : msg.isFromAgent ? 'agent' : 'user'),
-        conversationId: msg.conversationId || conversationId,
-      }));
-      
-      setMessages(formattedMessages);
-      
-      // Join conversation room for real-time updates
       WebSocketService.joinConversation(conversationId);
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
-    } finally {
-      setLoading(false);
+      console.log('WebSocket not available for joining conversation');
     }
+    
+    // TODO: Replace with actual API call when backend is ready
+    // try {
+    //   const response = await ApiService.getConversationMessages(conversationId);
+    //   const messageData = response.data || response;
+    //   const formattedMessages: Message[] = messageData.map((msg: any) => ({
+    //     id: msg.id,
+    //     text: msg.content || msg.text || msg.message,
+    //     timestamp: new Date(msg.createdAt || msg.timestamp),
+    //     sender: msg.senderType || msg.sender || (msg.isFromBot ? 'bot' : msg.isFromAgent ? 'agent' : 'user'),
+    //     conversationId: msg.conversationId || conversationId,
+    //   }));
+    //   setMessages(formattedMessages);
+    // } catch (error) {
+    //   console.error('Failed to fetch messages:', error);
+    // }
   };
 
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     const messageText = newMessage.trim();
-    const tempId = `temp-${Date.now()}`;
-    
     const messageData: Message = {
-      id: tempId,
+      id: `msg-${Date.now()}`,
       text: messageText,
       conversationId: selectedConversation.conversationId,
       timestamp: new Date(),
       sender: 'agent',
     };
 
+    // Add message to UI
+    setMessages((prev) => [...prev, messageData]);
+    setNewMessage('');
+
+    // Update user's last message in the sidebar
+    setAssignedUsers((prev) =>
+      prev.map((user) =>
+        user.conversationId === selectedConversation.conversationId
+          ? {
+              ...user,
+              lastMessage: messageText,
+              lastMessageTime: new Date().toISOString(),
+            }
+          : user
+      )
+    );
+    
+    // Send via WebSocket when available
     try {
-      // Add message optimistically to UI
-      setMessages((prev) => [...prev, messageData]);
-      setNewMessage('');
-
-      // Send to backend API
-      const response = await ApiService.sendAgentMessage(
-        selectedConversation.conversationId,
-        messageText
-      );
-      
-      const sentMessage = response.data || response;
-      
-      // Update message with real ID from backend
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId
-            ? {
-                ...m,
-                id: sentMessage.id || tempId,
-                timestamp: new Date(sentMessage.createdAt || m.timestamp),
-              }
-            : m
-        )
-      );
-
-      // Update user's last message in the sidebar
-      setAssignedUsers((prev) =>
-        prev.map((user) =>
-          user.conversationId === selectedConversation.conversationId
-            ? {
-                ...user,
-                lastMessage: messageText,
-                lastMessageTime: new Date().toISOString(),
-              }
-            : user
-        )
-      );
-      
-      // Send via WebSocket for real-time delivery
       WebSocketService.sendMessage(
         selectedConversation.conversationId,
         messageText,
@@ -257,10 +270,32 @@ const AgentInterface: React.FC = () => {
         'agent'
       );
     } catch (error) {
-      console.error('Failed to send message:', error);
-      // Remove message from UI on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      console.log('WebSocket not available for sending message');
     }
+    
+    // TODO: Replace with actual API call when backend is ready
+    // try {
+    //   const response = await ApiService.sendAgentMessage(
+    //     selectedConversation.conversationId,
+    //     messageText
+    //   );
+    //   const sentMessage = response.data || response;
+    //   // Update message with real ID from backend
+    //   setMessages((prev) =>
+    //     prev.map((m) =>
+    //       m.id === messageData.id
+    //         ? {
+    //             ...m,
+    //             id: sentMessage.id || messageData.id,
+    //             timestamp: new Date(sentMessage.createdAt || m.timestamp),
+    //           }
+    //         : m
+    //     )
+    //   );
+    // } catch (error) {
+    //   console.error('Failed to send message:', error);
+    //   setMessages((prev) => prev.filter((m) => m.id !== messageData.id));
+    // }
   };
 
   const selectConversation = (user: AssignedUser) => {
@@ -276,16 +311,24 @@ const AgentInterface: React.FC = () => {
     setAssignedUsers((prev) =>
       prev.map((u) => (u.id === user.id ? { ...u, unreadCount: 0 } : u)),
     );
+
   };
+
+
+
+
+
+  
 
   const filteredUsers = assignedUsers.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex flex-col sm:flex-row bg-white h-screen">
       {/* Sidebar using ConversationSidebar component */}
-      <ConversationSidebar
+           <ConversationSidebar
         assignedUsers={filteredUsers}
         selectedConversation={selectedConversation}
         searchTerm={searchTerm}
@@ -296,52 +339,34 @@ const AgentInterface: React.FC = () => {
       />
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className=' flex-1 flex flex-col'>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
             <Header className="shadow-md" />
             
-            {/* Conversation Context Banner */}
-            <div className="bg-emerald-50 border-b border-emerald-100 px-4 py-2">
-              <p className="text-sm text-emerald-800">
-                <span className="font-medium">Chatting with:</span> {selectedConversation.name}
-                {selectedConversation.language && (
-                  <span className="ml-3 text-emerald-600">
-                    Language: {selectedConversation.language.toUpperCase()}
-                  </span>
-                )}
-              </p>
-            </div>
-
             {/* Messages using ChatArea component */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-slate-50 to-white">
-              <div className="max-w-4xl mx-auto">
-                <div className="text-center text-slate-500 mb-6">
-                  <p className="text-sm bg-slate-100 inline-block px-3 py-1 rounded-full">
-                    Today
-                  </p>
+            {loading && messages.length === 0 ? (
+              <div className="flex-1  flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
+                  <p className="text-slate-500 text-sm">Loading messages...</p>
                 </div>
-
-                {loading && messages.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
-                    <p className="text-slate-500 text-sm">Loading messages...</p>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="font-medium">No messages yet</p>
-                    <p className="text-sm">Start the conversation</p>
-                  </div>
-                ) : (
-                  <ChatArea messages={messages} />
-                )}
               </div>
-            </div>
+            ) : messages.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-slate-500">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">No messages yet</p>
+                  <p className="text-sm">Start the conversation</p>
+                </div>
+              </div>
+            ) : (
+              <ChatArea messages={messages} user={selectedConversation} />
+            )}
 
             {/* Message Input using MessageInput component */}
-            <div className="bg-white border-t border-slate-200 p-4">
+            <div className='bg-[#FFFDF7]'>
               <MessageInput
                 value={newMessage}
                 onChange={setNewMessage}

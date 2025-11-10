@@ -56,26 +56,7 @@ const ThemeDropdown: React.FC = () => {
     setIsOpen(false);
   };
 
-  const handleAssignAgent = async () => {
-    setShowAgentModal(true);
-    setIsOpen(false);
-    
-    // Fetch agents if not already loaded
-    if (agents.length === 0 && !loadingAgents) {
-      setLoadingAgents(true);
-      try {
-        const response = await ApiService.getAgents();
-        // Handle backend response wrapping
-        const agentList = response.data || response;
-        setAgents(Array.isArray(agentList) ? agentList : []);
-      } catch (error) {
-        console.error('Error fetching agents:', error);
-      } finally {
-        setLoadingAgents(false);
-      }
-    }
-  };
-
+  
   const handleSelectAgent = (agent: Agent) => {
     console.log('Selected agent:', agent);
     // TODO: Implement agent assignment logic
@@ -83,12 +64,60 @@ const ThemeDropdown: React.FC = () => {
   };
 
   const handlePauseChat = () => {
-    console.log('Pause Chat clicked');
+    // Get current conversation from localStorage or context
+    const currentConversation = localStorage.getItem('currentConversation');
+    
+    if (currentConversation) {
+      try {
+        const conversation = JSON.parse(currentConversation);
+        // Update conversation status to paused
+        localStorage.setItem('conversationStatus', 'paused');
+        
+        // Show user feedback
+        alert('Chat has been paused. You can resume it anytime.');
+        
+        // TODO: Send pause status to backend when API is ready
+        // ApiService.pauseConversation(conversation.id);
+        
+      } catch (error) {
+        console.error('Error pausing chat:', error);
+      }
+    }
+    
     setIsOpen(false);
   };
 
   const handleEndChat = () => {
-    console.log('End Chat clicked');
+    const confirmEnd = window.confirm('Are you sure you want to end this chat? This action cannot be undone.');
+    
+    if (confirmEnd) {
+      // Get current conversation from localStorage or context
+      const currentConversation = localStorage.getItem('currentConversation');
+      
+      if (currentConversation) {
+        try {
+          const conversation = JSON.parse(currentConversation);
+          // Update conversation status to ended
+          localStorage.setItem('conversationStatus', 'ended');
+          
+          // Clear current conversation
+          localStorage.removeItem('currentConversation');
+          
+          // Show user feedback
+          alert('Chat has been ended successfully.');
+          
+          // TODO: Send end status to backend when API is ready
+          // ApiService.endConversation(conversation.id);
+          
+          // Optionally redirect or refresh the page
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('Error ending chat:', error);
+        }
+      }
+    }
+    
     setIsOpen(false);
   };
 
@@ -134,17 +163,7 @@ const ThemeDropdown: React.FC = () => {
             </button>
 
             {/* Assign Agent - Only show for admin/agent */}
-            {canAssignAgent && (
-              <button
-                onClick={handleAssignAgent}
-                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2.5 border-b border-neutral-300 dark:border-gray-600"
-              >
-                <UserPlus className="w-5 h-5 text-[#949494] dark:text-gray-400 flex-shrink-0" strokeWidth={2} />
-                <span className="text-sm font-medium text-[#949494] dark:text-gray-300">
-                  Assign Agent
-                </span>
-              </button>
-            )}
+           
 
             {/* Pause Chat */}
             <button

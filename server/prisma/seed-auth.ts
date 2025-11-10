@@ -32,6 +32,32 @@ async function main() {
     console.log('ℹ️  Admin already exists:', adminExists.email);
   }
 
+  // Create second admin
+  const secondAdminExists = await prisma.admin.findUnique({
+    where: { email: 'admin2@honeychatbot.com' },
+  });
+
+  if (!secondAdminExists) {
+    const hashedAdmin2Password = await bcrypt.hash('admin456', 10);
+
+    const admin2 = await prisma.admin.create({
+      data: {
+        name: 'Second Admin',
+        email: 'admin2@honeychatbot.com',
+        password: hashedAdmin2Password,
+        role: 'ADMIN',
+      },
+    });
+
+    console.log('✅ Created second admin:', {
+      email: admin2.email,
+      password: 'admin456',
+      role: admin2.role,
+    });
+  } else {
+    console.log('ℹ️  Second admin already exists:', secondAdminExists.email);
+  }
+
   // Create default dummy/system agent
   const dummyAgentExists = await prisma.agent.findUnique({
     where: { email: 'dummy@honeychatbot.com' },
@@ -117,9 +143,9 @@ async function main() {
 
   console.log('\n🎉 Authentication seeding complete!');
   console.log('\n📝 Login Credentials:');
-  console.log('\n🔐 ADMIN:');
-  console.log('   Email: admin@honeychatbot.com');
-  console.log('   Password: admin123');
+  console.log('\n🔐 ADMINS:');
+  console.log('   1. Email: admin@honeychatbot.com | Password: admin123 (SUPER_ADMIN)');
+  console.log('   2. Email: admin2@honeychatbot.com | Password: admin456 (ADMIN)');
   console.log('\n🤖 DUMMY/SYSTEM AGENT (Auto-assigned):');
   console.log('   Email: dummy@honeychatbot.com');
   console.log('   (This agent receives unassigned conversations)');

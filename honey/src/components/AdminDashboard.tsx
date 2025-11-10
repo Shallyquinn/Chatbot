@@ -1,3 +1,4 @@
+"use client"
 import React, { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Users, UserCheck, Smile, Clock, Download, User, Search, ChevronLeft, ChevronRight, X, CheckCircle, Edit2, Camera, UserPlus } from 'lucide-react';
 import {

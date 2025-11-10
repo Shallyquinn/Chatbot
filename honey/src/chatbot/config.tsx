@@ -417,7 +417,7 @@ const config = {
     ...mediaWidgets.map((widget) => ({
       widgetName: widget.widgetName,
       widgetFunc: (props: WidgetProps) =>
-        widget.widgetFunc(props as MediaWidgetProps),
+        widget.widgetFunc(props as MediaWidgetProps) || <></>,
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     })),
@@ -426,7 +426,7 @@ const config = {
     ...fpmChangeStopWidgets.map((widget) => ({
       widgetName: widget.widgetName,
       widgetFunc: (props: WidgetProps) =>
-        widget.widgetFunc(props as FPMWidgetProps),
+        widget.widgetFunc(props as FPMWidgetProps) || <></>,
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     })),
@@ -435,7 +435,7 @@ const config = {
     ...getPregnantWidgets.map((widget) => ({
       widgetName: widget.widgetName,
       widgetFunc: (props: WidgetProps) =>
-        widget.widgetFunc(props as GetPregnantWidgetProps),
+        widget.widgetFunc(props as GetPregnantWidgetProps) || <></>,
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     })),
@@ -444,7 +444,7 @@ const config = {
     ...preventPregnancyWidgets.map((widget) => ({
       widgetName: widget.widgetName,
       widgetFunc: (props: WidgetProps) =>
-        widget.widgetFunc(props as PreventPregnancyWidgetProps),
+        widget.widgetFunc(props as PreventPregnancyWidgetProps) || <></>,
       props: {},
       mapStateToProps: ['messages', 'currentStep'],
     })),

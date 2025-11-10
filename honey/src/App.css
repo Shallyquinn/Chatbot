@@ -47,11 +47,13 @@
 
 .chatbot-container {
   width: 100%;
-  height: 100%;
+  height: 100dvh;
+  height: 100vh;
   margin: 0;
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 /* Header adjustments - reduce excessive x-axis margin
 .CardHeader {
@@ -72,6 +74,11 @@
   .react-chatbot-kit-chat-inner-container {
     /* height: 100% !important; */
     min-height: (100vh) !important;
+    height: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden;
+    border-radius: 15px 15px 8px 8px;
   }
 
   .react-chatbot-kit-chat-bot-message-container {
@@ -116,7 +123,7 @@
 /* Hide the scrollbar but allow scrolling */
 .react-chatbot-kit-chat-message-container {
   padding: 12px 8px;
-  overflow-y: scroll !important; /* Enable scrolling */
+  overflow-y: auto !important; /* Enable scrolling */
   overflow-x: hidden !important;
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox - Modern browsers only. Fallback: webkit below for Chrome/Safari */
@@ -175,7 +182,7 @@
 
 /* Inner container */
 .react-chatbot-kit-chat-inner-container {
-  height: 100% !important;
+  height: 100vh !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden;
