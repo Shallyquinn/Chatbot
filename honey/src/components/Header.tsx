@@ -186,18 +186,18 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <div
-      className={`flex flex-row items-center bg-emerald-800 dark:bg-emerald-900 justify-between px-3 sm:px-4 py-3 transition-colors duration-300 ${className}`}
+      className={`flex flex-row items-center bg-[#006045] dark:bg-emerald-900 justify-between px-3 sm:px-4 py-3 transition-colors duration-300 ${className}`}
       data-component="header"
     >
-      <div className="flex justify-between w-full">
+      <div className="flex justify-between w-full flex-1">
         <div className="flex-row flex">
           {/* Profile Image */}
-          <div className="w-15 h-15 sm:h-20 sm:w-20 rounded-full bg-white flex items-center justify-center mr-2 sm:mr-3 overflow-hidden">
+          <div className="w-15 h-15 sm:h-20 sm:w-20 rounded-full flex items-center justify-center mr-2 sm:mr-3 overflow-hidden">
             {!imageError ? (
               <img
                 alt="Honey Chatbot Profile"
                 className="w-full h-full object-cover"
-                src={profileImage}
+                src={'/Honey_profile_pic.png'}
                 onError={() => setImageError(true)}
               />
             ) : (
@@ -241,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({
                   {/* Search Input */}
                   <div className="p-4 border-b border-gray-200">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         ref={inputRef}
                         type="text"

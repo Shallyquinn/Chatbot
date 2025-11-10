@@ -120,7 +120,7 @@ const ChatbotApp: React.FC = () => {
     <div className="min-h-screen bg-slate-100 flex p-0 sm:p-4 transition-colors duration-300">
       <div
         className={`w-full flex flex-col ${
-          isMobile ? 'h-screen' : 'max-w-md h-[600px]'
+          isMobile ? 'h-screen' : 'max-w-md min-h-screen'
         } shadow-xl overflow-hidden rounded-lg bg-white dark:bg-gray-800 transition-colors duration-300`}
         ref={chatContainerRef}
       >

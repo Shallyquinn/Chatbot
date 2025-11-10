@@ -52,6 +52,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 /* Header adjustments - reduce excessive x-axis margin
 .CardHeader {
@@ -175,7 +176,7 @@
 
 /* Inner container */
 .react-chatbot-kit-chat-inner-container {
-  height: 100% !important;
+  height: 100vh !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden;
