@@ -25,4 +25,9 @@ export class AnalyticsController {
   async getFlows() {
     return this.analyticsService.getFlows();
   }
+
+  @Get('agent-dashboard')
+  async getAgentDashboardStats() {
+    return this.analyticsService.getAgentDashboardStats();
+  }
 }

@@ -88,7 +88,7 @@ const AgentManagementDashboard: React.FC = () => {
 
   const fetchAgents = async () => {
     try {
-      const response = await ApiService.get('/agents');
+      const response = await ApiService.get('/admin/agents');
       const agentData = response.data || response;
       setAgents(agentData.map((agent: AgentAPIResponse) => ({
         id: agent.id,
@@ -106,15 +106,15 @@ const AgentManagementDashboard: React.FC = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await ApiService.get('/conversations/unassigned');
+      const response = await ApiService.get('/admin/queue');
       const requestData = response.data || response;
-      setRequests(requestData.map((req: ConversationAPIResponse) => ({
-        id: req.id,
-        userId: req.userId,
-        userName: req.userName || 'Anonymous User',
-        message: req.lastMessage || 'New conversation request',
-        timestamp: req.createdAt,
-        platform: req.platform || 'whatsapp',
+      setRequests(requestData.map((req: any) => ({
+        id: req.conversationId || req.id,
+        userId: req.user?.id || req.userId,
+        userName: req.user?.name || `User ${(req.user?.id || req.userId || 'unknown').slice(0, 8)}`,
+        message: req.lastMessage || 'Requested human agent assistance',
+        timestamp: req.queuedAt || req.assignedAt || req.createdAt,
+        platform: 'whatsapp',
         selected: false,
       })));
     } catch (error) {
@@ -172,7 +172,7 @@ const AgentManagementDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await ApiService.get('/analytics/agent-dashboard');
+      const response = await ApiService.get('/admin/queue/stats');
       const statsData = response.data || response;
       setStats(statsData);
     } catch (error) {

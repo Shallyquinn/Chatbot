@@ -21,12 +21,11 @@ import {
   AgentStatus,
   AssignmentStatus,
 } from '@prisma/client';
-// Note: Uncomment when implementing auth
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-// import { AdminGuard } from '../auth/guards/admin.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @Controller('admin')
-// @UseGuards(JwtAuthGuard, AdminGuard) // Uncomment when auth is implemented
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminDashboardController {
   constructor(
     private adminConfigService: AdminConfigService,

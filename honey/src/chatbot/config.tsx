@@ -122,7 +122,7 @@ const config = {
         }),
         createChatBotMessage('Please choose the language you want to chat with.', {
           delay: 1000,
-          widget: 'languageOptions',
+          widget: 'initialLanguageSelection',
         }),
       ].map(msg => ({ ...msg, timestamp: new Date().toISOString() })),
   botName: botName,
@@ -169,7 +169,7 @@ const config = {
   // FIXED: Widgets configuration with proper IWidget interface structure
   widgets: [
     {
-      widgetName: 'languageOptions',
+      widgetName: 'initialLanguageSelection',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={['English', 'Hausa', 'Yoruba']}
@@ -406,6 +406,20 @@ const config = {
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMoreHelpOptions(option)
+          }
+        />
+      ),
+      props: {},
+      mapStateToProps: ['messages', 'currentStep'],
+    },
+    {
+      widgetName: 'returnToMainMenu',
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={['🏠 Return to Main Menu', '👋 End Conversation']}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) =>
+            props.actionProvider.handleReturnToMainMenu(option)
           }
         />
       ),

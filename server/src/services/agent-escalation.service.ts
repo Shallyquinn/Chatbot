@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WebSocketService } from './websocket.service';
 
 @Injectable()
 export class AgentEscalationService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(AgentEscalationService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private websocketService: WebSocketService,
+  ) {}
 
   async escalateToHuman(conversationId: string, userId: string) {
     // 1. Update conversation status
@@ -23,13 +29,24 @@ export class AgentEscalationService {
       // Auto-assign if agent available
       await this.assignConversation(conversationId, availableAgent.id);
 
-      // Notify agent (WebSocket implementation would go here)
-      // this.websocketGateway.notifyAgent(availableAgent.id, {
-      //   type: 'NEW_ASSIGNMENT',
-      //   conversationId,
-      //   userId,
-      //   priority: 'HIGH'
-      // });
+      // Notify agent via WebSocket
+      try {
+        this.websocketService.notifyAgent(availableAgent.id, {
+          type: 'NEW_ASSIGNMENT',
+          conversationId,
+          userId,
+          priority: 'HIGH',
+          message: 'New conversation assigned to you',
+        });
+        this.logger.log(
+          `Notified agent ${availableAgent.id} of new assignment`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to notify agent ${availableAgent.id}:`,
+          error,
+        );
+      }
 
       return {
         status: 'ASSIGNED',
@@ -44,13 +61,23 @@ export class AgentEscalationService {
       // Get queue position
       const queueLength = await this.getQueueLength();
 
-      // Notify admins of queue buildup (implement when WebSocket is available)
+      // Notify admins of queue buildup
       if (queueLength > 5) {
-        // this.websocketGateway.notifyAdmins({
-        //   type: 'QUEUE_ALERT',
-        //   queueLength,
-        //   message: 'Queue is getting long - consider bulk assignment'
-        // });
+        try {
+          this.websocketService.notifyAdmins({
+            type: 'QUEUE_ALERT',
+            queueLength,
+            message: 'Queue is getting long - consider bulk assignment',
+          });
+          this.logger.log(
+            `Notified admins about queue buildup: ${queueLength} waiting`,
+          );
+        } catch (error) {
+          this.logger.error(
+            'Failed to notify admins about queue alert:',
+            error,
+          );
+        }
       }
 
       return {
@@ -114,12 +141,20 @@ export class AgentEscalationService {
         for (const convId of assignment.conversationIds) {
           await this.assignConversation(convId, assignment.agentId);
 
-          // Notify agent (WebSocket implementation would go here)
-          // this.websocketGateway.notifyAgent(assignment.agentId, {
-          //   type: 'BULK_ASSIGNMENT',
-          //   conversationId: convId,
-          //   totalAssigned: assignment.conversationIds.length
-          // });
+          // Notify agent via WebSocket
+          try {
+            this.websocketService.notifyAgent(assignment.agentId, {
+              type: 'BULK_ASSIGNMENT',
+              conversationId: convId,
+              totalAssigned: assignment.conversationIds.length,
+              message: `You have been assigned ${assignment.conversationIds.length} conversations`,
+            });
+          } catch (error) {
+            this.logger.error(
+              `Failed to notify agent ${assignment.agentId}:`,
+              error,
+            );
+          }
         }
 
         results.push({

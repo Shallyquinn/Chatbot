@@ -113,16 +113,16 @@ const convertSavedMessages = (messages: ChatMessageType[]) => {
 };
 
 const config = {
-  // Use saved messages if they exist, otherwise show welcome messages
+  // Use saved messages if they exist, otherwise show welcome messages in Yoruba
   initialMessages: initialState.messages.length > 0 
     ? convertSavedMessages(initialState.messages) // Convert and restore saved messages
     : [
-        createChatBotMessage(`Hello, my name is ${botName}.`, {
+        createChatBotMessage(`E kaabo! Oruko mi ni ${botName}.`, {
           delay: 500,
         }),
-        createChatBotMessage('Please choose the language you want to chat with.', {
+        createChatBotMessage('Mo wa lati ran e lowo nipa eto oyan ibimọ. Kini ọrọ ti o fẹ ka sọrọ lori?', {
           delay: 1000,
-          widget: 'languageOptions',
+          widget: 'purposeOptions', // Start directly with main menu in Yoruba
         }),
       ].map(msg => ({ ...msg, timestamp: new Date().toISOString() })),
   botName: botName,
@@ -169,17 +169,30 @@ const config = {
   // FIXED: Widgets configuration with proper IWidget interface structure
   widgets: [
     {
-      widgetName: 'languageOptions',
+      widgetName: 'initialLanguageSelection',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['English', 'Hausa', 'Yoruba']}
+          options={['English', 'Yoruba', 'Hausa']}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) =>
-            props.actionProvider.handleLanguageSelection(option)
-          }
+          handleClick={(option: string) => {
+            props.actionProvider.handleLanguageSelection(option);
+          }}
         />
       ),
-      props: {},
+      mapStateToProps: ['messages', 'currentStep'],
+    },
+    {
+      widgetName: 'smartLanguageSwitch',
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={['Switch to English', 'Switch to Hausa']}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) => {
+            const language = option.replace('Switch to ', '');
+            props.actionProvider.handleLanguageSelection(language);
+          }}
+        />
+      ),
       mapStateToProps: ['messages', 'currentStep'],
     },
     {

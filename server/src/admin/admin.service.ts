@@ -217,11 +217,17 @@ export class AdminService {
   }
 
   async getQueuedConversations() {
+    // Get conversations from queue table (WAITING status)
     const queueItems = await this.prisma.conversationQueue.findMany({
       include: {
         conversation: {
           include: {
             user: true,
+            assignment: {
+              include: {
+                agent: true,
+              },
+            },
           },
         },
       },
@@ -229,8 +235,34 @@ export class AdminService {
       orderBy: [{ priority: 'desc' }, { queuedAt: 'asc' }],
     });
 
-    // Transform to match frontend expectations
-    return queueItems.map((item, index) => {
+    // ALSO get conversations that are AGENT_ASSIGNED but haven't been responded to yet
+    // These are "new requests" that agents need to see and acknowledge
+    const assignedButUnattended = await this.prisma.conversation.findMany({
+      where: {
+        status: 'AGENT_ASSIGNED',
+        // Only include if no messages from agent yet (or conversation just created)
+        escalatedAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+        },
+      },
+      include: {
+        user: true,
+        assignment: {
+          include: {
+            agent: true,
+          },
+        },
+      },
+      orderBy: {
+        escalatedAt: 'asc',
+      },
+    });
+
+    // Combine both lists
+    const allRequests: any[] = [];
+
+    // Add queued items
+    queueItems.forEach((item, index) => {
       const waitMinutes = Math.floor(
         (Date.now() - new Date(item.queuedAt).getTime()) / 60000,
       );
@@ -240,17 +272,64 @@ export class AdminService {
           ? `${Math.floor(waitMinutes / 60)}h ${waitMinutes % 60}m`
           : `${waitMinutes}m`;
 
-      return {
+      allRequests.push({
         id: item.id,
         conversationId: item.conversationId,
         user: {
           name: `User ${item.conversation.user.user_session_id.slice(0, 8)}`,
+          id: item.conversation.user.user_session_id,
         },
         escalatedAt: item.conversation.escalatedAt?.toISOString(),
         position: index + 1,
         waitTime,
-      };
+        status: 'WAITING',
+        assignedAgent: null,
+        lastMessage: 'Waiting for agent assignment',
+      });
     });
+
+    // Add assigned but unattended conversations
+    assignedButUnattended.forEach((conv) => {
+      const waitMinutes = conv.escalatedAt
+        ? Math.floor(
+            (Date.now() - new Date(conv.escalatedAt).getTime()) / 60000,
+          )
+        : 0;
+
+      const waitTime =
+        waitMinutes >= 60
+          ? `${Math.floor(waitMinutes / 60)}h ${waitMinutes % 60}m`
+          : `${waitMinutes}m`;
+
+      allRequests.push({
+        id: conv.conversation_id,
+        conversationId: conv.conversation_id,
+        user: {
+          name: `User ${conv.user.user_session_id.slice(0, 8)}`,
+          id: conv.user.user_session_id,
+        },
+        escalatedAt: conv.escalatedAt?.toISOString(),
+        position: null, // Not in queue
+        waitTime,
+        status: 'ASSIGNED',
+        assignedAgent: conv.assignment?.[0]?.agent
+          ? {
+              id: conv.assignment[0].agent.id,
+              name: conv.assignment[0].agent.name,
+            }
+          : null,
+        lastMessage: 'Assigned to agent, awaiting response',
+      });
+    });
+
+    // Sort by escalatedAt (oldest first)
+    allRequests.sort((a, b) => {
+      const timeA = a.escalatedAt ? new Date(a.escalatedAt).getTime() : 0;
+      const timeB = b.escalatedAt ? new Date(b.escalatedAt).getTime() : 0;
+      return timeA - timeB;
+    });
+
+    return allRequests;
   }
 
   // Conversation analytics
@@ -304,16 +383,16 @@ export class AdminService {
 
   // Agent CRUD operations
   async createAgent(createAgentDto: CreateAgentDto) {
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      password, 
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
       maxChats,
       state,
       lga,
       primaryLanguage,
-      secondaryLanguage 
+      secondaryLanguage,
     } = createAgentDto;
 
     // Check if email already exists
@@ -1002,6 +1081,231 @@ export class AdminService {
       success: true,
       message: 'Profile updated successfully',
       admin: updatedAdmin,
+    };
+  }
+
+  // Queue Statistics Methods
+  async getQueueStatistics() {
+    const now = new Date();
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    const [total, waiting, assigned, resolved] = await Promise.all([
+      this.prisma.conversation.count({
+        where: {
+          created_at: { gte: startOfDay },
+        },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          status: 'WAITING_FOR_AGENT',
+        },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          status: 'AGENT_ASSIGNED',
+        },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          status: 'RESOLVED',
+          completedAt: { gte: startOfDay },
+        },
+      }),
+    ]);
+
+    const assignedConversations = await this.prisma.conversation.findMany({
+      where: {
+        assignedAgentId: { not: null },
+        assignedAt: { gte: startOfDay },
+      },
+      select: {
+        created_at: true,
+        assignedAt: true,
+      },
+    });
+
+    const avgWaitTime =
+      assignedConversations.length > 0
+        ? assignedConversations.reduce((sum, conv) => {
+            const wait = conv.assignedAt
+              ? (new Date(conv.assignedAt).getTime() -
+                  new Date(conv.created_at).getTime()) /
+                1000
+              : 0;
+            return sum + wait;
+          }, 0) / assignedConversations.length
+        : 0;
+
+    const resolvedToday = await this.prisma.conversation.findMany({
+      where: {
+        status: 'RESOLVED',
+        completedAt: { gte: startOfDay },
+        assignedAt: { not: null },
+      },
+      select: {
+        assignedAt: true,
+        agentMessages: {
+          orderBy: { sentAt: 'asc' },
+          take: 1,
+          select: { sentAt: true },
+        },
+      },
+    });
+
+    const avgResponseTime =
+      resolvedToday.length > 0
+        ? resolvedToday.reduce((sum, conv) => {
+            if (conv.agentMessages.length > 0 && conv.assignedAt) {
+              const responseTime =
+                (new Date(conv.agentMessages[0].sentAt).getTime() -
+                  new Date(conv.assignedAt).getTime()) /
+                1000;
+              return sum + responseTime;
+            }
+            return sum;
+          }, 0) / resolvedToday.filter((c) => c.agentMessages.length > 0).length
+        : 0;
+
+    return {
+      total,
+      waiting,
+      assigned,
+      resolved,
+      avgWaitTime: Math.round(avgWaitTime),
+      avgResponseTime: Math.round(avgResponseTime),
+    };
+  }
+
+  async getAgentStatuses() {
+    const agents = await this.prisma.agent.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        assignedConversations: {
+          where: {
+            status: 'ACTIVE',
+          },
+          select: {
+            id: true,
+            conversation: {
+              select: {
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return agents.map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      email: agent.email,
+      status: agent.status.toLowerCase(),
+      activeConversations: agent.assignedConversations.filter(
+        (a) => a.conversation.status === 'AGENT_ASSIGNED',
+      ).length,
+      totalResolved: 0,
+    }));
+  }
+
+  async getWaitingConversations(limit = 50, offset = 0) {
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
+        status: 'WAITING_FOR_AGENT',
+      },
+      orderBy: {
+        created_at: 'asc',
+      },
+      take: limit,
+      skip: offset,
+      select: {
+        conversation_id: true,
+        user_id: true,
+        created_at: true,
+        user: {
+          select: {
+            selected_language: true,
+          },
+        },
+        queue: {
+          select: {
+            priority: true,
+          },
+        },
+      },
+    });
+
+    return conversations.map((conv) => ({
+      id: conv.conversation_id,
+      userId: conv.user_id || 'Unknown',
+      userName: 'User',
+      language: conv.user?.selected_language || 'en',
+      waitTime: Math.floor(
+        (Date.now() - new Date(conv.created_at).getTime()) / 1000,
+      ),
+      priority: conv.queue?.priority || 'NORMAL',
+      createdAt: conv.created_at,
+    }));
+  }
+
+  async getDailyAnalytics(dateString?: string) {
+    const targetDate = dateString ? new Date(dateString) : new Date();
+    const startOfDay = new Date(
+      targetDate.getFullYear(),
+      targetDate.getMonth(),
+      targetDate.getDate(),
+    );
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const [conversations, messages, escalations] = await Promise.all([
+      this.prisma.conversation.groupBy({
+        by: ['status'],
+        where: {
+          created_at: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+        },
+        _count: true,
+      }),
+      this.prisma.agentMessage.count({
+        where: {
+          sentAt: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+        },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          escalationStatus: { not: null },
+          created_at: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      date: targetDate.toISOString().split('T')[0],
+      conversationsByStatus: conversations.reduce(
+        (acc, curr) => {
+          acc[curr.status] = curr._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      totalMessages: messages,
+      totalEscalations: escalations,
     };
   }
 }

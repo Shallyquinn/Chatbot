@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './create-user.dto';
 import { UpdateUserDto } from './update-user.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ChatbotUserData {
   sessionId: string;
@@ -25,18 +26,24 @@ export class UserService {
   constructor(private prisma: PrismaService) {}
 
   upsert(dto: CreateUserDto) {
+    // Generate user_session_id if not provided
+    const user_session_id = dto.user_session_id || uuidv4();
+
     return this.prisma.user.upsert({
-      where: { user_session_id: dto.user_session_id },
-      create: dto,
+      where: { user_session_id },
+      create: { ...dto, user_session_id },
       update: dto,
       select: { user_id: true, user_session_id: true },
     });
   }
 
   update(user_session_id: string, dto: UpdateUserDto) {
+    // Ensure user_session_id is provided
+    const sessionId = user_session_id || uuidv4();
+
     return this.prisma.user.upsert({
-      where: { user_session_id },
-      create: { user_session_id, ...dto },
+      where: { user_session_id: sessionId },
+      create: { user_session_id: sessionId, ...dto },
       update: dto,
       select: { user_id: true, user_session_id: true },
     });

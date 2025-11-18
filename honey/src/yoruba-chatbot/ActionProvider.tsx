@@ -148,6 +148,13 @@ class ActionProvider implements ActionProviderInterface {
   private static globalChatSessionInitialized: boolean = false;
   private static initializationPromise: Promise<void> | null = null;
   private static constructionCount: number = 0; // Track total constructions for debugging
+  
+  // Static navigation callback for language switching (set by App component)
+  private static navigationCallback: ((path: string) => void) | null = null;
+  
+  static setNavigationCallback(callback: (path: string) => void) {
+    ActionProvider.navigationCallback = callback;
+  }
 
   createChatBotMessage: CreateChatBotMessage;
   setState: SetStateFunc;
@@ -634,10 +641,11 @@ class ActionProvider implements ActionProviderInterface {
       }
 
       case 'language': {
+        // Yoruba chatbot - show only English and Hausa options (smart switching)
         const languageMessage = this.createChatBotMessage(
-          'Please select your preferred language:',
+          'Yan ede wo lo fẹ lati paarọ si? (Which language would you like to switch to?)',
           {
-            widget: 'languageOptions',
+            widget: 'smartLanguageSwitch',
             delay: 500,
           },
         );
@@ -724,7 +732,7 @@ class ActionProvider implements ActionProviderInterface {
         message_text: language,
         message_type: 'user',
         chat_step: 'language',
-        widget_name: 'languageOptions',
+        widget_name: 'smartLanguageSwitch',
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
@@ -735,36 +743,52 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
 
-    // Redirect to language-specific chatbot if Yoruba or Hausa is selected
-    if (language === 'Yoruba') {
+    // Smart language switching - redirect only if switching to a different language
+    if (language === 'English') {
       const redirectMessage = this.createChatBotMessage(
-        'E kaabo! (Welcome!) Redirecting you to Yoruba chatbot...',
+        'N yipada si Gẹẹsi... (Switching to English...)',
         { delay: 500 },
       );
       this.addMessageToState(redirectMessage);
       
-      // Redirect after a short delay
       setTimeout(() => {
-        window.location.href = '/chat/yoruba';
-      }, 1500);
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
       return;
     }
 
     if (language === 'Hausa') {
       const redirectMessage = this.createChatBotMessage(
-        'Sannu! (Welcome!) Redirecting you to Hausa chatbot...',
+        'N yipada si Hausa... (Switching to Hausa...)',
         { delay: 500 },
       );
       this.addMessageToState(redirectMessage);
       
-      // Redirect after a short delay
       setTimeout(() => {
-        window.location.href = '/chat/hausa';
-      }, 1500);
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat/hausa');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
       return;
     }
 
-    // For English, continue with normal onboarding
+    // If user selected Yoruba (current language), just acknowledge
+    if (language === 'Yoruba') {
+      const stayMessage = this.createChatBotMessage(
+        'O ti wa ni ede Yoruba tẹlẹ. (You are already in Yoruba language.)',
+        { delay: 500 },
+      );
+      this.addMessageToState(stayMessage);
+      return;
+    }
+
+    // For initial setup or other cases, continue with normal Yoruba onboarding
     // Check if this is a returning user first
     const isReturningUser = await this.checkForReturningUser();
 
@@ -1205,6 +1229,11 @@ class ActionProvider implements ActionProviderInterface {
         }
       ).handleMethodOptionsSelection(method);
     }
+  };
+
+  // Medical conditions screening handler (delegated to preventPregnancyActionProvider)
+  handleMedicalConditionsResponse = (option: string): void => {
+    this.preventPregnancyActionProvider.handleMedicalConditionsResponse(option);
   };
 
   // Task 5: Product detail selection handler
@@ -2736,22 +2765,62 @@ class ActionProvider implements ActionProviderInterface {
 
   private async escalateToHuman(): Promise<EscalationResult | null> {
     try {
+      console.log('🚀 Frontend: Starting escalateToHuman');
+      
       // Get the current conversation ID
       const currentConversationId = this.getCurrentConversationId();
       
+      console.log('🔍 Frontend: Conversation ID:', currentConversationId);
+      
       if (!currentConversationId) {
-        console.error('No conversation ID available for escalation');
+        console.error('❌ Frontend: No conversation ID available for escalation');
+        // Try to create a conversation first if we don't have one
+        try {
+          console.log('🔄 Frontend: Attempting to create conversation first...');
+          const conversation = await this.api.createConversation({
+            message_text: 'User requested human agent',
+            message_type: 'bot',
+            chat_step: 'agent_escalation',
+            widget_name: 'agentTypeSelection',
+            selected_option: 'Human Agent',
+            widget_options: [],
+            message_sequence_number: this.getNextSequenceNumber(),
+          });
+          
+          if (conversation?.conversation_id) {
+            // Update state with the new conversation ID
+            this.setState((prev) => ({
+              ...prev,
+              conversationId: conversation.conversation_id,
+            }));
+            console.log('✅ Frontend: Created conversation:', conversation.conversation_id);
+          } else {
+            console.error('❌ Frontend: Failed to create conversation');
+            return null;
+          }
+        } catch (error) {
+          console.error('❌ Frontend: Error creating conversation:', error);
+          return null;
+        }
+      }
+
+      // Get the conversation ID again (might have been created)
+      const conversationId = this.getCurrentConversationId();
+      if (!conversationId) {
+        console.error('❌ Frontend: Still no conversation ID after creation attempt');
         return null;
       }
 
       // Use the API service to escalate
-      const response = await this.api.escalateToAgent(currentConversationId);
+      console.log('📤 Frontend: Calling api.escalateToAgent...');
+      const response = await this.api.escalateToAgent(conversationId);
       
+      console.log('✅ Frontend: Escalation response:', response);
       return response as EscalationResult | null;
     } catch (error) {
-      console.error('Error escalating to human:', error);
+      console.error('❌ Frontend: Error escalating to human:', error);
+      return null;
     }
-    return null;
   }
 
   private setupAgentCommunication(agentId: string) {
@@ -3254,7 +3323,7 @@ class ActionProvider implements ActionProviderInterface {
     const languageQuestion = this.createChatBotMessage(
       'First, please select your preferred language:',
       {
-        widget: 'languageOptions',
+        widget: 'initialLanguageSelection',
         delay: 1500,
       },
     );

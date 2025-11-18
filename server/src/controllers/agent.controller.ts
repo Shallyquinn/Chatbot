@@ -9,14 +9,22 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
+  UploadedFile,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AgentEscalationService } from '../admin/services/agent-escalation.service';
 import { WebSocketService } from '../services/websocket.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentStatus, AssignmentStatus } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AgentGuard } from '../auth/guards/agent.guard';
 
 @Controller('agent')
-// @UseGuards(JwtAuthGuard, AgentGuard) // Uncomment when auth is implemented
+@UseGuards(JwtAuthGuard, AgentGuard)
 export class AgentController {
   constructor(
     private agentEscalationService: AgentEscalationService,
@@ -223,6 +231,72 @@ export class AgentController {
   // =============================================================================
   // MESSAGING
   // =============================================================================
+
+  @Post('conversations/:id/accept')
+  async acceptConversation(
+    @Param('id') conversationId: string,
+    @Request() req,
+  ) {
+    const agentId = this.getAgentId(req);
+
+    // Verify agent has this assignment
+    const assignment = await this.prisma.conversationAssignment.findFirst({
+      where: {
+        conversationId,
+        agentId,
+        status: AssignmentStatus.ACTIVE,
+      },
+      include: {
+        conversation: {
+          include: {
+            user: { select: { user_id: true, user_session_id: true } },
+          },
+        },
+        agent: { select: { name: true } },
+      },
+    });
+
+    if (!assignment) {
+      throw new Error('No active assignment found for this conversation');
+    }
+
+    // Send "agent joined" message to user via WebSocket
+    this.websocketService.notifyConversation(conversationId, {
+      type: 'AGENT_JOINED',
+      agentId,
+      agentName: assignment.agent.name,
+      timestamp: new Date(),
+    });
+
+    // Notify user directly
+    if (assignment.conversation?.user?.user_id) {
+      this.websocketService.notifyUser(assignment.conversation.user.user_id, {
+        type: 'AGENT_CONNECTED',
+        conversationId,
+        agentName: assignment.agent.name,
+        message: `${assignment.agent.name} has joined the chat`,
+        timestamp: new Date(),
+      });
+    }
+
+    // Notify admins
+    this.websocketService.notifyAdmins({
+      type: 'CONVERSATION_ACCEPTED',
+      conversationId,
+      agentId,
+      agentName: assignment.agent.name,
+      timestamp: new Date(),
+    });
+
+    return {
+      success: true,
+      message: 'Conversation accepted',
+      conversation: {
+        id: conversationId,
+        userName: assignment.conversation.user.user_session_id,
+      },
+    };
+  }
 
   @Post('messages')
   async sendMessage(
@@ -434,5 +508,205 @@ export class AgentController {
     });
 
     return { success: true, timestamp: new Date() };
+  }
+
+  @Post('conversations/:id/transfer')
+  async transferConversation(
+    @Param('id') conversationId: string,
+    @Body() transferDto: { targetAgentId: string; reason?: string },
+    @Request() req,
+  ) {
+    const currentAgentId = this.getAgentId(req);
+
+    // Update assignment to new agent
+    const assignment = await this.prisma.conversationAssignment.findFirst({
+      where: {
+        conversationId,
+        agentId: currentAgentId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Active assignment not found');
+    }
+
+    // Close current assignment
+    await this.prisma.conversationAssignment.update({
+      where: { id: assignment.id },
+      data: {
+        status: 'TRANSFERRED',
+        completedAt: new Date(),
+      },
+    });
+
+    // Create new assignment
+    const newAssignment = await this.prisma.conversationAssignment.create({
+      data: {
+        conversationId,
+        agentId: transferDto.targetAgentId,
+        status: 'ACTIVE',
+      },
+      include: {
+        agent: true,
+        conversation: true,
+      },
+    });
+
+    // Update conversation status
+    await this.prisma.conversation.update({
+      where: { conversation_id: conversationId },
+      data: {
+        status: 'AGENT_ASSIGNED',
+        assignedAgentId: transferDto.targetAgentId,
+      },
+    });
+
+    // TODO: Send notification to new agent via WebSocket
+    // this.websocketService.emit('conversation_transferred', {
+    //   type: 'conversation_transferred',
+    //   conversationId,
+    //   fromAgent: currentAgentId,
+    //   reason: transferDto.reason,
+    // });
+
+    return {
+      success: true,
+      data: newAssignment,
+      message: 'Conversation transferred successfully',
+    };
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: any,
+    @Body('conversationId') conversationId: string,
+    @Request() req,
+  ) {
+    const agentId = this.getAgentId(req);
+
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // In a real implementation, upload to cloud storage (S3, Azure, etc.)
+    // For now, we'll return a mock URL
+    const fileUrl = `/uploads/${Date.now()}_${file.originalname}`;
+
+    // Save file metadata to database
+    const fileRecord = await this.prisma.agentMessage.create({
+      data: {
+        conversationId,
+        agentId: agentId,
+        messageText: `File: ${file.originalname}`,
+        // Store file metadata in a separate file tracking table if needed
+        // metadata: {
+        //   fileName: file.originalname,
+        //   fileSize: file.size,
+        //   mimeType: file.mimetype,
+        //   fileUrl,
+        // }
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        fileUrl,
+        fileName: file.originalname,
+        fileSize: file.size,
+        messageId: fileRecord.id,
+      },
+    };
+  }
+
+  @Post('upload/multiple')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  async uploadMultipleFiles(
+    @UploadedFiles() files: any[],
+    @Body('conversationId') conversationId: string,
+    @Request() req,
+  ) {
+    const agentId = this.getAgentId(req);
+
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    const uploadedFiles = await Promise.all(
+      files.map(async (file) => {
+        const fileUrl = `/uploads/${Date.now()}_${file.originalname}`;
+
+        const fileRecord = await this.prisma.agentMessage.create({
+          data: {
+            conversationId,
+            agentId: agentId,
+            messageText: `File: ${file.originalname}`,
+            // Store file metadata in a separate file tracking table if needed
+          },
+        });
+
+        return {
+          fileUrl,
+          fileName: file.originalname,
+          fileSize: file.size,
+          messageId: fileRecord.id,
+        };
+      }),
+    );
+
+    return {
+      success: true,
+      data: uploadedFiles,
+    };
+  }
+
+  @Put('messages/:messageId/read')
+  async markMessageAsRead(
+    @Param('messageId') messageId: string,
+    @Request() req,
+  ) {
+    const agentId = this.getAgentId(req);
+
+    const message = await this.prisma.agentMessage.update({
+      where: { id: messageId },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      data: message,
+    };
+  }
+
+  @Put('conversations/:conversationId/read-all')
+  async markConversationAsRead(
+    @Param('conversationId') conversationId: string,
+    @Request() req,
+  ) {
+    const agentId = this.getAgentId(req);
+
+    // Mark all unread messages in conversation as read
+    const result = await this.prisma.agentMessage.updateMany({
+      where: {
+        conversationId,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        messagesMarkedRead: result.count,
+      },
+    };
   }
 }

@@ -23,14 +23,14 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'No FPM now or recently',
-          'IUD',
-          'Implants',
-          'Injections/ Depo-provera',
+          'Bantaba amfani da wata hanyar tsara iyali ba',
+          "Na'urar IUD",
+          'Alluran roba na hanu(Implants)',
+          'Allurai / Depo-provera / Sayana Press',
           'Sayana Press',
-          'Daily Pills',
-          'Condoms',
-          'Emergency pills',
+          'Kwayan sha na kullum',
+          'Kwaroron roba (condom)',
+          'Kwayan sha na gaggawa',
           'Female sterilisation',
           'Male sterilisation',
         ]}
@@ -45,7 +45,7 @@ export const getPregnantWidgets = [
     widgetName: 'getPregnantTryingDuration',
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={['Less than 1 year', 'Longer than 1 year']}
+        options={['Ƙasa da shekara ɗaya', 'Fiye da shekara ɗaya']}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantTryingDuration(option)
@@ -58,9 +58,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'Yes, more than 1 year',
-          'Yes, less than 1 year',
-          "No, I didn't remove",
+          'Eh, fiye da shekara ɗaya',
+          'Eh, ƙasa da shekara ɗaya',
+          "A’a, ban cire ba",
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -74,9 +74,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'Longer than 3 months',
-          'Less than 3 months',
-          "No, I didn't remove",
+          'Fiye da watanni uku',
+          'Ƙasa da watanni uku',
+          "A’a, ban cire ba",
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -89,7 +89,7 @@ export const getPregnantWidgets = [
     widgetName: 'getPregnantInjectionStop',
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={['Yes', 'No']}
+        options={['Ee', "A'a"]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantInjectionStop(option)
@@ -101,7 +101,7 @@ export const getPregnantWidgets = [
     widgetName: 'getPregnantPillsStop',
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
-        options={['Yes', 'No']}
+        options={['Ee', "A'a"]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
           actionProvider.handleGetPregnantPillsStop(option)
@@ -114,9 +114,9 @@ export const getPregnantWidgets = [
     widgetFunc: ({ actionProvider }: GetPregnantWidgetProps) => (
       <OptionButtons
         options={[
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
         ]}
         actionProvider={actionProvider}
         handleClick={(option: string) =>
@@ -131,14 +131,14 @@ export const getPregnantWidgets = [
 export const getPregnantMessages = {
   // Initial messages
   introduction: createChatBotMessage(
-    'This is great! I am happy to give you advice on family planning.',
+    ' Da kyau! Ina farin cikin ba ki shawarwari kan tsarin iyali.',
     {
       delay: 500,
     },
   ),
 
   fpmQuestion: createChatBotMessage(
-    'Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options',
+    'Shin a halin yanzu kina amfani da hanyar tsarin iyali ko kin yi amfani da shi kwanan nan?\n\nZaɓi abin da kake amfani da shi a yanzu. Duba jerin zabuka don ganin sauran su.',
     {
       delay: 1000,
       widget: 'getPregnantFPMSelection',
@@ -147,14 +147,14 @@ export const getPregnantMessages = {
 
   // No FPM branch
   noFPMExplanation: createChatBotMessage(
-    "Most couples will get pregnant within a year if they have regular sex and don't use contraception. But this is very individual and dependent on many factors.",
+    "Yawancin ma'aurata za su yi ciki cikin shekara guda idan suna yin jima'i akai-akai kuma ba sa amfani da kayan hana haihuwa. Amma wannan yana bambanta tsakanin mutane kuma yana dogara da abubuwa da yawa.",
     {
       delay: 500,
     },
   ),
 
   tryingDurationQuestion: createChatBotMessage(
-    'How long have you been trying to get pregnant?',
+    'Na tsawon wani lokaci kike ƙoƙarin samun ciki?',
     {
       delay: 1000,
       widget: 'getPregnantTryingDuration',
@@ -162,7 +162,7 @@ export const getPregnantMessages = {
   ),
 
   generalAdvice: createChatBotMessage(
-    'I see! No worries, getting pregnant might take some more time. However, I understand it might be frustrating. I recommend visiting your health care provider for proper medical assessment and guidance',
+    "Na gane! Babu damuwa, daukar ciki na iya ɗaukar ɗan lokaci kaɗan. Duk da haka, mun fahimci yana iya zama abin takaici.  Ina ba da shawara ka ziyarci ma'aikacin kiwon lafiya don ingantaccen bincike da jagorar likita.",
     {
       delay: 500,
     },
@@ -170,14 +170,14 @@ export const getPregnantMessages = {
 
   // IUD branch
   iudExplanation: createChatBotMessage(
-    'To get pregnant the IUD needs to be removed Return to fertility is immediate, or it may take a week or two to become fertile.* *In most cases, you can become pregnant in the first cycle after removal.',
+    "Don samun ciki, dole ne a cire na'urar IUD. Dawowar haihuwa (fertility) na iya kasancewa nan da nan, ko kuma yana iya ɗaukar mako ɗaya zuwa biyu kafin ki zama cikin hali na daukar ciki. A mafi yawan lokuta, za ki iya samun ciki a zagayowar farko na al'adarki bayan cire IUD.",
     {
       delay: 500,
     },
   ),
 
   iudRemovalQuestion: createChatBotMessage(
-    'Have you already removed the IUD for more than a year and still can not get pregnant?',
+    "Shin kin cire IUD wato Na'urar hana daukar ciki ta cikin mahaifa fiye da shekara guda kuma har yanzu ba ki iya yin ciki ba?",
     {
       delay: 1000,
       widget: 'getPregnantIUDRemoval',
@@ -185,21 +185,21 @@ export const getPregnantMessages = {
   ),
 
   iudMoreThanYear: createChatBotMessage(
-    'I understand it could be frustrating, so it might be good to talk to a specialist and get more detailed advice.',
+    'Na fahimci cewa hakan na iya zama abin takaici, don haka yana da kyau a yi magana da ƙwararren likita kuma a samu shawara mafi dacewa.',
     {
       delay: 500,
     },
   ),
 
   iudLessThanYear: createChatBotMessage(
-    'We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.',
+    'Mun fahimci cewa wannan na iya zama abin takaici, amma kada ki damu, samun ciki na iya ɗaukar ɗan lokaci. Don Allah ki ziyarci likitan lafiyarki don samun shawara mafi inganci.',
     {
       delay: 500,
     },
   ),
 
   iudNotRemoved: createChatBotMessage(
-    'We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.',
+    'Muna ba da shawarar ki ziyarci asibitin da kika fara amfani da hanyar hana daukar ciki ko wani asibiti da ke kusa domin cire shi.',
     {
       delay: 500,
     },
@@ -207,14 +207,14 @@ export const getPregnantMessages = {
 
   // Implant branch
   implantExplanation: createChatBotMessage(
-    'To get pregnant the Implant needs to be removed The earliest possible time to get pregnant is within 1 week of having the rod removed, but usually fertility is fully restored within 3 weeks.',
+    "Don samun ciki, dole ne a cire Implant. Mafi ƙanƙancin lokacin da za a iya samun ciki shi ne cikin mako ɗaya bayan cire sandar (rod), amma yawanci haihuwa tana dawowa gaba ɗaya cikin makonni 3.",
     {
       delay: 500,
     },
   ),
 
   implantRemovalQuestion: createChatBotMessage(
-    'Have you already removed the implant for more than 3 months and still can not get pregnant?',
+    "Shin kin cire allurar roban hannu fiye da watanni uku (3) kuma har yanzu ba ki iya daukan ciki ba?",
     {
       delay: 1000,
       widget: 'getPregnantImplantRemoval',
@@ -222,21 +222,21 @@ export const getPregnantMessages = {
   ),
 
   implantLongerThan3Months: createChatBotMessage(
-    'I understand not being able to get pregnant might be frustrating. It is good to talk to a specialist and get more detailed advice',
+    'Na fahimci cewa rashin samun ciki na iya zama abin damuwa. Yana da kyau a yi magana da ƙwararren likita don samun shawara mafi inganci.',
     {
       delay: 500,
     },
   ),
 
   implantLessThan3Months: createChatBotMessage(
-    'We understand it might be frustrating, but no worries, getting pregnant might take some more time. Kindly visit your health care provider and get more detailed advice.',
+    ' Na san yana iya zama abin takaici, amma babu damuwa, daukar ciki na iya ɗaukar ɗan lokaci. Da fatan za ki ziyarci likitan lafiyarki domin samun cikakken bayani da shawara mafi dacewa.',
     {
       delay: 500,
     },
   ),
 
   implantNotRemoved: createChatBotMessage(
-    'We recommend you visiting the clinic where you adopted the method or a nearby cinic to remove it.',
+    'Muna ba da shawarar ki ziyarci asibitin da kika fara amfani da hanyar hana ɗaukar ciki ko wani asibiti da ke kusa domin cire shi.',
     {
       delay: 500,
     },
@@ -244,14 +244,14 @@ export const getPregnantMessages = {
 
   // Injection branch
   injectionExplanation: createChatBotMessage(
-    "To get pregnant you need to stop taking the injection.\n\nIn most cases, it's possible to become pregnant after 3 months which is the duration of the injection.\n\nBut it can take up to six month for the complete effect of the hormone to wear off and to begin ovulating and having regular periods again",
+    "Don samun ciki, dole ne ki daina karɓar allurar hana ɗaukar ciki.\n\nA mafi yawan lokuta, yana yiwuwa a sami ciki bayan watanni 3, wanda shi ne tsawon lokacin da allurar ke aiki.\n\nAmma yana iya ɗaukar har zuwa watanni 6 kafin tasirin hormone ya ƙare gaba ɗaya, sannan ki fara fitowar kwai (ovulation) da komawa da jinin al’ada yadda ya saba.",
     {
       delay: 500,
     },
   ),
 
   injectionStopQuestion: createChatBotMessage(
-    'Have you stopped taking the injection for more than 6 months and still can not get pregnant?',
+    'Shin kun daina shan allurar fiye da watanni 6 kuma har yanzu ba za ku iya samun ciki ba?',
     {
       delay: 1000,
       widget: 'getPregnantInjectionStop',
@@ -259,14 +259,14 @@ export const getPregnantMessages = {
   ),
 
   injectionStoppedYes: createChatBotMessage(
-    'I understand not being able to get pregnant might be frustrating. It is good to talk to a specialist and get more detailed advice.',
+    'Na fahimci cewa rashin samun ciki na iya zama abin takaici. Yana da kyau a yi magana da ƙwararren likita kuma a samu shawara mafi inganci.',
     {
       delay: 500,
     },
   ),
 
   injectionStoppedNo: createChatBotMessage(
-    'No worries, women who stop using the injection usually experience at least 6 months of delay before pregnancy but depending on your body it may be longer.',
+    'Kada ki damu, mata da suka daina amfani da allurar hana haihuwa yawanci suna fuskantar jinkiri na akalla watanni shida kafin su sake samun ciki, amma wannan yana iya ɗaukar lokaci mai tsawo bisa yadda jikin mutum yake.',
     {
       delay: 500,
     },
@@ -274,14 +274,14 @@ export const getPregnantMessages = {
 
   // Pills branch
   pillsExplanation: createChatBotMessage(
-    "To get pregnant you need to stop taking the pill. The pill stops your body from ovulating, but as soon as you stop taking the pill, Your ovulation will start again . So, it's possible to get pregnant as soon as you stop the pill.",
+    "Don samun ciki, dole ne a daina shan kwayar hana haihuwa. Wannan kwayar tana hana jiki yin ƙwai (ovulation), amma da zarar an daina shan ta, jikin zai fara yin ƙwai kuma. Saboda haka, yana yiwuwa ki samu ciki da zarar kika daina shan kwayar.",
     {
       delay: 500,
     },
   ),
 
   pillsStopQuestion: createChatBotMessage(
-    'Have you stopped taking the pill for more than 3 months and still can not get pregnant?',
+    "Shin kin daina shan kwayar hana daukar ciki fiye da watanni 3 kuma har yanzu ba ki sami ciki ba?",
     {
       delay: 1000,
       widget: 'getPregnantPillsStop',
@@ -289,7 +289,7 @@ export const getPregnantMessages = {
   ),
 
   pillsStoppedNo: createChatBotMessage(
-    'I understand that it might be frustrating. But no worries, women who stop using the Pills experience no delay in getting pregnant. Call 7790 and requestto speak to a nurse counsellor if you still have concerns.',
+    'Na fahimci cewa hakan na iya zama abin damuwa. Amma kar ki damu, mata da suka daina amfani da kwayar hana haihuwa (Pills) ba sa fuskantar jinkiri wajen samun ciki. Ki kira 7790 ki nemi yin magana da jami’ar lafiya (nurse counsellor) idan har kina da wasu damuwa.',
     {
       delay: 500,
     },
@@ -297,7 +297,7 @@ export const getPregnantMessages = {
 
   // Condoms branch
   condomsAdvice: createChatBotMessage(
-    "To get pregnant you need to stop using condoms. So, it's possible to get pregnant as soon as you stop using the condoms. Most couples will get pregnant within a year if they have regular sex and don't use contraception. But this is very individual and dependent on many factors.",
+    "Don samun ciki, dole ne a daina amfani da kwandom (condom). Saboda haka, yana yiwuwa ki samu ciki da zarar kika daina amfani da shi. Mafi yawan ma’aurata suna samun ciki cikin shekara guda idan suna yin jima’i akai-akai ba tare da amfani da wata hanyar hana haihuwa ba. Amma wannan yana bambanta daga mutum zuwa mutum, saboda abubuwa da dama suna iya shafar hakan.",
     {
       delay: 500,
     },
@@ -305,7 +305,7 @@ export const getPregnantMessages = {
 
   // Emergency pills branch
   emergencyPillsAdvice: createChatBotMessage(
-    "To get pregnant you need to stop taking emergency pills. So, it's possible to get pregnant as soon as you stop the pill. Note that you can not use emergency pill as the main family planning method. Most couples will get pregnant within a year if they have regular sex and don't use contraception. But this is very individual and dependent on many factors.",
+    "Don samun ciki, dole ne a daina shan kwayar gaggawa (emergency pill). Saboda haka, yana yiwuwa ki samu ciki da zarar kika daina shan kwayar. Ki lura cewa ba za a yi amfani da kwayar gaggawa a matsayin hanya mai inganci hanyar hana haihuwa ba. Mafi yawan ma’aurata suna samun ciki cikin shekara guda idan suna yin jima’i akai-akai ba tare da wata hanya ta hana haihuwa ba. Amma wannan yana da bambanci bisa ga yanayin jikin kowa.",
     {
       delay: 500,
     },
@@ -313,14 +313,14 @@ export const getPregnantMessages = {
 
   // Sterilisation branches
   femaleSterilisationAdvice: createChatBotMessage(
-    'Sometimes female sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation',
+    'Wani lokaci dashen mata (female sterilisation) yana iya dawowa. Wannan na iya faruwa nan da nan ko bayan wasu shekaru. Don haka, ki ziyarci asibiti don samun karin bayani daga ƙwararren ma’aikacin lafiya game da matsayin dashenki.',
     {
       delay: 500,
     },
   ),
 
   maleSterilisationAdvice: createChatBotMessage(
-    'Sometimes male sterilisation is reversible. It can be immediately after or even several years later. Kindly visit your health provider and get more advice regarding the status of your sterilisation.',
+    'Haka kuma, wani lokaci dashen maza (male sterilisation) yana iya dawowa. Wannan ma yana iya faruwa nan da nan ko bayan wasu shekaru. Don haka, ka ziyarci asibiti domin samun karin bayani daga ƙwararren ma’aikacin lafiya game da matsayin dashenka.',
     {
       delay: 500,
     },
@@ -333,12 +333,12 @@ export const getPregnantMessages = {
   }),
 
   // Ask more questions response
-  askMoreQuestions: createChatBotMessage('Okay!', {
+  askMoreQuestions: createChatBotMessage('Toh, shikenan!', {
     delay: 500,
   }),
 
   askMoreQuestionsPrompt: createChatBotMessage(
-    'Please note that I am a family planning bot and can only respond to questions relating to family planning. What is your question?',
+    'Don Allah a lura cewa ni bot ne na tsara iyali (family planning bot), kuma ina iya amsa tambayoyi da suka shafi tsara iyali ne kawai. Menene tambayarka?',
     {
       delay: 1000,
     },

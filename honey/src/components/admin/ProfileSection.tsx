@@ -95,8 +95,9 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
       if (formData.email !== profile.email) {
         onNotification('Login email updated. Please re-login with new email.', 'success');
       }
-    } catch (error: any) {
-      onNotification(error.message || 'Failed to update profile', 'error');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      onNotification(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +136,14 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
 
       {/* Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLoading) {
+              setShowModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
@@ -144,6 +152,8 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-gray-600"
                 disabled={isLoading}
+                aria-label="Close edit profile modal"
+                title="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -168,6 +178,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                   <label
                     htmlFor="image-upload"
                     className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    aria-label="Upload profile image"
                   >
                     <Camera className="w-6 h-6 text-white" />
                   </label>
@@ -178,6 +189,8 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                     onChange={handleImageUpload}
                     className="hidden"
                     disabled={isLoading}
+                    aria-label="Upload profile image file"
+                    title="Upload profile image"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Click to upload (Max 2MB)</p>
@@ -185,29 +198,35 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 mb-1">
                   Name
                 </label>
                 <input
+                  id="profile-name"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
                   disabled={isLoading}
+                  placeholder="Enter your name"
+                  title="Profile name"
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email (Login Email)
                 </label>
                 <input
+                  id="profile-email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
                   disabled={isLoading}
+                  placeholder="Enter your email"
+                  title="Login email address"
                 />
                 <p className="text-xs text-amber-600 mt-1">
                   ⚠️ Changing this will update your login email
@@ -220,41 +239,50 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
                       Current Password
                     </label>
                     <input
+                      id="current-password"
                       type="password"
                       value={formData.currentPassword}
                       onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
                       disabled={isLoading}
+                      placeholder="Enter current password"
+                      title="Current password"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                       New Password
                     </label>
                     <input
+                      id="new-password"
                       type="password"
                       value={formData.newPassword}
                       onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
                       disabled={isLoading}
+                      placeholder="Enter new password"
+                      title="New password"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                       Confirm New Password
                     </label>
                     <input
+                      id="confirm-password"
                       type="password"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
                       disabled={isLoading}
+                      placeholder="Confirm new password"
+                      title="Confirm new password"
                     />
                   </div>
                 </div>

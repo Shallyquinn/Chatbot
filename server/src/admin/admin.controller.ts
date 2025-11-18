@@ -113,6 +113,29 @@ export class AdminController {
     return this.adminService.getConversationAnalytics(analyticsDays);
   }
 
+  @Get('queue/stats')
+  async getQueueStats() {
+    return this.adminService.getQueueStatistics();
+  }
+
+  @Get('agents/status')
+  async getAgentStatuses() {
+    return this.adminService.getAgentStatuses();
+  }
+
+  @Get('conversations/waiting')
+  async getWaitingConversations(
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.adminService.getWaitingConversations(limit, offset);
+  }
+
+  @Get('analytics/daily')
+  async getDailyAnalytics(@Query('date') date?: string) {
+    return this.adminService.getDailyAnalytics(date);
+  }
+
   @Get('profile')
   async getAdminProfile(@Request() req: any) {
     return this.adminService.getAdminProfile(req.user.id);

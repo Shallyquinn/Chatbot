@@ -131,9 +131,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   
 
-  // =============================================================================
+
   // SMART WIDGET DISCOVERY METHODS
-  // =============================================================================
+
 
   /**
    * Intelligently finds image and audio widgets for any method or product
@@ -302,17 +302,17 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     return { hasImage: false, hasAudio: false };
   };
   
-  // =============================================================================
+
   // PREVENT PREGNANCY INITIATION
-  // =============================================================================
+
 
   handlePreventPregnancyInitiation = async(): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage = this.createUserMessage("How to prevent pregnancy");
+    const userMessage = this.createUserMessage("Báwo ni a ṣe lè dena oyun");
     
     // Phase 2: Use MessageFormatter for professional greeting
-    const greetingText = MessageFormatter.formatSuccess("I see! 👍\n\nYou are at the right place, I can assist you with this.");
+    const greetingText = MessageFormatter.formatSuccess("Mo rí i! 👍\n\nO wà níbi tó tọ́, mo lè ràn ẹ lọ́wọ́ pẹ̀lú èyí");
     const greetingTiming = SmartMessageTimer.createTimingConfig(greetingText, 'confirmation', 'medium');
     const responseMessage = this.createChatBotMessage(greetingText, { delay: greetingTiming.delay });
 
@@ -361,9 +361,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }).catch(err => console.error('Failed to save follow-up message:', err));
   };
 
-  // =============================================================================
+
   // CONTRACEPTION TYPE SELECTION
-  // =============================================================================
+
 
   handleContraceptionTypeSelection = async(type: string): Promise<void> => {
     await this.ensureChatSession();
@@ -408,7 +408,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     await this.api.createResponse({
       response_category:'ContraceptionType',
       response_type:'user',
-      question_asked:'What kind of contraception do you want to know about?',
+      question_asked:'Ìru ọ̀nà ìdena oyun wo ni o fẹ́ mọ̀ nípa rẹ̀?',
       user_response:contraceptionType,
       widget_used:'contraceptiontypeoptions',
       available_options:['Emergency', 'Prevent in future'],
@@ -434,37 +434,33 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }));
   };
 
-  // =============================================================================
+
   // EMERGENCY CONTRACEPTION PATH
-  // =============================================================================
+
 
   private handleEmergencyPath = async(userMessage: ChatMessage): Promise<void> => {
     // Phase 2: Format emergency contraception info with warning
     const emergencyInfoText = MessageFormatter.formatWarning(
-      "To avoid pregnancy after unprotected sex, you can take emergency contraceptive pills.\n\n" +
-      "Emergency pills are very effective when taken within 24 to 72 hours after unprotected sex. " +
-      "You are advised to not take it more than 3 times in a month. " +
-      "If you are ovulating, you should use an alternative contraceptive plan (condoms).\n\n" +
-      "Please note that they are not effective if you are already pregnant."
+      "Láti dènà nini oyún lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò, o lè lo òògùn adena oyún onípàjáwìrì.\n\n" + "Òògùn onípàjáwìrì yìí máa n ṣiṣẹ́ dáadáa tí a bá lo o láàrín wákàtí mẹrinlelogun sí wákàtí mejìlélàádọ́rin lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò." +" A gba yín láàmòràn kí ẹ má ṣe lo o ju ẹ́ẹ̀mẹ́ta lọ ninu osù kan.Ilana ìdáàbòbòbò míìrán (Kọndọmu) ni kí ẹ lo bí ẹ bá n pa ẹyin lọwọ."
     );
     const emergencyTiming = SmartMessageTimer.createTimingConfig(emergencyInfoText, 'warning', 'high');
     const responseMessage = this.createChatBotMessage(emergencyInfoText, { delay: emergencyTiming.delay });
 
     //use type-safe products list
-    const availableProducts: EmergencyProduct[] = ["postpill", "postinor2"];
+    const availableProducts: EmergencyProduct[] = ["Postpill", "Postinor-2"];
     
     // Phase 2: Format product list with info icon
     const productListText = MessageFormatter.formatInfo(
-      "Let me tell you some of the effective and available emergency contraceptive pills:\n\n" +
+      "Jẹ ki n sọ diẹ fun ọ ninu àwọn oogun pajawiri adèna oyún ti o munadoko ti o wa:\n\n" +
       "• Postpill can be taken within 5 days after sex\n" +
       "• Postinor-2 is effective within 3 days after sex\n\n" +
-      "Which product do you want to learn about?"
+      "Ewo nínú àwọn Òògùn yìí  ni o fẹ mọ nipa rẹ?"
     );
     const productTiming = SmartMessageTimer.createTimingConfig(productListText, 'info', 'medium');
     const productMessage = this.createChatBotMessage(productListText, { delay: productTiming.delay });
 
     // Phase 2: Add button guidance
-    const selectionText = MessageFormatter.addButtonGuidance("Select one to learn more:");
+    const selectionText = MessageFormatter.addButtonGuidance(     "Ewo nínú àwọn Òògùn yìí  ni o fẹ mọ nipa rẹ?");
     const selectionTiming = SmartMessageTimer.createTimingConfig(selectionText, 'question', 'medium');
     const selectionMessage = this.createChatBotMessage(
       selectionText,
@@ -507,9 +503,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }).catch(err => console.error('Failed to save selection message:', err));
   };
 
-  // =============================================================================
+
   // EMERGENCY PRODUCT SELECTION
-  // =============================================================================
+
 
   handleEmergencyProductSelection = async(product: string): Promise<void> => {
     // Type safety conversion
@@ -519,27 +515,24 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     const widgets = this.findMediaWidgets(emergencyProduct);
    
 
-    // Using type-safe constants instead of magic strings
-    const productInfoMap: Record<EmergencyProduct, string > = {
-      "postpill": "Postpill is a one-dose emergency contraceptive pill by DKT. It contains 1.5 mg Levongestrel. It should be taken orally as soon as possible but can still be taken within 5 days (120 hours) of unprotected sex. It doesn’t work if you are already pregnant and will not harm an already established pregnancy.\n\n You can buy Postpill at any pharmacy or health store around you. It is 95% effective when taken within 24 hours of unprotected sex.\n\nIf more than 120 hours (5 days) have passed since unprotected sex, it won't be effective. In such a situation, kindly call 7790 and ask to speak to a nurse counsellor for further guidance.",
+    // Using type-safe constants instead of magic strings (removed explicit Record<> to allow "Postinor-2" key)
+    const productInfoMap = {
+      Postpill: "Òògùn tàà pé ni 'postpill' yìí jẹ́ òògùn oní lílò lẹ́kan ṣoṣo latọ́wọ́ ilé-ìṣẹ́ DKT.Ó ní ìwọ̀n mílígírámù kan àti ààbò èròjà kan tí a n pé ní Levongestrel. Ó gbọdọ̀ jẹ́ lílò ní kíákíà láàrín wákàtí mẹ́rinlelogun, ṣùgbọ́n ó sí tún lè lòó láàrín ọjọ́ márùn (ọgọ́fà wákàtí) lẹ́yìn tí ìbálòpọ̀ láìní ìdáàbòbò bá wáyé.\n\nBí o bá ṣe tete lo òògùn yìí sí ni yóò ṣe tete ṣiṣẹ́ sí. Kò lè ṣiṣẹ́ tí ó bá ti loyún tẹlẹ, bẹ́ẹ̀ ni kò lè pà oyún tí ó ti dúró lára rárá.\n\nÓ lè rí òògùn yìí rà ní ilé ìtajà òògùn tó súnmọ́ ọ. Ó munadoko ní àádọ́rún [95%] nínú ọgọ́rùn-ún bí a bá mu un láàárín wákàtí méjìlélọ́gọ́rin [24] lẹ́yìn ìbálòpò tí a kò lo ìdena oyun.\n\nTi o ba ti ju bíi ọgọfa wakati(ọjọ márùn) lọ lẹhin ibalopọ tí kò ní ìdáàbòbò, oogun yìí ko ní ṣiṣẹ rárá, o dara ki o yara pé oníṣègùn eto ìlera rẹ láti gba amọran mìíràn.",
       
-      "postinor2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
-    };
-    await this.api.createResponse({
-    response_category: "EmergencyProduct",
+      "Postinor-2": "Òògùn Postinor jẹ́ èyí tí ó maa n dènà oyún tí a ó fẹ́ láì ṣeùwù láàrín wákàtí méjìlélààdọ́rin lẹ́yìn ìbálòpọ̀ tí kò ní ìdáàbòbò.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
     response_type: "user",
     question_asked: "Which emergency contraception product do you want to know about?",
     user_response: emergencyProduct,
     widget_used: "emergencyProductOptions",
     available_options: ["Postpill", "Postinor-2"],
     step_in_flow: "emergencyProductSelection",
-  });
+  };
     const productInfo = productInfoMap[emergencyProduct];
     if (!productInfo) {
     
       // Handle unknown product case
       const errorMessage = this.createChatBotMessage(
-        "I don't have information about that product. Please choose Postpill or Postinor-2.",
+        "Mi ò ní ìmọ̀ nípa ọjà yẹn. Jọ̀wọ́, yan Postpill tàbí Postinor-2.",
         { 
           delay: 500,
           widget: "emergencyProductOptions"
@@ -565,9 +558,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Smart image display with formatted intro
     if (widgets.hasImage && widgets.imageWidget) {
       const imageIntro = MessageFormatter.formatInfo(
-        `Here's what ${emergencyProduct} looks like:`
+        `Èyí ni bí ${emergencyProduct} ṣe rí:`,
       );
       const imageMessage = this.createChatBotMessage(
+    
         imageIntro,
         { widget: widgets.imageWidget, delay: timing.delay + 800 }
       );
@@ -577,7 +571,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Smart audio display with formatted intro  
     if (widgets.hasAudio && widgets.audioWidget) {
       const audioIntro = MessageFormatter.formatTip(
-        `Click to listen to a short introduction of ${emergencyProduct} in Pidgin, if you want to.`
+        `Tẹ̀ lórí láti gbọ́ ìtẹ̀síwájú kéékèèké nípa ${emergencyProduct} ní Pidgin, bí o bá fẹ́.`,
       );
       const audioDelay = widgets.hasImage ? timing.delay + 1500 : timing.delay + 800;
       const audioMessage = this.createChatBotMessage(
@@ -598,7 +592,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Add follow-up with button guidance
     const followUpText = MessageFormatter.addButtonGuidance(
-      "Do you want to find out about other family planning methods?"
+      "Ṣé o fẹ́ mọ̀ nípa àwọn ọ̀nà ìdílé míì tí a fi ń dena oyun"
     );
     const followUpDelay = timing.delay + 1500;
     const followUpMessage = this.createChatBotMessage(
@@ -641,18 +635,18 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }));
   };
 
-  // =============================================================================
+
   // PREVENT FUTURE PATH
-  // =============================================================================
+
 
   private handlePreventFuturePath = async(userMessage: ChatMessage): Promise<void> => {
     // Format intro message to match WhatsApp transcript exactly
-    const introText = "Allright 👌\nI am happy to provide you with more information about family planning methods that are effective and safe for you.";
+    const introText = "Alright 👌\nI am happy to provide you with more information about family planning methods that are effective and safe for you.";
     const introTiming = SmartMessageTimer.createTimingConfig(introText, 'info', 'medium');
     const responseMessage = this.createChatBotMessage(introText, { delay: introTiming.delay });
 
     // Phase 2: Question exactly as in WhatsApp
-    const questionText = "For how long do you want to prevent pregnancy?";
+    const questionText =       "Ọdún mélòó ni o fẹ fi dúró láì loyún?";
     const durationMessage = this.createChatBotMessage(
       questionText,
       { 
@@ -692,9 +686,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }).catch(err => console.error('Failed to save duration message:', err));
   };
 
-  // =============================================================================
+
   // PREVENTION DURATION SELECTION
-  // =============================================================================
+
   // PREVENTION DURATION SELECTION
   // Handles both button clicks and typed natural language inputs
   handlePreventionDurationSelection = async(duration: string): Promise<void> => {
@@ -733,23 +727,16 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Phase 2: Enhanced duration config with proper formatting (using display labels as keys)
     const durationConfig: Record<PreventionDuration, { message: string; widget: string }> = {
-      "Up to 1 year": {
-        message: "The short-term family planning methods are:\n\n" +
-          "1. Daily contraceptive pills\n" +
-          "2. The barrier contraceptives which are Diaphragms and Condoms\n" +
-          "3. Injectables.",
+      "Titi di ọdun kan": {
+        message: `Àwọn ìlànà ìfètò sọ́mọ bíbí aláàkókò kúkúrú ni:\n\n ${this.formatMethodList(availableMethods)} \n`+ "\n1. Òògùn adena oyún olojoojumo\n" + "2. Àwọn adena oyún tí ó jẹ́ oní kíkì bọ oju ara, ìyẹn dayaframu àti kọ́ndọ̀mù",
         widget: "shortTermMethods"
       },
-      "1 - 2 years": {
-        message: "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods, the Injectables or the Implants.",
+      "Odun kan si meji": {
+        message: "Tí o bá fẹ́ dena oyun láàárín ọdún kan sí méjì, o lè lo èyíkéyìí nínú àwọn ọ̀nà ìdílé tí kò pẹ́ tọ́ (short-acting) tàbí abẹrẹ ìdílé (injectables).",
         widget: "mediumTermMethods"
       },
-      "3 - 4 years": {
-        message: "For 3-4 years, you can use:\n\n" +
-          "1. Injectables\n" +
-          "2. IUD (Intrauterine Device)\n" +
-          "3. IUS (Intrauterine System)\n" +
-          "4. Implants",
+      "Mẹta si mẹrin ọdun": {
+        message: `Fún ìdábò bo tó máa pé ọdún mẹ́ta sí mẹ́rin, o lè lo ọ̀nà àárín-ìgbà bíi abẹrẹ ìdílé, IUD, IUS tàbí implanti.${this.formatInlineMethodList(availableMethods)} `,
         widget: "longTermMethods"
       },
       "5 - 10 years": {
@@ -759,11 +746,11 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
           "3. Implants (up to 5 years)",
         widget: "extendedLongTermMethods"
       },
-      "Permanently": {
-        message: "For permanent prevention of pregnancy, these methods are available:\n\n" +
+      "Titilai": {
+        message: "Fún ìdena oyun títí láéláé, o lè ronú nípa ọ̀nà sterilization tabi" + "these methods are available:\n\n" +
           "1. Tubal ligation (for women)\n" +
           "2. Vasectomy (for men)\n\n" +
-          "⚠️ Please note: These procedures are permanent and irreversible.",
+          "⚠️ Please note: Àwọn ọ̀nà wọ̀nyí jẹ́ títí láéláé, a kò sì lè yí wọn padà lẹ́yìn tí a bá ti ṣe wọn.",
         widget: "permanentMethods"
       },
       "Not sure": {
@@ -815,7 +802,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     const responseMessage = this.createChatBotMessage(config.message, { delay: responseTiming.delay });
 
     // Method selection prompt - match WhatsApp exactly
-    const selectionText = "Click on any of the methods to get more information about it.";
+    const selectionText = `Click on any of the ${availableMethods.length} methods to get more information about it.`;
     const methodSelectionMessage = this.createChatBotMessage(
       selectionText,
       { 
@@ -896,9 +883,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   };
 
-  // =============================================================================
+
   // "NOT SURE" CATEGORY SELECTION HANDLER
-  // =============================================================================
+
   handleNotSureCategorySelection = async(category: string): Promise<void> => {
     await this.ensureChatSession();
     
@@ -980,7 +967,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }).catch(err => console.error('Failed to save response:', err));
   };
   //old handlePreventionDurationSelection
-  // =============================================================================
+
   // handlePreventionDurationSelection = (duration: string): void => {
   //   const userMessage: ChatMessage = {
   //     message: duration,
@@ -995,9 +982,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   //   // const availableMethods = getMethodOptionsForDuration(durationKey);
 
   //   switch (durationKey) {
-  //     case "Up to 1 year":
+  //     case "Titi di ọdun kan":
   //       responseMessage = this.createChatBotMessage(
-  //         "The short-term family planning methods are:\n\n1. Daily contraceptive pills\n2. The barrier contraceptives (diaphragm, female condom, male condom)",
+  //         "“Awọn ọna igbero idile igba kukuru jẹ:\n\n1. Òògùn idena oyún olojoojumọ \n2. The barrier contraceptives (Aranmo )",
   //         { delay: 500 }
   //       );
   //       widget = "shortTermMethods";
@@ -1005,31 +992,31 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   //     case "1 - 2 years":
   //       responseMessage = this.createChatBotMessage(
-  //         "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods or injectables.",
+  //         "Ti o ba fẹ ṣe idiwọ oyun laarin ọdun kan si meji, o le lo eyikeyi awọn ọna ṣiṣe eto ẹbi kukuru tabi awọn abẹrẹ.",
   //         { delay: 500 }
   //       );
   //       widget = "mediumTermMethods";
   //       break;
 
-  //     case "3-4 years":
+  //     case "Mẹta si mẹrin ọdun":
   //       responseMessage = this.createChatBotMessage(
-  //         "For 3-4 years of protection, you can use medium-term methods like injectables, IUD, IUS, or implants.",
+  //         "Fún ìdábò bo tó máa pé ọdún mẹ́ta sí mẹ́rin, o lè lo ọ̀nà àárín-ìgbà bíi abẹrẹ ìdílé, IUD, IUS tàbí implanti.",
   //         { delay: 500 }
   //       );
   //       widget = "longTermMethods";
   //       break;
 
-  //     case "5-10 years":
+  //     case "ọdun marun si mẹwa":
   //       responseMessage = this.createChatBotMessage(
-  //         "For long-term protection (5-10 years), the most effective methods are IUD, IUS, and implants.",
+  //         "Fún ìdábò bo pípẹ́ (ọdún márùn-ún sí mẹ́wàá), àwọn ọ̀nà tó munadoko jù lọ ni IUD, IUS àti implanti.",
   //         { delay: 500 }
   //       );
   //       widget = "extendedLongTermMethods";
   //       break;
 
-  //     case "Permanently":
+  //     case "Titilai":
   //       responseMessage = this.createChatBotMessage(
-  //         "For permanent prevention of pregnancy, you can consider sterilization methods. These are permanent and irreversible procedures.",
+  //         "Fún ìdena oyun títí láéláé, o lè ronú nípa ọ̀nà sterilization. Àwọn ọ̀nà wọ̀nyí jẹ́ títí láéláé, a kò sì lè yí wọn padà.",
   //         { delay: 500 }
   //       );
   //       widget = "permanentMethods";
@@ -1086,11 +1073,11 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   };
 }
 
-  // =============================================================================
+
   // METHOD SELECTION HANDLING
-  // =============================================================================
+
   // METHOD SELECTION HANDLER (Task 5: Product Information Flow)
-  // =============================================================================
+
 
   handleMethodOptionsSelection = async(method: string): Promise<void> => {
     await this.ensureChatSession();
@@ -1215,9 +1202,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     })
   };
 
-  // =============================================================================
+
   // PRODUCT DETAIL SELECTION HANDLER (Task 5: Advantages/Disadvantages OR Who Can Use)
-  // =============================================================================
+
 
   handleProductDetailSelection = async(choice: string): Promise<void> => {
     await this.ensureChatSession();
@@ -1398,9 +1385,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }));
   };
 
-  // =============================================================================
+
   // LEARN OTHER METHODS HANDLER (Task 5: Navigation after product details)
-  // =============================================================================
+
 
   handleLearnOtherMethods = async(answer: string): Promise<void> => {
     await this.ensureChatSession();
@@ -1476,9 +1463,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }
   };
 
-  // =============================================================================
+
   // MEDICAL CONDITIONS SCREENING RESPONSE
-  // =============================================================================
+
   handleMedicalConditionsResponse = async(answer: string): Promise<void> => {
     const normalized = answer.trim().toLowerCase();
     const userMessage = this.createUserMessage(answer);
@@ -1519,9 +1506,9 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     }
   };
 
-  // =============================================================================
+
   // METHOD INFORMATION DATABASE
-  // =============================================================================
+
 
   private getMethodInformation = (method: ContraceptiveMethod): {
     description: string;

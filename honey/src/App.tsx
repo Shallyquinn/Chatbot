@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useNavigate,
 } from 'react-router-dom';
 import Chatbot from 'react-chatbot-kit';
 import 'react-chatbot-kit/build/main.css';
@@ -26,6 +27,7 @@ import './App.css';
 
 // Your existing chatbot component
 const ChatbotApp: React.FC = () => {
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState<boolean>(false);
   // Use stable chatKey - don't change it unless absolutely necessary
   const chatKey = useMemo(() => 'chatbot-session', []);
@@ -33,6 +35,13 @@ const ChatbotApp: React.FC = () => {
   const chatContainerRef = useRef(null);
   const lastMessageCountRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
+  
+  // Set up navigation callback for ActionProvider
+  useEffect(() => {
+    ActionProvider.setNavigationCallback((path: string) => {
+      navigate(path);
+    });
+  }, [navigate]);
 
   // Memoize save handler to prevent infinite re-renders
   const handleSaveMessages = useCallback((messages: ChatMessage[]) => {

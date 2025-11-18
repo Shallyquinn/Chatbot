@@ -26,26 +26,26 @@ export type GreetingStep =
   | "main_navigation"
   | "complete";
 
-export type EmergencyProduct = "postpill" | "postinor2";
+export type EmergencyProduct = "Postpill" | "Postinor-2";
 
 export type PreventionDuration =
-  | "short_term"
-  | "medium_term"
-  | "long_term"
-  | "extended_term"
+  | "short term"
+  | "medium term"
+  | "long term"
+  | "extended term"
   | "permanent";
 
 export type ContraceptiveMethod =
-  | "daily_pills"
-  | "diaphragm"
-  | "female_condom"
-  | "male_condom"
-  | "injectables"
-  | "implants"
-  | "ius"
-  | "iud"
-  | "vasectomy"
-  | "tubal_ligation";
+  | "Daily pills"
+  | "Diaphragm"
+  | "Female condom"
+  | "Male condom"
+  | "Injectables"
+  | "Implants"
+  | "IUS"
+  | "IUD"
+  | "Vasectomy"
+  | "Tubal_ligation";
 
 export type ContraceptionType = "emergency" | "prevention";
 
@@ -75,7 +75,7 @@ export interface ChatbotState {
   isReturningUser?: boolean;
   // Agent-related fields
   conversationId?: string;
-  escalationStatus?: "QUEUED" | "ASSIGNED" | "COMPLETED" | null;
+  escalationStatus?: "QUEUED" | "ASSIGNED" | "COMPLETED" | "OUTSIDE_HOURS" | "outside_hours" | null;
   queuePosition?: number;
   assignedAgent?: string | null;
   agentId?: string | null;

@@ -97,9 +97,7 @@ class ApiService {
     );
   }
 
-  // =============================================================================
   // AUTHENTICATION
-  // =============================================================================
 
   async adminLogin(email: string, password: string): Promise<LoginResponse> {
     const response = await this.api.post("/auth/admin/login", {
@@ -118,9 +116,7 @@ class ApiService {
     return response.data.data || response.data;
   }
 
-  // =============================================================================
   // ADMIN ENDPOINTS
-  // =============================================================================
 
   // Dashboard metrics
   async getDashboardMetrics() {
@@ -161,19 +157,17 @@ class ApiService {
     assignments: ConversationAssignment
   ): Promise<ApiResponse> {
     const response = await this.api.post(
-      "/admin/dashboard/bulk-assign",
+      "/admin/conversations/bulk-assign",
       assignments
     );
     return response.data;
   }
 
   async assignConversation(conversationId: string, agentId: string) {
-    const response = await this.api.put(
-      `/admin/conversations/${conversationId}/assign`,
-      {
-        agentId,
-      }
-    );
+    const response = await this.api.post("/admin/conversations/assign", {
+      conversationId,
+      agentId,
+    });
     return response.data;
   }
 
@@ -207,13 +201,11 @@ class ApiService {
 
   // Real-time stats
   async getRealtimeStats() {
-    const response = await this.api.get("/admin/realtime/stats");
+    const response = await this.api.get("/admin/queue/stats");
     return response.data;
   }
 
-  // =============================================================================
   // AGENT ENDPOINTS
-  // =============================================================================
 
   // Profile management
   async getAgentProfile() {
@@ -226,8 +218,8 @@ class ApiService {
     return response.data;
   }
 
-  async updateAgentStatus(status: string) {
-    const response = await this.api.put("/agent/status", { status });
+  async updateAgentStatus(isOnline: boolean) {
+    const response = await this.api.put("/agent/status", { isOnline });
     return response.data;
   }
 
@@ -239,7 +231,7 @@ class ApiService {
 
   async getConversationMessages(conversationId: string) {
     const response = await this.api.get(
-      `/agent/conversations/${conversationId}/messages`
+      `/conversations/${conversationId}/messages`
     );
     return response.data;
   }
@@ -248,6 +240,7 @@ class ApiService {
     const response = await this.api.post("/agent/messages", {
       conversationId,
       text,
+      content: text,
     });
     return response.data;
   }
@@ -309,9 +302,7 @@ class ApiService {
     return response.data;
   }
 
-  // =============================================================================
   // CONVERSATION ESCALATION (for chatbot users requesting human agents)
-  // =============================================================================
 
   async escalateToAgent(conversationId: string, userId: string) {
     const response = await this.api.post("/conversations/escalate", {
@@ -328,9 +319,75 @@ class ApiService {
     return response.data;
   }
 
-  // =============================================================================
+  // ADMIN DASHBOARD APIs
+
+  async getQueueStats() {
+    const response = await this.api.get("/admin/queue/stats");
+    return response.data;
+  }
+
+  async getAgentStatuses() {
+    const response = await this.api.get("/admin/agents/status");
+    return response.data;
+  }
+
+  async getWaitingConversations(limit = 50, offset = 0) {
+    const response = await this.api.get("/admin/conversations/waiting", {
+      params: { limit, offset },
+    });
+    return response.data;
+  }
+
+  async getDailyAnalytics(date?: string) {
+    const response = await this.api.get("/admin/analytics/daily", {
+      params: date ? { date } : {},
+    });
+    return response.data;
+  }
+
+  // FILE UPLOAD
+
+  async uploadFile(file: File, conversationId: string) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("conversationId", conversationId);
+
+    const response = await this.api.post("/agent/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  }
+
+  async uploadFiles(files: File[], conversationId: string) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    formData.append("conversationId", conversationId);
+
+    const response = await this.api.post("/agent/upload-multiple", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  }
+
+  // MESSAGE RECEIPTS
+
+  async markMessageAsRead(messageId: string) {
+    const response = await this.api.put(`/agent/messages/${messageId}/read`);
+    return response.data;
+  }
+
+  async markConversationAsRead(conversationId: string) {
+    const response = await this.api.put(
+      `/agent/conversations/${conversationId}/read-all`
+    );
+    return response.data;
+  }
+
   // GENERIC HTTP METHODS (for flexible API calls)
-  // =============================================================================
 
   // Generic HTTP methods - using 'any' for maximum flexibility with different API responses
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

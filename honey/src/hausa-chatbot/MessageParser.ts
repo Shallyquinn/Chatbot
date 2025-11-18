@@ -572,15 +572,15 @@ class MessageParser {
       default:
         console.log(`Unhandled step: ${this.state.currentStep}`);
         // In default state, try to find a match for known user inputs
-        if (lowerCase.includes("improve sex life")) {
+        if (lowerCase.includes("inganta rayuwar jima'i (sex life)")) {
           this.actionProvider.handleSexLifeImprovement();
-        } else if (lowerCase.includes("prevent pregnancy")) {
+        } else if (lowerCase.includes("yadda ake ɗaukar ciki")) {
           this.actionProvider.handlePlanningMethodSelection(
-            "How to prevent pregnancy"
+            "Yadda ake ɗaukar ciki"
           );
-        } else if (lowerCase.includes("change") && lowerCase.includes("fpm")) {
+        } else if (lowerCase.includes("sauya") && lowerCase.includes("fpm")) {
           this.actionProvider.handleFPMChangeSelection(
-            "Change/stop current FPM"
+            "Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu "
           );
         } else if (lowerCase === "human" || lowerCase.includes("agent")) {
           // Handle direct request for a human agent
@@ -626,7 +626,8 @@ class MessageParser {
           lowerCase === "menu" ||
           lowerCase === "honey" ||
           lowerCase === "human" ||
-          lowerCase === "language"
+          lowerCase === "language" ||
+          lowerCase === "harshe" // Hausa word for "language"
         ) {
           // Handle other keyword navigation
           this.actionProvider.handleKeywordNavigation(message);
@@ -644,11 +645,11 @@ class MessageParser {
           };
 
           const genericResponse = this.actionProvider.createChatBotMessage(
-            "I'm not sure I understand. You can:\n" +
-              "• Type 'menu' to see main options\n" +
-              "• Type 'demographics' to update your information\n" +
-              "• Type 'human' to speak with an agent\n" +
-              "• Select an option from the available buttons"
+            "Ban gane ba. Zaka iya:\n" +
+              "• Rubuta 'menu' don ganin zaɓuɓɓukan asali\n" +
+              "• Rubuta 'demographics' don sabunta bayananku\n" +
+              "• Rubuta 'human' don magana da wakili\n" +
+              "• Zaɓi zaɓi daga maɓallan da ake samu"
           );
           this.actionProvider.setState((prev) => ({
             ...prev,

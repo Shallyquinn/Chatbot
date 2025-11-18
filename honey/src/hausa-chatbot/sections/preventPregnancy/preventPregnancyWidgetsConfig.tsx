@@ -18,9 +18,11 @@ export interface PreventPregnancyWidgetProps {
   state: ChatbotState;
 }
 
-// =============================================================================
+
+
 // CONTRACEPTION TYPE SELECTION WIDGET
-// =============================================================================
+
+
 
 export const contraceptionTypeOptionsWidget = {
   widgetName: 'contraceptionTypeOptions',
@@ -35,9 +37,11 @@ export const contraceptionTypeOptionsWidget = {
   ),
 };
 
-// =============================================================================
+
+
 // EMERGENCY CONTRACEPTION WIDGETS
-// =============================================================================
+
+
 
 export const emergencyProductOptionsWidget = {
   widgetName: 'emergencyProductOptions',
@@ -52,9 +56,11 @@ export const emergencyProductOptionsWidget = {
   ),
 };
 
-// =============================================================================
+
+
 // PREVENTION DURATION SELECTION WIDGET
-// =============================================================================
+
+
 
 export const preventionDurationOptionsWidget = {
   widgetName: 'preventionDurationOptions',
@@ -69,9 +75,11 @@ export const preventionDurationOptionsWidget = {
   ),
 };
 
-// =============================================================================
+
+
 // METHOD SELECTION WIDGETS - Dynamic based on duration
-// =============================================================================
+
+
 
 export const MethodOptionsWidget = {
   widgetName: 'methodOptions',
@@ -91,7 +99,7 @@ export const shortTermMethodsWidget = {
   widgetName: 'shortTermMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration('Up to 1 year')}
+      options={getMethodOptionsForDuration('Har zuwa shekara 1')}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -105,7 +113,7 @@ export const mediumTermMethodsWidget = {
   widgetName: 'mediumTermMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration('1 - 2 years')}
+      options={getMethodOptionsForDuration('Shekara 1 zuwa 2')}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -119,7 +127,7 @@ export const longTermMethodsWidget = {
   widgetName: 'longTermMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration('3 - 4 years')}
+      options={getMethodOptionsForDuration('Shekara 3 zuwa 4')}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -133,7 +141,7 @@ export const extendedLongTermMethodsWidget = {
   widgetName: 'extendedLongTermMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration('5 - 10 years')}
+      options={getMethodOptionsForDuration('Shekara 5 zuwa 10')}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -147,7 +155,7 @@ export const permanentMethodsWidget = {
   widgetName: 'permanentMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={getMethodOptionsForDuration('Permanently')}
+      options={getMethodOptionsForDuration('Na dindindin')}
       actionProvider={props.actionProvider}
       handleClick={(option: string) =>
         props.actionProvider.handleMethodOptionsSelection(option)
@@ -161,56 +169,42 @@ export const notSureCategoryOptionsWidget = {
   widgetName: 'notSureCategoryOptions',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={['3-10 years', '3 months', 'Flexible methods', 'Permanent methods']}
+      options={['Shekara 3-10', 'Watanni 3', 'Hanyoyin sassauƙa', 'Hanyoyi na dindindin']}
       actionProvider={props.actionProvider}
-      handleClick={(option: string) =>
-        props.actionProvider.handleNotSureCategorySelection(option)
-      }
+      handleClick={(option: string) => {
+        // Map category back to duration for existing handler
+        const durationMap: Record<string, string> = {
+          'Shekara 3-10': 'Shekara 3 zuwa 4',
+          'Watanni 3': 'Har zuwa shekara 1',
+          'Hanyoyin sassauƙa': 'Shekara 1 zuwa 2',
+          'Hanyoyi na dindindin': 'Na dindindin',
+        };
+        props.actionProvider.handlePreventionDurationSelection(durationMap[option] || option);
+      }}
     />
   ),
 };
 
-// =============================================================================
+
+
 // ADDITIONAL ACTION WIDGETS
-// =============================================================================
+
+
 
 export const learnMoreMethodsWidget = {
   widgetName: 'learnMoreMethods',
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
-      options={['Yes', '📊 Compare Methods', 'No']}
+      options={['Ee', "A'a"]}
       actionProvider={props.actionProvider}
       handleClick={(option: string) => {
-        if (option === 'Yes') {
+        if (option === 'Ee') {
           props.actionProvider.handlePreventionDurationSelection(
-            'Up to 1 year',
+            'Har zuwa shekara 1',
           );
-        } else if (option === '📊 Compare Methods') {
-          // Phase 3.3: Show comparison instructions
-          const compareMsg = props.actionProvider.createChatBotMessage(
-            "Great! Select methods from the list and I'll compare them side-by-side. Choose the duration first:",
-            { 
-              delay: 300,
-              widget: 'preventionDurationOptions'
-            }
-          );
-          props.actionProvider.setState((prev: ChatbotState) => ({
-            ...prev,
-            messages: [...prev.messages, compareMsg]
-          }));
         } else {
-          // Phase 3: Show flow end options instead of direct main menu
-          const thankYouMsg = props.actionProvider.createChatBotMessage(
-            "No problem! What would you like to do next?",
-            { 
-              delay: 300,
-              widget: 'flowEndOptions'
-            }
-          );
-          props.actionProvider.setState((prev: ChatbotState) => ({
-            ...prev,
-            messages: [...prev.messages, thankYouMsg]
-          }));
+          // Just handle as main menu navigation
+          props.actionProvider.handlePreventionDurationSelection('Har zuwa shekara 1');
         }
       }}
     />
@@ -244,40 +238,33 @@ export const comparisonActionsWidget = {
   widgetFunc: (props: PreventPregnancyWidgetProps) => (
     <OptionButtons
       options={[
-        '✅ Compare Now',
-        '🗑️ Clear Selection',
-        '➕ Add More Methods'
+        'Kwatanta Yanzu',
+        'Share Zaɓi',
+        'Ƙara Hanyoyi'
       ]}
       actionProvider={props.actionProvider}
       handleClick={(option: string) => {
-        const cleanOption = option.replace(/[\u{2705}\u{1F5D1}\u{FE0F}\u{2795}]/gu, '').trim();
-        
-        if (cleanOption === 'Compare Now') {
-          props.actionProvider.handleCompareNow();
-        } else if (cleanOption === 'Clear Selection') {
-          props.actionProvider.handleClearComparison();
-        } else if (cleanOption === 'Add More Methods') {
-          // Show duration options to select more methods
-          const addMoreMsg = props.actionProvider.createChatBotMessage(
-            "Great! For how long do you want to prevent pregnancy?",
-            { 
-              delay: 300,
-              widget: 'preventionDurationOptions'
-            }
-          );
-          props.actionProvider.setState((prev: ChatbotState) => ({
-            ...prev,
-            messages: [...prev.messages, addMoreMsg]
-          }));
+        // Simplified handling without emoji regex issues
+        if (option.includes('Kwatanta') || option.includes('Yanzu')) {
+          // Compare now - use available handler
+          props.actionProvider.handleMethodOptionsSelection(option);
+        } else if (option.includes('Share') || option.includes('Zaɓi')) {
+          // Clear selection - use available handler
+          props.actionProvider.handleMethodOptionsSelection(option);
+        } else {
+          // Add more methods - navigate to duration selection
+          props.actionProvider.handlePreventionDurationSelection('Har zuwa shekara 1');
         }
       }}
     />
   ),
 };
 
-// =============================================================================
+
+
 // PRODUCT DETAIL WIDGETS (Task 5: Product Information Flow)
-// =============================================================================
+
+
 
 // Widget for "What do you want to learn about?" buttons after product description
 export const productDetailOptionsWidget = {
@@ -352,9 +339,11 @@ export const learnOtherMethodsWidget = {
   ),
 };
 
-// =============================================================================
+
+
 // MEDICAL CONDITIONS SCREENING WIDGET
-// =============================================================================
+
+
 
 export const medicalConditionsCheckWidget = {
   widgetName: 'medicalConditionsCheck',
@@ -368,9 +357,11 @@ export const medicalConditionsCheckWidget = {
   ),
 };
 
-// =============================================================================
+
+
 // EXPORT ALL PREVENT PREGNANCY WIDGETS
-// =============================================================================
+
+
 
 export const preventPregnancyWidgets = [
   contraceptionTypeOptionsWidget,

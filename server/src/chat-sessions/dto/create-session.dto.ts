@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 
 export class CreateChatSessionDto {
-  @IsString() user_session_id: string;
+  @IsOptional() @IsString() user_session_id?: string;
   @IsOptional() @IsUUID() user_id?: string;
   @IsOptional() @IsDateString() session_start_time?: string;
   @IsOptional() @IsDateString() session_end_time?: string | null;

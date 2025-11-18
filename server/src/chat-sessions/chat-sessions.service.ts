@@ -16,16 +16,17 @@ export class ChatSessionsService {
   async create(dto: CreateChatSessionDto) {
     let userId = dto.user_id ?? null;
 
-    if (!userId) {
+    // Only try to find user if user_session_id is provided
+    if (!userId && dto.user_session_id) {
       const user = await this.prisma.user.findUnique({
         where: { user_session_id: dto.user_session_id },
         select: { user_id: true },
       });
-      if (!user) {
-        throw new BadRequestException('User not for this session_id');
+      if (user) {
+        userId = user.user_id;
       }
-      userId = user?.user_id ?? null;
-    } else {
+    } else if (userId) {
+      // Validate user_id if provided
       const exists = await this.prisma.user.findUnique({
         where: { user_id: userId },
         select: { user_id: true },
@@ -37,8 +38,8 @@ export class ChatSessionsService {
 
     return this.prisma.chatSession.create({
       data: {
-        user_session_id: dto.user_session_id,
-        user_id: userId, // <- now guaranteed (or explicitly null if you choose)
+        user_session_id: dto.user_session_id ?? null,
+        user_id: userId,
         session_start_time: dto.session_start_time ?? new Date().toISOString(),
         session_end_time: dto.session_end_time ?? null,
         total_messages_count: dto.total_messages_count ?? 0,

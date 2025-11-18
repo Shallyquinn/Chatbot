@@ -138,19 +138,19 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     // Reset sequence number for new conversation
     this.resetSequenceNumber();
 
-    const userMessage = this.createUserMessage('How to get pregnant');
+    const userMessage = this.createUserMessage( 'Yadda ake ɗaukar ciki');
 
     // Ensure session is initialized
     await this.ensureChatSession();
 
     // Use the original messages from getPregnantConfig
     const introMessage = this.createChatBotMessage(
-      'This is great! I am happy to give you advice on family planning.',
+      'Da kyau! Ina farin cikin ba ki shawarwari kan tsarin iyali.',
       { delay: 500 },
     );
 
     const questionMessage = this.createChatBotMessage(
-      'Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options',
+      'Shin a halin yanzu kina amfani da hanyar tsarin iyali ko kin yi amfani da shi kwanan nan?\n\nZaɓi abin da kake amfani da shi a yanzu. Duba jerin zabuka don ganin sauran su.',
       {
         widget: 'getPregnantFPMSelection',
         delay: 1000,
@@ -190,7 +190,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       .createConversation({
         message_type: 'bot',
         message_text:
-          'This is great! I am happy to give you advice on family planning.',
+          'Da kyau! Ina farin cikin ba ki shawarwari kan tsarin iyali.',
         chat_step: 'getPregnantFPMSelection',
         widget_name: 'getPregnantFPMSelection',
         message_sequence_number: this.getNextSequenceNumber(),
@@ -203,18 +203,18 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       .createConversation({
         message_type: 'bot',
         message_text:
-          'Are you currently using a family planning method (FPM) or did you recently use one?\n\nPlease select from the options your current or recently used method. Scroll to see all options',
+          'Shin a halin yanzu kina amfani da hanyar tsarin iyali ko kin yi amfani da shi kwanan nan?\n\nZaɓi abin da kake amfani da shi a yanzu. Duba jerin zabuka don ganin sauran su.',
         chat_step: 'getPregnantFPMSelection',
         widget_name: 'getPregnantFPMSelection',
         widget_options: [
-          'No FPM now or recently',
-          'IUD',
-          'Implants',
-          'Injections /Depo-provera / Sayana Press',
+          'Bantaba amfani da wata hanyar tsara iyali ba',
+          "Na'urar IUD",
+          'Alluran roba na hanu(Implants)',
+          'Allurai / Depo-provera / Sayana Press',
           'Sayana Press',
-          'Daily Pills',
-          'Condoms',
-          'Emergency pills',
+          'Kwayan sha na kullum',
+          'Kwaroron roba (condom)',
+          'Kwayan sha na gaggawa',
           'Female sterilisation',
           'Male sterilisation',
         ],
@@ -310,18 +310,18 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         response_category: 'GetPregnantFPMSelection',
         response_type: 'user',
         question_asked:
-          'Are you currently using a family planning method (FPM) or did you recently use one?',
+          'Shin a halin yanzu kina amfani da hanyar tsarin iyali ko kin yi amfani da shi kwanan nan?',
         user_response: selection,
         widget_used: 'getPregnantFPMSelection',
         available_options: [
-          'No FPM now or recently',
-          'IUD',
-          'Implants',
-          'Injections /Depo-provera / Sayana Press',
+          'Ban taba amfani da wata hanyar tsara iyali ba',
+          "Na'urar IUD",
+          'Alluran roba na hanu(Implants)',
+          'Allurai / Depo-provera / Sayana Press',
           'Sayana Press',
-          'Daily Pills',
-          'Condoms',
-          'Emergency pills',
+          'Kwayan sha na kullum',
+          'Kwaroron roba (condom)',
+          'Kwayan sha na gaggawa',
           'Female sterilisation',
           'Male sterilisation',
         ],
@@ -350,85 +350,85 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         nextStep: ChatStep;
       }
     > = {
-      'No FPM now or recently': {
+      'Ban taba amfani da wata hanyar tsara iyali ba': {
         message:
-          "That's good to know. Since you're not using any contraceptive method, your body should be ready for pregnancy. Let me ask you about your journey so far.",
-        followUpQuestion: 'How long have you been trying to conceive?',
+          "Madalla da jin haka. Tun da ba kiyi amfani da wata hanyar hana daukar ciki ba, jikinki zai kasance a shirye don samun ciki. Bari in  yi miki wasu tambayoyi.",
+        followUpQuestion: 'Na wani tsawon lokaci kike ƙoƙarin samun ciki?',
         followUpWidget: 'getPregnantTryingDuration',
         nextStep: 'getPregnantTryingDuration',
       },
-      IUD: {
+      "Na'urar IUD": {
         message:
-          "I understand you currently have an IUD. To get pregnant, you'll need to have it removed by a healthcare provider. The IUD prevents pregnancy very effectively, so removal is necessary.",
-        followUpQuestion: 'Have you had your IUD removed?',
+          "Na fahimci kina da na'urar IUD a halin yanzu. Don samun ciki, dole ne likita ya cire miki shi. Na'urar IUD yana hana daukar ciki sosai, don haka cire shi yana da muhimmanci.",
+        followUpQuestion: "Kin cire na'urar IUD ɗinki?",
         followUpWidget: 'getPregnantIUDRemoval',
         nextStep: 'getPregnantIUDRemoval',
       },
-      Implants: {
+      'Alluran roba na hanu(Implants)': {
         message:
-          "I see you have an implant. To get pregnant, you'll need to have the implant removed by a healthcare provider. The implant prevents pregnancy very effectively.",
-        followUpQuestion: 'Have you had your implant removed?',
+          "Na kuma ga kina da imflant. Don samun ciki, dole ne likita ya cire miki shi. Imflant yana hana daukar ciki.",
+        followUpQuestion: 'Kin cire imflant ɗinki?',
         followUpWidget: 'getPregnantImplantRemoval',
         nextStep: 'getPregnantImplantRemoval',
       },
-      'Injections /Depo-provera / Sayana Press': {
+      'Allurai / Depo-provera / Sayana Press': {
         message:
-          "I understand you're using injections. To get pregnant, you'll need to stop getting the injections. However, it may take some time for your fertility to return after stopping.",
-        followUpQuestion: 'Have you stopped getting the injections?',
+          "Na fahimci kina amfani da allurar hana daukar ciki. Don samun ciki, dole ne ki daina karɓar allurar. Duk da haka, yana iya ɗaukar ɗan lokaci kafin yanayin samun ciki ya dawo daidai bayan kin daina.",
+        followUpQuestion: 'Kin daina karɓar allurar hana daukar ciki?',
         followUpWidget: 'getPregnantInjectionStop',
         nextStep: 'getPregnantInjectionStop',
       },
       'Sayana Press': {
         message:
-          "I understand you're using Sayana Press. To get pregnant, you'll need to stop getting the injections. However, it may take some time for your fertility to return after stopping.",
+          "Na fahimci kina amfani da Sayana Press. Don samun ciki, dole ne ki daina karɓar allurar Sayana Press. Amma yana iya ɗaukar ɗan lokaci kafin yanayin samun ciki ya dawo daidai bayan kin daina.",
         followUpQuestion:
-          'Have you stopped getting the Sayana Press injections?',
+          'Kin daina karɓar allurar Sayana Press?',
         followUpWidget: 'getPregnantInjectionStop',
         nextStep: 'getPregnantInjectionStop',
       },
-      'Daily Pills': {
+      'Kwayan sha na kullum': {
         message:
-          "I see you're taking daily contraceptive pills. To get pregnant, you'll need to stop taking the pills. Your fertility should return relatively quickly after stopping.",
-        followUpQuestion: 'Have you stopped taking the daily pills?',
+          "Na ga kina shan kwayar hana daukar ciki kullum. Don samun ciki, dole ne ki daina shan kwayar. Haihuwa na dawowa da sauri bayan kin daina shan ta.",
+        followUpQuestion: 'Kin daina shan kwayar kullum ta hana daukar ciki?',
         followUpWidget: 'getPregnantPillsStop',
         nextStep: 'getPregnantPillsStop',
       },
-      Condoms: {
+      'Kwaroron roba (condom)': {
         message:
-          "Since you're using condoms, you can start trying to conceive immediately by simply not using them during intercourse. Condoms don't affect your fertility.",
-        followUpQuestion: 'What would you like to do next?',
+          "Tunda kina amfani da kondom, zaku iya fara ƙoƙarin samun ciki nan take ta hanyar daina amfani da su yayin jima'i. Kondom baya shafar haihuwa.",
+        followUpQuestion: 'Me kike son ki yi gaba?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       },
-      'Emergency pills': {
+      'Kwayan sha na gaggawa': {
         message:
-          "Emergency contraceptive pills are only meant for occasional use and don't affect your long-term fertility. You can start trying to conceive whenever you're ready.",
-        followUpQuestion: 'What would you like to do next?',
+          "Kwayar hana daukar ciki ta gaggawa an tsara ta ne don amfani na lokaci-lokaci kawai, kuma bata da tasiri a kan haihuwa na dogon lokaci. Zaki iya fara ƙoƙarin samun ciki duk lokacin da kika shirya.",
+        followUpQuestion: 'Me kike son ki yi gaba?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       },
       'Female sterilisation': {
         message:
-          "Female sterilisation is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: 'What would you like to do next?',
+          "Tiyatar hana haihuwa ga mata (female sterilisation) an ƙera ta ne don ta zama ta dindindin. Duk da yake ana yin tiyatar dawo da haihuwa, tana da wahala kuma ba ta tabbatar da dawowar haihuwar. Ina ba da shawarar ki tuntuɓi ƙwararren likita don tattaunawa kan zabin da ya dace.",
+        followUpQuestion: 'Me kike son ki yi gaba?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       },
       'Male sterilisation': {
         message:
-          "Male sterilisation (vasectomy) is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: 'What would you like to do next?',
+          "Tiyatar hana haihuwa ga maza (vasectomy) an tsara ta ne don ta zama ta dindindin. Duk da yake ana iya tiyatar dawo da haihuwa, tana da wahala kuma ba ta tabbatar da dawowar haihuwa ba. Ina ba da shawarar ka tuntuɓi ƙwararren likita don tattaunawa kan zabin da ya dace da kai.",
+        followUpQuestion: 'Me kake son ka yi gaba?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       },
     };
 
     const foundResponse = responses[method];
-    console.log('Found response:', foundResponse ? 'Yes' : 'No', { method }); // Debug log
+    console.log('Found response:', foundResponse ? 'Ee' : "A'a", { method }); // Debug log
     return (
       foundResponse || {
-        message: `I understand you're using ${method}. For specific guidance about conception while using this method, I recommend consulting with a healthcare provider. Please call 7790 for personalized assistance.`,
-        followUpQuestion: 'What would you like to do next?',
+        message: `Na fahimci kina amfani da ${method}. Don samun cikakken shawarwari kan yadda zaka iya samun ciki yayin amfani da wannan hanyar, ina ba da shawarar ka tuntuɓi likitan lafiya. Don samun taimako na musamman, ka kira 7790.`,
+        followUpQuestion: 'Me kake son ka yi gaba?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       }
@@ -439,26 +439,26 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   private getWidgetOptions(widgetName: string): string[] {
     const optionsMap: Record<string, string[]> = {
       getPregnantTryingDuration: [
-        'Less than 6 months',
-        '6-12 months',
-        'More than 1 year',
+        'Ƙasa da watanni shida',
+        'Watanni 6–12',
+        'Fiye da shekara 1',
       ],
       getPregnantIUDRemoval: [
-        'Yes, more than 1 year',
-        'Yes, less than 1 year',
-        "No, I didn't remove",
+        'Eh, fiye da shekara ɗaya',
+        'Eh, ƙasa da shekara ɗaya',
+        "A’a, ban cire ba",
       ],
       getPregnantImplantRemoval: [
-        'Longer than 3 months',
-        'Less than 3 months',
-        "No, I didn't remove",
+        'Fiye da watanni uku',
+        'Ƙasa da watanni uku',
+        "A’a, ban cire ba",
       ],
-      getPregnantInjectionStop: ['Yes', 'No'],
-      getPregnantPillsStop: ['Yes', 'No'],
+      getPregnantInjectionStop: ['Ee', "A'a"],
+      getPregnantPillsStop: ['Ee', "A'a"],
       getPregnantNextAction: [
-        'Ask more questions',
-        'Find nearest clinic',
-        'Back to main menu',
+        'Yi ƙarin tambayoyi',
+        'Nemo asibiti mafi kusa',
+        'Koma zuwa babban menu',
       ],
     };
     return optionsMap[widgetName] || [];
@@ -489,7 +489,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -542,13 +542,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+          'Yi ƙarin tambayoyi',
+          'Nemo asibiti mafi kusa',
+          'Koma zuwa babban menu',
         ],
         message_sequence_number: 9,
         message_delay_ms: 1000,
@@ -564,9 +564,9 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         user_response: duration,
         widget_used: 'getPregnantTryingDuration',
         available_options: [
-          'Less than 6 months',
-          '6-12 months',
-          'More than 1 year',
+          'Ƙasa da watanni shida',
+          'Watanni 6–12:',
+          'Fiye da shekara 1:',
         ],
         step_in_flow: 'getPregnantTryingDuration',
       })
@@ -578,17 +578,17 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   // Get advice based on trying duration
   private getTryingDurationAdvice(duration: string): string {
     const adviceMap: Record<string, string> = {
-      'Less than 6 months':
-        "It's still early in your conception journey. For most couples, it can take up to 6-12 months to conceive naturally. Continue with regular unprotected intercourse and maintain a healthy lifestyle with proper nutrition, exercise, and prenatal vitamins.",
-      '6-12 months':
-        "You've been trying for a while, which is normal for many couples. Consider tracking your ovulation cycle to optimize timing. Maintain healthy habits and consider consulting a healthcare provider if you have concerns.",
-      ' than 1 year':
-        "After trying for over a year, it may be helpful to consult with a fertility specialist or healthcare provider. They can assess both partners and provide guidance on next steps. Don't lose hope - many couples conceive with proper medical guidance.",
+      'Ƙasa da watanni shida':
+        "Har yanzu lokaci bai kure muku ba ta neman ciki. Ga ma’aurata da dama, yana iya ɗaukar tsawon watanni 6 zuwa 12 kafin su sami ciki ta hanya ta halitta. Ci gaba da saduwa ba tare da amfani da kariya ba, sannan ki kula da lafiyar ki — abinci mai gina jiki, motsa jiki, da shan bitamin na mata masu juna biyu.",
+      'Watanni 6–12:':
+        "Kin riga kin dade kina ƙoƙarin samun ciki, wanda hakan al’ada ce ga ma’aurata da dama. Yi la’akari da bin diddigin lokacin ovulation ɗinki domin sanin lokacin da kike da damar daukar ciki. Ci gaba da kula da lafiyarki, kuma ki tuntubi likitan lafiya idan kina da damuwa.",
+      'Fiye da shekara 1:':
+        "Idan kin yi ƙoƙarin samun ciki fiye da shekara guda, yana da kyau ki tuntuɓi ƙwararren likitan haihuwa (fertility specialist) ko likitan lafiya. Zasu iya bincikar ku duka biyun su kuma ba da shawarar matakan da suka dace. Kada ki damu, ma’aurata da dama suna samun ciki bayan samun kulawar likita.",
     };
 
     return (
       adviceMap[duration] ||
-      'Thank you for sharing that information. For personalized advice about your conception journey, I recommend consulting with a healthcare provider who can assess your specific situation.'
+      'Na gode da bayyana wannan bayanin. Don samun shawarwari na musamman game da tafiyarki ta neman ciki, ina ba da shawarar ki tuntuɓi likitan lafiya domin tantance halin da kike ciki.'
     );
   }
 
@@ -602,7 +602,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -653,13 +653,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+          'Yi ƙarin tambayoyi',
+          'Nemo asibiti mafi kusa',
+          'Koma zuwa babban menu',
         ],
         message_sequence_number: 9,
         message_delay_ms: 1000,
@@ -675,9 +675,9 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         user_response: status,
         widget_used: 'getPregnantIUDRemoval',
         available_options: [
-          'Yes, more than 1 year',
-          'Yes, less than 1 year',
-          "No, I didn't remove",
+          'Eh, fiye da shekara ɗaya',
+          'Eh, ƙasa da shekara ɗaya',
+          "A’a, ban cire ba",
         ],
         step_in_flow: 'getPregnantIUDRemoval',
       })
@@ -689,17 +689,17 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   // Get IUD removal specific response
   private getIUDRemovalResponse(status: string): string {
     const responses: Record<string, string> = {
-      'Yes, more than 1 year':
-        "Great! Since you had your IUD removed more than a year ago, your fertility should have fully returned. You can continue trying to conceive naturally. If you haven't conceived yet, consider consulting with a healthcare provider for fertility assessment.",
-      'Yes, less than 1 year':
-        "Good! Your IUD has been removed. Most women's fertility returns immediately after IUD removal, so you can start trying to conceive right away. It may take a few months for your cycle to regulate completely.",
-      "No, I didn't remove":
-        "To get pregnant, you'll need to have your IUD removed by a healthcare provider. This is a simple procedure that can be done at a clinic. Please call 7790 to schedule an appointment for IUD removal.",
+      'Eh, fiye da shekara ɗaya':
+        "Madalla! Tun da aka cire miki IUD ɗinki fiye da shekara guda da ta wuce, yuwuwar samun ciki ta dawo yadda ta ke. Za ki iya ci gaba da ƙoƙarin samun ciki ta hanya ta halatta. Idan har yanzu baki samu ciki ba, ki yi la’akari da tuntuɓar likitan lafiya don yin gwajin haihuwa (fertility assessment).",
+      'Eh, ƙasa da shekara ɗaya':
+        "Da kyau! An cire miki IUD ɗinki. Yawancin mata suna samun damar daukar ciki nan da nan bayan cirewa, don haka za ki iya fara ƙoƙarin samun ciki yanzu. Amma ki sani, zai iya ɗaukar ‘yan watanni kafin jinin al’ada ya dawo yadda yake.",
+      "A’a, ban cire ba":
+        "Don Allah ki tuntuɓi likitan lafiya game da IUD ɗinki da shirin samun ciki. Ki kira 7790 don samun shawarwari na musamman.",
     };
 
     return (
       responses[status] ||
-      'Please consult with a healthcare provider about your IUD and conception plans. Call 7790 for personalized assistance.'
+      'Don Allah ki tuntuɓi likitan lafiya game da IUD ɗinki da shirin samun ciki. Ki kira 7790 don samun shawarwari na musamman.'
     );
   }
 
@@ -713,7 +713,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -764,13 +764,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+          'Yi ƙarin tambayoyi',
+          'Nemo asibiti mafi kusa',
+          'Koma zuwa babban menu',
         ],
         message_sequence_number: 9,
         message_delay_ms: 1000,
@@ -782,13 +782,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       .createResponse({
         response_category: 'GetPregnantImplantRemoval',
         response_type: 'user',
-        question_asked: 'Have you had your implant removed?',
+        question_asked: 'Kin cire imflant ɗinki?',
         user_response: status,
         widget_used: 'getPregnantImplantRemoval',
         available_options: [
-          'Longer than 3 months',
-          'Less than 3 months',
-          "No, I didn't remove",
+          'Fiye da watanni uku',
+          'Ƙasa da watanni uku',
+          "A’a, ban cire ba",
         ],
         step_in_flow: 'getPregnantImplantRemoval',
       })
@@ -800,17 +800,17 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   // Get implant removal specific response
   private getImplantRemovalResponse(status: string): string {
     const responses: Record<string, string> = {
-      'Longer than 3 months':
-        'Excellent! Since you had your implant removed more than 3 months ago, your fertility should have fully returned. You can continue trying to conceive naturally. Most women conceive within a year of implant removal.',
-      'Less than 3 months':
-        "Good! Your implant has been removed recently. Most women's fertility returns immediately after implant removal, so you can start trying to conceive right away. It may take a few cycles for your body to fully adjust.",
-      "No, I didn't remove":
-        "To get pregnant, you'll need to have your implant removed by a healthcare provider. This is a simple procedure that can be done at a clinic. Please call 7790 to schedule an appointment for implant removal.",
+      'Fiye da watanni uku':
+        'Da kyau! Tun da aka cire miki imflant ɗinki (na’urar hana ɗaukar ciki) fiye da watanni uku da suka wuce, yuwuwar samun ciki ta dawo yadda ta ke. Za ki iya ci gaba da ƙoƙarin samun ciki ta hanya ta halatta. Yawancin mata suna samun ciki cikin shekara guda bayan cire imflant.',
+      'Ƙasa da watanni uku':
+        "Da kyau! An cire miki imflant ɗinki kwanan nan. Yawancin mata suna dawo da yuwuwar samun ciki nan da nan bayan cire imflant, don haka za ki iya fara ƙoƙarin samun ciki yanzu. Amma ki sani, zai iya ɗaukar yan zagayowar jini kafin jikinki ya daidaita gaba ɗaya.",
+      "A’a, ban cire ba":
+        "Don samun ciki, dole ne a cire imflant ɗinki ta hannun likitan lafiya. Wannan hanya ce mai sauƙi da ake yi a asibiti. Don Allah ki kira 7790 don yin alƙawari (appointment) don cire imflant ɗin.",
     };
 
     return (
       responses[status] ||
-      'Please consult with a healthcare provider about your implant and conception plans. Call 7790 for personalized assistance.'
+      'Don Allah ki tuntuɓi likitan lafiya game da imflant ɗinki da shirin samun ciki. Ki kira 7790 don samun shawarwari na musamman'
     );
   }
 
@@ -824,7 +824,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -875,13 +875,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+          'Yi ƙarin tambayoyi',
+          'Nemo asibiti mafi kusa',
+          'Koma zuwa babban menu',
         ],
         message_sequence_number: 9,
         message_delay_ms: 1000,
@@ -893,10 +893,10 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       .createResponse({
         response_category: 'GetPregnantInjectionStop',
         response_type: 'user',
-        question_asked: 'Have you stopped getting the injections?',
+        question_asked: 'Kin daina karɓar alluran hana ɗaukar ciki?',
         user_response: status,
         widget_used: 'getPregnantInjectionStop',
-        available_options: ['Yes', 'No'],
+        available_options: ['Ee', "A'a"],
         step_in_flow: 'getPregnantInjectionStop',
       })
       .catch((err) =>
@@ -907,13 +907,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   // Get injection stop specific response
   private getInjectionStopResponse(status: string): string {
     const responses: Record<string, string> = {
-      Yes: "Good! You've stopped the injections. Please note that it may take 6-12 months or sometimes longer for your fertility to return after stopping injections like Depo-Provera or Sayana Press. This is normal, so be patient with your body as it readjusts.",
-      No: "To get pregnant, you'll need to stop getting the injections. Simply don't go for your next scheduled injection. Remember that it may take several months for your fertility to return after your last injection, so don't be discouraged if conception doesn't happen immediately.",
+      Ee: "Madalla! Kin daina karɓar allurar hana ɗaukar ciki. Ki sani cewa yana iya ɗaukar tsawon watanni 6 zuwa 12, ko ma fiye, kafin yuwuwar samun ciki ta dawo bayan daina allurai kamar Depo-Provera ko Sayana Press. Wannan ba matsala bane, don haka ki yi haƙuri da jikinki yayin da yake dawo daidai.",
+      "A'a": "Don samun ciki, ki daina karɓar allurai gaba ɗaya. Ki tuna cewa yuwuwar samun ciki tana iya ɗaukar watanni bayan allurar ƙarshe, don haka kar ki damu idan baki samu ciki nan da nan ba.",
     };
 
     return (
       responses[status] ||
-      'Please consult with a healthcare provider about stopping your injections and conception plans. Call 7790 for personalized assistance.'
+      '"Don Allah ki tuntuɓi likitan lafiya game da daina allurai da shirin samun ciki. Ki kira 7790 don samun shawarwari na musamman"'
     );
   }
 
@@ -927,7 +927,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -978,13 +978,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+          'Yi ƙarin tambayoyi',
+          'Nemo asibiti mafi kusa',
+          'Koma zuwa babban menu',
         ],
         message_sequence_number: 9,
         message_delay_ms: 1000,
@@ -997,10 +997,10 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         response_category: 'GetPregnantPillsStop',
         response_type: 'user',
         question_asked:
-          'Have you stopped taking the daily contraceptive pills?',
+          'Kin daina shan kwayoyin hana ɗaukar ciki na kullum?',
         user_response: status,
         widget_used: 'getPregnantPillsStop',
-        available_options: ['Yes', 'No'],
+        available_options: ['Ee', "A'a"],
         step_in_flow: 'getPregnantPillsStop',
       })
       .catch((err) =>
@@ -1011,13 +1011,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   // Get pills stop specific response
   private getPillsStopResponse(status: string): string {
     const responses: Record<string, string> = {
-      Yes: "Great! You've stopped taking the pills. Your fertility should return relatively quickly - most women can conceive within 1-3 months after stopping birth control pills. Start taking prenatal vitamins if you haven't already.",
-      No: "To get pregnant, you'll need to stop taking the daily contraceptive pills. Simply don't take any more pills. Your fertility should return quickly, often within the first month after stopping.",
+      Ee: "Madalla! Kin daina shan kwayoyin hana ɗaukar ciki. Yuwuwar samun ciki tana dawowa cikin ƙanƙanin lokaci -yawancin mata suna iya ɗaukar ciki cikin watanni 1 zuwa 3 bayan daina amfani da su. Idan baki fara ba tukuna, ki fara shan bitamin na mata masu juna biyu (prenatal vitamins).",
+      "A'a": "Don samun ciki, ki daina shan kwayoyin hana ɗaukar ciki na kullum. Yuwuwar samun ciki tana dawowa da sauri, yawanci cikin wata ɗaya bayan daina shan kwayoyi.",
     };
 
     return (
       responses[status] ||
-      'Please consult with a healthcare provider about stopping your pills and conception plans. Call 7790 for personalized assistance.'
+      '"Don Allah ki tuntuɓi likitan lafiya game da daina shan kwayoyi da shirin samun ciki. Ki kira 7790 don samun shawarwari na musamman"'
     );
   }
 
@@ -1025,14 +1025,14 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
   handleGetPregnantNextAction = async (action: string): Promise<void> => {
     const userMessage = this.createUserMessage(action);
 
-    if (action === 'Ask more questions') {
+    if (action === 'Yi ƙarin tambayoyi') {
       const moreQuestionsMessage = this.createChatBotMessage(
-        "I'm here to help with any questions you have about getting pregnant. What would you like to know?",
+        "Ina nan don taimaka miki kan duk wani tambaya da ya shafi samun ciki. Mene ne kike son sani?",
         { delay: 500 },
       );
 
       const promptMessage = this.createChatBotMessage(
-        'Please type your question below:',
+        'Don Allah ki rubuta tambayarki a ƙasa:',
         { delay: 1000 },
       );
 
@@ -1072,7 +1072,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createConversation({
           message_type: 'bot',
           message_text:
-            "I'm here to help with any questions you have about getting pregnant. What would you like to know?",
+            "Ina nan don taimaka miki da duk wata tambaya da kike da ita game da samun ciki. Mene ne kike son sani?",
           chat_step: 'getPregnantUserQuestion',
           widget_name: 'getPregnantUserQuestion',
           message_sequence_number: 11,
@@ -1083,7 +1083,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       await this.api
         .createConversation({
           message_type: 'bot',
-          message_text: 'Please type your question below:',
+          message_text: 'Don Allah ki rubuta tambayarki a ƙasa:',
           chat_step: 'getPregnantUserQuestion',
           widget_name: 'getPregnantUserQuestion',
           message_sequence_number: 12,
@@ -1095,22 +1095,22 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createResponse({
           response_category: 'GetPregnantNavigation',
           response_type: 'user',
-          question_asked: 'What would you like to do next?',
+          question_asked: 'Me kike son ki yi gaba?',
           user_response: action,
           widget_used: 'getPregnantNextAction',
           available_options: [
-            'Ask more questions',
-            'Find nearest clinic',
-            'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
           ],
           step_in_flow: 'getPregnantNextAction',
         })
         .catch((err) =>
           console.error('Failed to save navigation response:', err),
         );
-    } else if (action === 'Find nearest clinic') {
+    } else if (action === 'Nemo asibiti mafi kusa') {
       const clinicMessage = this.createChatBotMessage(
-        'To find the nearest clinic, please share your location or enter your city/area name.',
+        'Don neman asibiti mafi kusa, don Allah ki rubuta inda kike ko ki shigar da sunan garinki ko unguwarki.',
         { delay: 500 },
       );
 
@@ -1145,7 +1145,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createConversation({
           message_type: 'bot',
           message_text:
-            'To find the nearest clinic, please share your location or enter your city/area name.',
+            'Don neman asibiti mafi kusa, don Allah ki rubuta inda kike ko ki shigar da sunan garinki ko unguwarki.',
           chat_step: 'locationInput',
           widget_name: 'locationInput',
           message_sequence_number: 11,
@@ -1157,22 +1157,22 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createResponse({
           response_category: 'GetPregnantNavigation',
           response_type: 'user',
-          question_asked: 'What would you like to do next?',
+          question_asked: 'Me kike son ki yi gaba?',
           user_response: action,
           widget_used: 'getPregnantNextAction',
           available_options: [
-            'Ask more questions',
-            'Find nearest clinic',
-            'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
           ],
           step_in_flow: 'locationInput',
         })
         .catch((err) =>
           console.error('Failed to save clinic navigation response:', err),
         );
-    } else if (action === 'Back to main menu') {
+    } else if (action === 'Koma zuwa babban menu') {
       const mainMenuMessage = this.createChatBotMessage(
-        'What would you like me to help you with?',
+        'Mene ne kike so in taimaka miki da shi?',
         {
           widget: 'fpmOptions',
           delay: 500,
@@ -1209,7 +1209,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       await this.api
         .createConversation({
           message_type: 'bot',
-          message_text: 'What would you like me to help you with?',
+          message_text: 'Mene ne kike so in taimaka miki da shi?',
           chat_step: 'fpm',
           widget_name: 'fpmOptions',
           message_sequence_number: 11,
@@ -1221,13 +1221,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createResponse({
           response_category: 'GetPregnantNavigation',
           response_type: 'user',
-          question_asked: 'What would you like to do next?',
+          question_asked: 'Me kike son ki yi gaba?',
           user_response: action,
           widget_used: 'getPregnantNextAction',
           available_options: [
-            'Ask more questions',
-            'Find nearest clinic',
-            'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
           ],
           step_in_flow: 'fpm',
         })
@@ -1237,12 +1237,12 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     } else {
       // Handle unexpected actions - prevent dead ends
       const errorMessage = this.createChatBotMessage(
-        "I didn't understand that option. Let me show you the available choices again.",
+        "Ban fahimci wannan zaɓin ba. Bari in sake nuna miki zaɓuɓɓukan da ake da su yanzu.",
         { delay: 500 },
       );
 
       const nextActionMessage = this.createChatBotMessage(
-        'What would you like to do next?',
+        'Me kike son ki yi gaba?',
         {
           widget: 'getPregnantNextAction',
           delay: 1000,
@@ -1278,7 +1278,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createConversation({
           message_type: 'bot',
           message_text:
-            "I didn't understand that option. Let me show you the available choices again.",
+            "Ban fahimci wannan zaɓin ba. Bari in sake nuna miki zaɓuɓɓukan da ake da su yanzu.",
           chat_step: 'getPregnantNextAction',
           widget_name: 'getPregnantNextAction',
           message_sequence_number: this.getNextSequenceNumber(),
@@ -1289,13 +1289,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       await this.api
         .createConversation({
           message_type: 'bot',
-          message_text: 'What would you like to do next?',
+          message_text: 'Me kike son ki yi gaba?',
           chat_step: 'getPregnantNextAction',
           widget_name: 'getPregnantNextAction',
           widget_options: [
-            'Ask more questions',
-            'Find nearest clinic',
-            'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
           ],
           message_sequence_number: this.getNextSequenceNumber(),
           message_delay_ms: 1000,
@@ -1307,13 +1307,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         .createResponse({
           response_category: 'GetPregnantNavigationError',
           response_type: 'user',
-          question_asked: 'What would you like to do next?',
+          question_asked: 'Me kike son ki yi gaba?',
           user_response: action,
           widget_used: 'getPregnantNextAction',
           available_options: [
-            'Ask more questions',
-            'Find nearest clinic',
-            'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
           ],
           step_in_flow: 'getPregnantNextAction',
         })
@@ -1332,7 +1332,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -1383,13 +1383,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
         ],
         message_sequence_number: 15,
         message_delay_ms: 1000,
@@ -1401,7 +1401,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       .createResponse({
         response_category: 'GetPregnantUserQuestion',
         response_type: 'user',
-        question_asked: 'What would you like to know about getting pregnant?',
+        question_asked: 'Mene ne kike son sani game da samun ciki?',
         user_response: question,
         widget_used: 'getPregnantUserQuestion',
         available_options: [],
@@ -1421,12 +1421,12 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     };
 
     const responseMessage = this.createChatBotMessage(
-      `Thank you for providing your location: ${location}. I'm searching for clinics near you. For immediate assistance, please call 7790 to speak with our team who can provide specific clinic locations and contact information.`,
+      `Na gode da raba bayanai game da wurin da kike: ${location}. Ina binciken asibitoci mafi kusa da ke wurinki. Don samun taimako cikin gaggawa, don Allah ki kira 7790 don yin magana da ƙungiyarmu, wacce za ta ba ki cikakken bayani kan asibitoci mafi kusa da lambar tuntuɓarsu.`,
       { delay: 500 },
     );
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'getPregnantNextAction',
         delay: 1000,
@@ -1466,7 +1466,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: `Thank you for providing your location: ${location}. I'm searching for clinics near you. For immediate assistance, please call 7790 to speak with our team who can provide specific clinic locations and contact information.`,
+        message_text: `Na gode da raba bayanai game da wurin da kike: ${location}. Ina binciken asibitoci mafi kusa da ke wurinki. Don samun taimako cikin gaggawa, don Allah ki kira 7790 don yin magana da ƙungiyarmu, wacce za ta ba ki cikakken bayani kan asibitoci mafi kusa da lambar tuntuɓarsu.`,
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         message_sequence_number: this.getNextSequenceNumber(),
@@ -1477,13 +1477,13 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     await this.api
       .createConversation({
         message_type: 'bot',
-        message_text: 'What would you like to do next?',
+        message_text: 'Me kike son ki yi gaba?',
         chat_step: 'getPregnantNextAction',
         widget_name: 'getPregnantNextAction',
         widget_options: [
-          'Ask more questions',
-          'Find nearest clinic',
-          'Back to main menu',
+            'Yi ƙarin tambayoyi',
+            'Nemo asibiti mafi kusa',
+            'Koma zuwa babban menu',
         ],
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
@@ -1496,7 +1496,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
         response_category: 'LocationInput',
         response_type: 'user',
         question_asked:
-          'Please share your location or enter your city/area name',
+          'Don Allah ki shigar da sunan garinki ko unguwarki.',
         user_response: location,
         widget_used: 'locationInput',
         available_options: [],
@@ -1513,24 +1513,24 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       lowerQuestion.includes('ovulation') ||
       lowerQuestion.includes('fertile')
     ) {
-      return "Ovulation typically occurs around day 14 of a 28-day cycle. You're most fertile in the days leading up to and during ovulation. Consider tracking your cycle and using ovulation predictor kits to optimize timing.";
+      return "Fitowar kwai (Ovulation) yawanci yana faruwa a rana ta 14 a cikin zagayowar jini haila na kwanaki 28.";
     } else if (
       lowerQuestion.includes('nutrition') ||
       lowerQuestion.includes('diet')
     ) {
-      return 'A healthy diet rich in folic acid, iron, and prenatal vitamins is important when trying to conceive. Avoid alcohol, limit caffeine, and maintain a balanced diet with plenty of fruits and vegetables.';
+      return "Yiwuwar samun ciki (fertility) yana da yawa a kwanakin da suka gabaci da lokacin fitowar kwai (ovulation). Ki yi la’akari da bin diddigin zagayowar al'adar ki da amfani da na’urorin gano fitowar kwai (ovulation predictor kits) domin samun lokaci mafi dacewa don ɗaukar ciki.";
     } else if (
       lowerQuestion.includes('exercise') ||
       lowerQuestion.includes('activity')
     ) {
-      return 'Moderate exercise is beneficial when trying to conceive. Avoid excessive high-intensity workouts that might affect your cycle. Walking, swimming, and yoga are excellent options.';
+      return 'Takaitaccen motsa jiki (moderate exercise) yana da amfani idan kina ƙoƙarin samun ciki. Ki guji motsa jiki mai tsanani sosai wanda zai iya shafar zagayowar jikinki (menstrual cycle). Yin tafiya, iyo, da yoga su ne zaɓuɓɓuka masu kyau don kiyaye lafiyar jiki yayin shirin samun ciki.';
     } else if (
       lowerQuestion.includes('age') ||
       lowerQuestion.includes('older')
     ) {
-      return "Age can affect fertility, but many women conceive naturally at various ages. If you're over 35 and have been trying for 6 months, or over 40, consider consulting a fertility specialist sooner.";
+      return "Shekaru na iya yin tasiri kan yuwuwar samun ciki (fertility), amma mata da dama suna samun ciki ta hanya a lokuta daban-daban na rayuwa. Idan kina da fiye da shekaru 35 kuma kina ƙoƙarin samun ciki na tsawon watanni 6 ba tare da nasara ba, ko kuma fiye da shekaru 40, ana ba da shawarar ki tuntuɓi ƙwararren likitan haihuwa (fertility specialist) da wuri.";
     } else {
-      return 'Thank you for your question. For specific medical advice about conception, I recommend consulting with a healthcare provider who can address your individual situation. You can call 7790 to speak with a medical professional.';
+      return "Na gode da tambayarki. Don samun shawarwari na musamman game da samun ciki (conception), ana ba da shawarar ki tuntuɓi likitan lafiya wanda zai iya ba da amsa bisa ga halin da kike ciki. Ki kira 7790 don yin magana da ƙwararren ma’aikacin lafiya.";
     }
   }
 }

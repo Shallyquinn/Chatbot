@@ -43,7 +43,10 @@ import {
   TrendingDown,
   Users,
   MessageSquare,
-  Clock
+  Clock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 interface Agent {
@@ -91,6 +94,8 @@ export function AgentDashboard() {
     email: '',
     role: '',
   });
+  const [sortField, setSortField] = useState<'name' | 'status' | 'currentChats' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     fetchAgents();
@@ -166,11 +171,47 @@ export function AgentDashboard() {
     );
   };
 
+  const handleSort = (field: 'name' | 'status' | 'currentChats') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: 'name' | 'status' | 'currentChats') => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 inline ml-1 text-[#999]" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-4 h-4 inline ml-1 text-[#006045]" />
+      : <ArrowDown className="w-4 h-4 inline ml-1 text-[#006045]" />;
+  };
+
   const filteredAgents = agents.filter(
-    (agent) =>
-      agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agent.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    .filter(
+      (agent) =>
+        agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agent.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (!sortField) return 0;
+      
+      let comparison = 0;
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'status') {
+        const statusOrder = { 'ONLINE': 0, 'BUSY': 1, 'AWAY': 2, 'OFFLINE': 3 };
+        const aStatus = a.isOnline ? 'ONLINE' : 'OFFLINE';
+        const bStatus = b.isOnline ? 'ONLINE' : 'OFFLINE';
+        comparison = statusOrder[aStatus as keyof typeof statusOrder] - statusOrder[bStatus as keyof typeof statusOrder];
+      } else if (sortField === 'currentChats') {
+        comparison = a.currentChats - b.currentChats;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <div className="min-h-screen bg-[#fffdf7] p-6">
@@ -313,11 +354,29 @@ export function AgentDashboard() {
           <Table>
             <TableHeader>
               <TableRow className="bg-[#efefef]">
-                <TableHead className="text-[#595959] font-semibold">Agent Name</TableHead>
+                <TableHead 
+                  className="text-[#595959] font-semibold cursor-pointer hover:text-[#006045] transition-colors"
+                  onClick={() => handleSort('name')}
+                >
+                  Agent Name
+                  {getSortIcon('name')}
+                </TableHead>
                 <TableHead className="text-[#595959] font-semibold">Email</TableHead>
-                <TableHead className="text-[#595959] font-semibold">Availability</TableHead>
+                <TableHead 
+                  className="text-[#595959] font-semibold cursor-pointer hover:text-[#006045] transition-colors"
+                  onClick={() => handleSort('status')}
+                >
+                  Availability
+                  {getSortIcon('status')}
+                </TableHead>
                 <TableHead className="text-[#595959] font-semibold">Avg. Response</TableHead>
-                <TableHead className="text-[#595959] font-semibold">Chats</TableHead>
+                <TableHead 
+                  className="text-[#595959] font-semibold cursor-pointer hover:text-[#006045] transition-colors"
+                  onClick={() => handleSort('currentChats')}
+                >
+                  Chats
+                  {getSortIcon('currentChats')}
+                </TableHead>
                 <TableHead className="text-[#595959] font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>

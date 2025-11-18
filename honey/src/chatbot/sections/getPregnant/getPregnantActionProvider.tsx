@@ -409,14 +409,14 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       },
       'Female sterilisation': {
         message:
-          "Female sterilisation is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
+          "Sometimes female sterilisation is reversible. It can be immediately after or even several years later.Kindly visit your health provider and get more advice regarding the status of your sterilisation.",
         followUpQuestion: 'What would you like to do next?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',
       },
       'Male sterilisation': {
         message:
-          "Male sterilisation (vasectomy) is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
+          "Sometimes male sterilisation (vasectomy) is reversible. It can be immediately after or even several years later.Kindly visit your health provider and get more advice regarding the status of your sterilisation.",
         followUpQuestion: 'What would you like to do next?',
         followUpWidget: 'getPregnantNextAction',
         nextStep: 'getPregnantNextAction',

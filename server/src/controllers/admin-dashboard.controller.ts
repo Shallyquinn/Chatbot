@@ -8,14 +8,17 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AdminConfigService } from '../services/admin-config.service';
 import { AgentEscalationService } from '../services/agent-escalation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentStatus } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @Controller('admin')
-// @UseGuards(AdminGuard) // Uncomment when auth is implemented
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminDashboardController {
   constructor(
     private adminConfigService: AdminConfigService,
@@ -379,12 +382,12 @@ export class AdminDashboardController {
   async updateMessage(
     @Param('key') key: string,
     @Body() updateDto: { value: string; language?: string },
-    // TODO: Get admin ID from JWT token
+    @Request() req: any,
   ) {
     await this.adminConfigService.updateMessage(
       key,
       updateDto.value,
-      'admin-id', // Replace with actual admin ID from JWT
+      req.user.id, // Get admin ID from JWT token
       updateDto.language,
     );
 
@@ -400,11 +403,12 @@ export class AdminDashboardController {
   async updateChatbotOptions(
     @Param('key') key: string,
     @Body() updateDto: { options: string[] },
+    @Request() req: any,
   ) {
     await this.adminConfigService.updateChatbotOptions(
       key,
       updateDto.options,
-      'admin-id', // Replace with actual admin ID from JWT
+      req.user.id, // Get admin ID from JWT token
     );
 
     return { success: true, message: 'Options updated successfully' };
@@ -419,11 +423,12 @@ export class AdminDashboardController {
   async updateSystemSetting(
     @Param('key') key: string,
     @Body() updateDto: { value: string },
+    @Request() req: any,
   ) {
     await this.adminConfigService.updateSystemSetting(
       key,
       updateDto.value,
-      'admin-id', // Replace with actual admin ID from JWT
+      req.user.id, // Get admin ID from JWT token
     );
 
     return { success: true, message: 'System setting updated successfully' };
@@ -439,10 +444,10 @@ export class AdminDashboardController {
   }
 
   @Post('config/import')
-  async importConfiguration(@Body() configData: any) {
+  async importConfiguration(@Body() configData: any, @Request() req: any) {
     return await this.adminConfigService.importConfiguration(
       configData,
-      'admin-id', // Replace with actual admin ID from JWT
+      req.user.id, // Get admin ID from JWT token
     );
   }
 

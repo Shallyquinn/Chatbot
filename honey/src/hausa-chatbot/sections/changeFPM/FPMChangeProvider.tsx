@@ -139,7 +139,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     // console.log("🔧 Stored method locally:", this.currentMethodLocal);
 
     const concernTypeQuestion = this.createChatBotMessage(
-      'Ok, I can help you. What specific concern do you have with this method?\nPlease select a concern type',
+      'To, zan iya taimaka miki. Wane irin damuwa kike da wannan hanya (method)?\nDa fatan za ki zaɓi nau’in damuwarki (concern type).',
       {
         widget: 'fpmConcernTypeOptions',
         delay: 500,
@@ -195,12 +195,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     console.log('🔍 Using method for response:', methodToUse);
 
     const responseMessage = this.createChatBotMessage(
-      'I understand your concern. Let me provide you with some information.',
+      'Na fahimci damuwarki. Bari in ba ki wasu bayanai.',
       { delay: 500 }
     );
 
     const concernQuestion = this.createChatBotMessage(
-      'What would you like to know more about?',
+      'Me kike so ki ƙara sani a kai?',
       {
         widget: 'fpmConcernOptions',
         delay: 1000,
@@ -251,11 +251,11 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.updateUser({ current_concern_type: option }).catch(err => console.error('Failed to update user:', err));
     // Store the user's intention locally
     let userIntention = '';
-    if (option === 'Concerned about FP') {
+    if (option === 'Damuwa game da Tsarin Iyali (FP).') {
       userIntention = 'concerned';
-    } else if (option === 'Want to switch FP') {
+    } else if (option === 'Inaso na canza Tsarin Iyali (FP).') {
       userIntention = 'switch';
-    } else if (option === 'Want to stop FP') {
+    } else if (option === 'Inaso na daina Tsarin Iyali (FP).') {
       userIntention = 'stop';
     }
 
@@ -263,12 +263,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
 
     if (userIntention === 'switch') {
       const responseMessage = this.createChatBotMessage(
-        'Okay, I see.\n\nLet me ask you a few questions to better understand what kind of method would suit best for you.',
+        'To, na gane.\n\nBari in tambaye ki ‘yan tambayoyi don fahimtar wacce hanya (method) ta fi dacewa da ke.',
         { delay: 500 },
       );
 
       const methodQuestion = this.createChatBotMessage(
-        'Which method are you currently using?\nMethod you use now',
+        'Wace hanya (method) kike amfani da ita a halin yanzu?',
         {
           widget: 'switchFPMOptions',
           delay: 1000,
@@ -308,20 +308,20 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       await this.api.createResponse({
         response_category: 'FPMConcern',
         response_type: 'user',
-        question_asked: 'What is your concern about family planning?',
+        question_asked: 'Menene damuwarki game da Tsarin Iyali ',
         user_response: option,
         widget_used: 'fpmConcernOptions',
         available_options: [
-          'Concerned about FP',
-          'Want to switch FP',
-          'Want to stop FP',
+          'Damuwa game da Tsarin Iyali (FP).',
+          'Inaso na canza Tsarin Iyali (FP).',
+          'Inaso na daina Tsarin Iyali (FP).',
         ] as string[],
         step_in_flow: 'fpmConcernSelection',
       }).catch(err => console.error('Failed to save response data:', err));
     } else {
       // For concerned and stop - ask which method they're using
       const responseMessage = this.createChatBotMessage(
-        'Ok, I can help you. Which method are you currently using?\noptions(choose)',
+        'To, zan iya taimaka miki. Wace hanya (method) kike amfani da ita a yanzu?\n Zaɓuɓɓuka (options/choose):',
         {
           widget:
             userIntention === 'stop' ? 'stopFPMOptions' : 'currentFPMOptions',
@@ -372,7 +372,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.updateUser({ current_fpm_method: method }).catch(err => console.error('Failed to update user:', err));
     // Ask about satisfaction with the current method
     const satisfactionQuestion = this.createChatBotMessage(
-      'How has the method been working for you? Please rate your satisfaction level.',
+      'Yaya hanyar (method) ta ke aiki a gare ki? Za ki ce kina da gamsuwa kaɗan ne ko kuwa ba ki gamsu da ita gaba ɗaya ba?',
       {
         widget: 'satisfactionOptions',
         delay: 500,
@@ -403,16 +403,16 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'SwitchCurrentFPM',
       response_type: 'user',
-      question_asked: 'Which method are you currently using?',
+      question_asked: 'Wace hanyar kike amfani da ita a yanzun?',
       user_response: method,
       widget_used: 'switchFPMOptions',
       available_options: [
-        'Pills',
-        'IUD',
+        'Kwayoyi (Pills)',
+        'Na’urar IUD',
         'Implant',
         'Injectables',
-        'Condoms',
-        'Other',
+        'Kwandom',
+        'Wata Hanya',
       ] as string[],
       step_in_flow: 'switchCurrentFPMSelection',
     }).catch(err => console.error('Failed to save response data:', err));
@@ -436,7 +436,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     console.log('🔧 Stop flow - stored method in state:', method);
     await this.api.createFpmInteraction({ stop_reason: method }).catch(err => console.error('Failed to save FPM interaction:', err));
     const reasonQuestion = this.createChatBotMessage(
-      'Okay, thanks for sharing!\nCan you tell me why do you want to stop using this method?\n\nFP = Family planning method\nOptions(Choose one)',
+      'To, na gode da bayanan ki! \n Za ki iya faɗa min dalilin da yasa kike son daina amfani da wannan hanyar?\n\nFP = Tsarin Iyali\nZaɓuɓɓuka (Zabi daya)',
       {
         widget: 'stopReasonOptions',
         delay: 500,
@@ -464,7 +464,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       response_category: 'StopFPMSelection',
       response_type: 'user',
       question_asked:
-        'Can you tell me why do you want to stop using this method?',
+        'Za ki iya faɗa min dalilin da yasa kike son daina amfani da wannan hanyar',
       user_response: method,
       widget_used: 'stopReasonOptions',
       available_options: [],
@@ -488,7 +488,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     }).catch(err => console.error('Failed to save change selection:', err));
 
     const concernMessage = this.createChatBotMessage(
-      'I am sorry to hear that you are dissatisfied with the current family planning method.\n Could you tell me a little more about the situation? What is your concern? \n\n FP = Family Planning method (contraceptive)',
+      'Ban ji dadi cewa ba ki gamsu da hanyar tsarin iyali da kike amfani da ita a yanzu. \n Ama ko zaki iya fadamin abun da ke faruwa? \n\n FP = Tsarin Iyali',
       {
         widget: 'fpmConcernOptions',
         delay: 500,
@@ -515,10 +515,10 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       response_category: 'FPMChangeSelection',
       response_type: 'user',
       question_asked:
-        'How has the method been working for you? Would you say you are somewhat satisfied, or not at all satisfied with your method?',
+        'Yaya hanyar take aiki a gare ki? Za ki ce kina da ɗan gamsuwa, ko kuwa ba ki gamsu da ita gaba ɗaya?',
       user_response: option,
       widget_used: 'satisfactionOptions',
-      available_options: ['Somewhat satisfied', 'Not at all satisfied'],
+      available_options: ['Ba laifi', 'Ba a gamsu da ita ba gaba ɗaya'],
       step_in_flow: 'FPMChangeSelection',
     }).catch(err => console.error('Failed to save response data:', err));
   };
@@ -552,15 +552,15 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'SatisfactionAssessment',
       response_type: 'user',
-      question_asked: 'How has the method been working for you?',
+      question_asked: 'Yaya hanyar take aiki a gare ki?',
       user_response: satisfaction,
       widget_used: 'satisfactionOptions',
-      available_options: ['Somewhat satisfied', 'Not at all satisfied'],
+      available_options: ['Ba laifi', 'Ba a gamsu da ita ba gaba ɗaya'],
       step_in_flow: 'satisfactionAssessment',
     }).catch(err => console.error('Failed to save response data:', err));
 
     const reasonQuestion = this.createChatBotMessage(
-      'May I know why do you want to switch?\nPick a reason why',
+      'Ko zan iya sanin dalilin da yasa kike son canza tsarin da kike amfani da yanzun?\nZabi dalilin da yasa',
       {
         widget: 'switchReasonOptions',
         delay: 500,
@@ -612,13 +612,13 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'SwitchReason',
       response_type: 'user',
-      question_asked: 'Why do you want to switch methods?',
+      question_asked: 'Miye dalilin da yasa kike son canza tsari?',
       user_response: reason,
       widget_used: 'switchReasonOptions',
       step_in_flow: 'switchReason',
     }).catch(err => console.error('Failed to save response data:', err));
     const recommendationQuestion = this.createChatBotMessage(
-      'Would you like to know about other methods that you may like better?',
+      'Kina son san wasu hanyoyin ko zaki so ki gwada su?',
       {
         widget: 'methodRecommendationOptions',
         delay: 500,
@@ -663,21 +663,21 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'MethodRecommendationInquiry',
       response_type: 'user',
-      question_asked: 'Would you like to know about other methods?',
+      question_asked: 'Kina son sanin wasu hanyoyin?',
       user_response: response,
       widget_used: 'methodRecommendationOptions',
-      available_options: ['Yes', 'No'],
+      available_options: ["Ee', 'A'a"],
       step_in_flow: 'methodRecommendation',
     }).catch(err => console.error('Failed to save response data:', err));
 
-    if (response === 'Yes') {
+    if (response === 'Ee') {
       const introMessage = this.createChatBotMessage(
-        'OK. Let me ask you a few questions to better understand what kind of method would be good for you.',
+        'To bari in yi maki wasu tambayoyi don fahimtar irin hanyar da za ta fi dacewa da ke',
         { delay: 500 },
       );
 
       const kidsQuestion = this.createChatBotMessage(
-        'Would you like to have kids in the future or not?',
+        "Za ki so ki samu wasu yaran a nan gaba ko a'a?",
         {
           widget: 'kidsInFutureOptions',
           delay: 1000,
@@ -709,7 +709,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       }).catch(err => console.error('Failed to save kids question:', err));
     } else {
       const nextActions = this.createChatBotMessage(
-        'What would you like to do next?',
+        'Me kike son yi nan gaba?',
         {
           widget: 'fpmNextActionOptions',
           delay: 500,
@@ -760,15 +760,15 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'KidsInFuture',
       response_type: 'user',
-      question_asked: 'Do you want to have children in the future?',
+      question_asked: 'Za ki so ki samu wasu yaran nan gaba?',
       user_response: response,
       widget_used: 'kidsInFutureOptions',
       step_in_flow: 'kidsInFuture',
     }).catch(err => console.error('Failed to save response data:', err));
 
-    if (response === 'Yes, I want more kids') {
+    if (response === 'Ee, Ina so in samu yara fiye da haka.') {
       const timingQuestion = this.createChatBotMessage(
-        'How many years would you like to wait from now before you have another child?\nMenu',
+        'Shekaru nawa kike son jira kafin ki kuma haihuwa?\nMenu',
         {
           widget: 'timingOptions',
           delay: 500,
@@ -823,7 +823,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       response_category: 'TimingPreference',
       response_type: 'user',
       question_asked:
-        'How many years would you like to wait before having another child?',
+        'Shekaru nawa kike son jira kafin ki kuma haihuwa?',
       user_response: timing,
       widget_used: 'timingOptions',
       step_in_flow: 'timing',
@@ -835,12 +835,12 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   // Helper method to proceed to important factors
   private proceedToImportantFactors = async (userMessage: ChatMessage): Promise<void> => {
     const thanksMessage = this.createChatBotMessage(
-      'Okay, thank you for sharing this!',
+      'Madalla, Nagode da bayanen ki',
       { delay: 500 },
     );
 
     const factorsQuestion = this.createChatBotMessage(
-      'When you are picking a contraceptive method, which factor is the most important to you?\nPick one factor',
+      'Lokacin da kuke zabar hanyoyin hana haihuwa, wadanne abubuwa ne suke da mahimmanci a gare ku?\nZabi hanya daya',
       {
         widget: 'importantFactorsOptions',
         delay: 1000,
@@ -901,7 +901,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       response_category: 'ImportantFactors',
       response_type: 'user',
       question_asked:
-        'Which factor is the most important to you when picking a contraceptive method?',
+        'Wace hanya ce tafi muhimmanci a gareku lokacin zabar hanyar hana haihuwa?',
       user_response: factor,
       widget_used: 'importantFactorsOptions',
       step_in_flow: 'importantFactors',
@@ -912,9 +912,9 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     let responseMessage: ChatMessage;
     let nextStep = 'fpmNextAction';
 
-    if (factor === 'No effect on menstrual🩸flow') {
+    if (factor === 'Baya da illa ga haila🩸') {
       responseMessage = this.createChatBotMessage(
-        'When you are picking a contraceptive method, what are the things that are important to you?',
+        'Wace hanya ce tafi muhimmanci a gareku lokacin zabar hanyar hana haihuwa?',
         {
           widget: 'menstrualFlowOptions',
           delay: 500,
@@ -941,7 +941,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       responseMessage = this.createChatBotMessage(response, { delay: 500 });
 
       const nextActions = this.createChatBotMessage(
-        'What would you like to do next?',
+        'Me kike son yi nan gaba?',
         {
           widget: 'fpmNextActionOptions',
           delay: 1000,
@@ -986,43 +986,43 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   // Helper for factor-based recommendation
   private getFactorBasedRecommendation(factor: string): string {
     const recommendations: Record<string, string> = {
-      'Efficiency in prevention':
-        'The most effective methods are implants and IUDs.\nOther effective methods to consider are injectables, daily pills, and diaphragms.',
-      'Should be safe to use':
-        'Absolutely.\n\nAll methods we recommend are chosen to keep you safe and healthy.',
-      'Be easy and convenient':
-        'Of all methods that are easy to use, the most effective method is the Implants.\n\nOther simple methods to adopt are the Injectables and the Pills.\n\nThe least effective (but still 99%) method you can use is Condoms.',
-      'Easy to use':
-        'Of all methods that are easy to use, the most effective method is the Implants.\n\nOther simple methods to adopt are the Injectables and the Pills.\n\nThe least effective (but still 99%) method you can use is Condoms.',
-      'Long lasting':
-        'If you want a long-lasting contraceptive method, the most effective options are Implants (3-5 years) or IUDs (5-10 years). These require minimal maintenance once inserted.',
-      'Discreet from others':
-        "If you're looking for a discreet method, the Implant is the most effective option. Other effective hidden methods includes Injectables and Diaphragm.",
+      'Inganci wajen hana ɗaukar ciki':
+        "Ingantattun hanyoyin suna haɗe da inflant ta hanu da IUDs.\nSauran hanyoyin da za a yi la'akari da su suna haɗa da allurai, kwayoyi na kowace rana, da diaphragm",
+      'Mafi aminci wajen amfani':
+        'Kwarai kuwa\n\nDuk hanyoyin da muke ba da shawarar an zaɓe su don kiyaye ki da lafiyar ki',
+      'Mafi sauki da kwanciyar hankali':
+        'Daga cikin duk hanyoyin da suke da sauƙin amfani, hanya mafi inganci ita ce Inflant.\n\nSauran hanyoyin sauƙi da za a iya amfani da su sun haɗa da allurai da kwayoyi.\n\nHanya mafi ƙarancin inganci (amma har yanzu tana da kashi 99%) da za ku iya amfani da ita ita ce amfani da kwaroron roba (condom).',
+      'Mafi sauki wurin amfani':
+        'Daga cikin duk hanyoyin da suke da sauƙin amfani, hanya mafi inganci ita ce Inflant.\n\nSauran hanyoyin sauƙi da za a iya amfani da su sun haɗa da allurai da kwayoyi.\n\nHanya mafi ƙarancin inganci (amma har yanzu tana da kashi 99%) da za ku iya amfani da ita ita ce amfani da kwaroron roba (condom).',
+      'Mai ɗorewa na dogon lokaci':
+        'Idan kina son hanyar hana haiwuha mai ɗorewa na dogon lokaci, mafi inganci sune Impfant wanda yake ɗaukar shekara 3–5, ko Na’urar IUD wadda take iya ɗaukar shekara 5–10. Wadannan hanyoyi ba sa buƙatar kulawa sosai bayan an saka su',
+      'Mafi sirri acikin su dukka':
+        "Idan kina neman hanya mafi sirri, ita ce Imflant ita ce hanya mafi inganci.Sauran hanyoyi da suke da srri da inganci sun haɗa da Allurai da Diaphragm.",
       Discreet:
-        "If you're looking for a discreet method, the Implant is the most effective option. Other effective hidden methods includes Injectables and Diaphragm.",
-      'No pain/cramp/vomit':
-        'The methods that are completely painless are the condoms and diaphrams but they are not as effective as the injectibles, implants and the IUDs. With the injectibles and implants, most people do not experience side effects but some people experience mild headaches. With the IUDs most people do not experience any discomfort after insertion but some people report mild abdominal pain.',
-      'No weight gain':
-        'Ok, if you do not want to gain weight, the most effective method to adopt is the IUD.\n\nOther method to adopt is the Diaphragm and the least effective methods you can use are the condoms, abstinence from sex on fertile days, and the withdrawal method.',
-      'No effect on sex life':
-        "The effects of contraceptive methods on sex life can vary depending on individual experiences and preferences.\n\nSome methods, like hormonal contraceptives (such as birth control pills, patches, or IUDs), may have side effects like changes in libido, mood swings, or dryness.\n\nHowever, these effects are not universal, and many individuals use contraceptives without experiencing negative impacts on their sex lives.\n\nOther non-hormonal methods like condoms or copper IUDs typically don't affect libido.\nUltimately, it's essential to discuss any concerns or potential side effects with a healthcare provider to find the best option that suits your needs and lifestyle.",
+        "Idan kina neman hanya mafi sirri, ita ce Imflant ita ce hanya mafi inganci.Sauran hanyoyi da suke da sirri da inganci sun haɗa da Allurai da Diaphragm.",
+      'Ba ciwo/laulayi/amai':
+        ' Hanyoyin da ba su da zafi su ne kwaroron roba da diaprams amma ba su da tasiri kamar allura, dasa da kuma IUDs. Tare da alluran alluran da sanyawa, yawancin mutane ba sa fuskantar illa amma wasu mutane suna samun ciwon kai mai sauƙi. Tare da IUD yawancin mutane ba sa samun wani rashin jin daɗi bayan an saka su amma wasu mutane suna ba da rahoton ciwon ciki mai sauƙi.',
+      'Ba ƙaran kiba':
+        "ko, idan ba kwa son ƙara kiba, hanya mafi inganci ita ce IUD. Wasu haya mafi inganci sune amfani da Diaphragm, kuma mafi karancin tasiri sune, zaku iya amfani da condom , ku kauracewa jima'i lokacin da da ta fi kyankyasan kwai da kuma inzili(fitar da zakari yayin kawi maniyyi)",
+      "Ba illa ga rayuwar jima'i (sex life)":
+        "Amfanin hanyoyin hana haihuwa a rayuwar jima'i na iya bambanta dangane da abubuwan da mutum ya samu da kuma abubuwan da ake so.\n\nWasu hanyoyin, kamar maganin hana haihuwa na hormonal (kamar maganin hana haihuwa, faci, ko IUDs), na iya samun illa kamar canje-canje a cikin libido, canjin yanayi, ko bushewa.\n\nDuk da haka, waɗannan tasirin ba na duniya ba ne, kuma mutane da yawa suna amfani da maganin hana haihuwa ba tare da samun mummunan tasiri akan rayuwarsu ta jima'i ba.\n\nSauran hanyoyin da ba na hormonal ba kamar kwaroron roba ko jan ƙarfe IUD yawanci ba sa shafar sha'awa (libido).\nA ƙarshe, yana da mahimmanci a tattauna duk wata damuwa ko illa mai lahani tare da mai ba da lafiya don nemo mafi kyawun zaɓi wanda ya dace da bukatunku da salon rayuwa.",
       'No hormones':
-        'If you prefer a non-hormonal method, the Copper IUD is the most effective option. Condoms and diaphragms are also hormone-free but require consistent use.',
-      'Be able have kids after':
-        'Okay, I see.\n\nThe most effective methods for quick return to fertility are Implants and IUD.\n\nOther effective methods are Daily Pills and Diaphragm and the least effective methods you can use are the condoms, abstinence from sex on fertile days, and the withdrawal method.',
-      'Stop without clinic':
-        'Okay, I see.\n\nSome of the effective methods you can stop easily without going to the clinic are the injectables, the piils and the diaphragm.\n\nOther least effective methods that can easily stop using are the condoms, abstinence from sex on fertile days, and the withdrawal method.',
-      'Can stop anytime':
-        'If you want immediate control, condoms and daily pills can be stopped anytime. Diaphragms also offer this flexibility. For longer-term methods, injectables wear off naturally in 3 months.',
+        'Idan kina son hanyar da ba ta ƙunsa sinadarin hormone ba, Na’urar Copper IUD ita ce hanya mafi inganci. Kwandom da Diaphragm suma ba su ƙunshi hormone ba, amma suna buƙatar a riƙa amfani da su akai-akai.',
+      'A ci gaba da iya haihuwa bayan daina amfani da hanya':
+        "To, na gane.\n\nHanyoyin da suka fi dacewa don dawowa da sauri zuwa haihuwa sune Imflants da IUD.\n\nSauran ingantattun hanyoyin sune Kwayoyin Kwayoyin Kuɗi da Diaphragm kuma mafi ƙarancin ingantattun hanyoyin da zaku iya amfani da su sune kwaroron roba, kauracewa jima'i a ranakun haihuwa, da kuma hanyar cirewa.",
+      'A daina ba tare da zuwa asibiti ba':
+        ' To, na gane.\n\nWasu daga cikin hanyoyi (methods) masu inganci da za a iya daina amfani da su cikin sauƙi ba tare da zuwa asibiti ba sun haɗa da Allurai, Kwayoyi, da Diaphragm.\n\nSauran hanyoyi masu ƙarancin inganci waɗanda ake iya daina amfani da su cikin sauƙi sun haɗa da Kwandom), Guje wa jima’i a ranakun yiwuwar daukan ciki (fertile days), da Hanyar cire azzakari kafin inzali (withdrawal method).',
+      'Ana iya dainawa a ko wani lokaci':
+        '"Idan kina son biyan bukata nan take, Kwandom da Kwayoyi na kullum za a iya daina amfani da su a kowane lokaci. Diaphragm ma tana ba da irin wannan sassaucin. Amma ga hanyoyi na dogon lokaci, Allurai suna daina aiki da kansu bayan watanni uku (3 months)."',
       Affordable:
-        'For cost-effective options, condoms and daily pills are generally the most affordable. Injectables may also be budget-friendly depending on your healthcare coverage. Call 7790 for local pricing information.',
-      'Protects against STIs':
-        'Condoms are the only contraceptive method that also protects against sexually transmitted infections (STIs). For dual protection, you might consider using condoms along with another highly effective method.',
+        "Don hanyoyi masu araha, Kwandom da Kwayoyi na kullum su ne mafi araha gaba ɗaya. Allurai a na iya zama masu sauƙin biya gwargwadon irin inshorar lafiyarki. Kira 7790 don samun bayani kan farashin da ake amfani da shi a yankinku.",
+      'Kariya daga cututtukan jima’i':
+        "Kwandom ita ce kaɗai hanyar hana daukan ciki da ke kuma ba da kariya daga cututtukan da ake ɗauka ta hanyar jima’i (STIs). Don samun kariya biyu, za ki iya amfani da Kwandom tare da wata hanyar.",
     };
 
     return (
       recommendations[factor] ||
-      `Thank you for sharing your preference. For your specific needs regarding ${factor.toLowerCase()}, I recommend speaking with a healthcare provider at 7790 for personalized guidance.`
+      `Na gode da bayyana ra’ayinki. Dangane da buƙatarki da suka shafi ${factor.toLowerCase()}, ina ba da shawarar ki tuntuɓi mai ba da kulawar lafiya ta kiran 7790 don samun shawara ta musamman gare ki.`
     );
   }
 
@@ -1048,7 +1048,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     }).catch(err => console.error('Failed to save FPM interaction:', err));
     
     const nextActions = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba',
       {
         widget: 'fpmNextActionOptions',
         delay: 1000,
@@ -1083,60 +1083,22 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
   // Helper for menstrual flow response
   private getMenstrualFlowResponse(preference: string): string {
     const responses: Record<string, string> = {
-      'No INcrease of🩸flow':
-        'If you want to avoid increasing menstrual flow, the most effective methods are Implants.\n\nOther methods to adopt includes the Injectables and Pills.',
-      'No DEcrease of🩸flow':
-        'If you want to avoid decrease/stop of menstrual flow, The most effective methods is IUD.\n\nOther method to adopt is the pills.',
-      'No change in menstrual flow':
-        'If you prefer a method that does not change your menstrual flow, you may consider the Copper IUD or condoms. These methods typically do not affect your periods. Please consult a healthcare provider for more personalized advice.',
-      'Lighter or no periods':
-        'If you would like lighter or no periods, hormonal IUDs, implants, or injections may be suitable options. These methods can reduce menstrual bleeding or even stop periods for some users. Please consult a healthcare provider for more information.',
+      'Ba ya ƙara yawan zubar jini🩸':
+        'Idan kina so ki guje wa karuwar hawan haila, hanyoyin da suka fi dacewa shine dasa alurar hanu (imflants).\n\nSauran hanyoyin da za a bi sun haɗa da allura  da ƙwayoyin sha',
+      'Ba ya rage yawan zubar jini🩸':
+        'Idan kana son kauce wa raguwa/tashewar jinin haila, Hanyoyi mafi inganci shine IUD.\n\nWasu hanyoyi da za a iya amfani da su sun hada da shan kwayoyi',
+      'Ba ya canza yawan jinin al’ada':
+        "Idan kina son hanyar da ba ta canza yawan jinin al’ada, za ki iya amfani da Na’urar Copper IUD ko Kwandom. Waɗannan hanyoyi yawanci ba sa shafar jinin al’ada. Da fatan za ki tuntuɓi mai ba da kulawar lafiya don samun shawara ta musamman.",
+      'Ƙaranci ko daukewar jinin al’ada':
+        "Idan kina son samun ƙarancin jinin al’ada ko ma rashin al’ada gaba ɗaya, Na’urar Hormonal IUD, Imflants, ko Allurai na iya zama hanyoyi mafi dacewa gare ki. Waɗannan hanyoyi suna iya rage zubar jinin al’ada ko ma su hana al’ada gaba ɗaya ga wasu masu amfani. Da fatan za ki tuntuɓi mai ba da kulawar lafiya don ƙarin bayani.",
       'Regular periods':
-        'If having regular periods is important to you, daily pills may help regulate your cycle. Please consult a healthcare provider to discuss the best option for your needs.',
+        "Idan yin haila ko wani wata yana da muhimmanci a gare ku, kwayoyin hana daukar ciki (Daily pills) na iya taimakawa wajen daidaita zagayowar hailar ku. Don Allah tuntubi ma'aikacin kiwon lafiya don tattauna mafi kyawun zaɓi ga bukatun ku.",
     };
 
     return (
       responses[preference] ||
-      'Thank you for sharing your preference. For more information on how different contraceptive methods affect menstrual flow, please call 7790 to speak with a healthcare professional.'
+      'Na gode da bayyana ra’ayinki. Don ƙarin bayani game da yadda hanyoyi hana daukar ciki (contraceptive methods) daban-daban ke shafar jinin al’ada (menstrual flow), kira 7790 don yin magana da ƙwararren ma’aikacin lafiya.'
     );
-  }
-
-  // Helper for method-specific fertility timeline information (from flowchart analysis)
-  private getFertilityTimelineMessage(method: string): string {
-    const methodLower = method.toLowerCase();
-    
-    // IUD - Return to fertility
-    if (methodLower.includes('iud') || methodLower.includes('copper') || methodLower.includes('hormonal coil')) {
-      return 'Important: If you stop using the IUD, return to fertility happens immediately after removal, or it can take 1-2 weeks. In most cases, you can become pregnant in the first cycle after removal. Visit the clinic where you adopted the method or a nearby clinic to have it removed.';
-    }
-    
-    // Implants - Return to fertility
-    if (methodLower.includes('implant') || methodLower.includes('rod') || methodLower.includes('jadelle') || methodLower.includes('implanon')) {
-      return 'Important: After stopping the implant, the earliest possible time to get pregnant is within 1 week of having the rod removed, but usually within 1 month. You will need to visit a clinic to have the implant removed by a healthcare provider.';
-    }
-    
-    // Injectables - Return to fertility
-    if (methodLower.includes('inject') || methodLower.includes('depo') || methodLower.includes('sayana')) {
-      return 'Important: After stopping injectables, it usually takes several months for the complete effect of the hormones to disappear. In most cases, it is possible to become pregnant after 6 months. You can simply stop taking the injections without needing a clinic visit.';
-    }
-    
-    // Pills - Return to fertility
-    if (methodLower.includes('pill') || methodLower.includes('oral contraceptive') || methodLower.includes('combined pill') || methodLower.includes('progestin-only')) {
-      return 'Important: The pill stops your body from ovulating, but as soon as you stop taking the pill, your ovulation will start again. So, it is possible to get pregnant as soon as you stop the pill. You can stop at any time without needing a clinic visit.';
-    }
-    
-    // Condoms - No fertility delay
-    if (methodLower.includes('condom')) {
-      return 'Important: Condoms have no effect on your fertility. You can get pregnant immediately after stopping their use. No clinic visit needed.';
-    }
-    
-    // Emergency contraception (Postpill)
-    if (methodLower.includes('postpill') || methodLower.includes('emergency') || methodLower.includes('postinor')) {
-      return 'Important: Emergency contraception does not affect your long-term fertility. Your normal fertility returns immediately. It only prevents pregnancy from the specific act of unprotected sex.';
-    }
-    
-    // Default message for other methods
-    return 'Important: Different methods have different timelines for return to fertility. Please call 7790 to speak with a healthcare professional about your specific method and when you can expect to be able to get pregnant after stopping.';
   }
 
   // Handler for stop reason
@@ -1162,7 +1124,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     }).catch(err => console.error('Failed to save FPM interaction:', err));
 
     const counselingResponse = this.createChatBotMessage(
-      'Okay, I understand and I am sorry you are experiencing these issues.\n\nPlease call 7790 and request to speak to a nurse counsellor to direct and counsel you on better options for you.',
+      'To, na fahimta, kuma banji dadin irin waɗannan matsalolin da kike fuskanta ba. \n\nDa fatan za ki kira 7790 don yin magana da jami’in lafiya mai ba da shawara (nurse counsellor) domin ya jagorance ki kuma ya ba ki shawara kan hanyoyi mafi dacewa gare ki.',
       { delay: 500 },
     );
 
@@ -1175,7 +1137,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       : null;
     
     const nextActions = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son ki yi gaba?',
       {
         widget: 'fpmNextActionOptions',
         delay: fertilityMessage ? 1500 : 1000,
@@ -1241,7 +1203,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     }).catch(err => console.error('Failed to save side effect:', err));
 
     const responseMessage = this.createChatBotMessage(
-      'Okay, I understand and I am sorry you are experiencing these issues.\nPlease call 7790 and ask to speak to a nurse counselor who will direct and counsel you on what to do.',
+      'To, na fahimta, kuma banji dadi ba da irin waɗannan matsalolin da kike fuskanta.\nDa fatan za ki kira 7790 don yin magana da jami’in lafiya mai ba da shawara (nurse counselor) wanda zai jagorance ki kuma ya ba ki shawara kan abin da ya kamata ki yi',
       { delay: 500 },
     );
 
@@ -1253,7 +1215,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     }).catch(err => console.error('Failed to save FPM interaction:', err));
     
     const nextActions = this.createChatBotMessage(
-      'What would you like to do next?',
+      "Me kike son yi gaba?",
       {
         widget: 'fpmNextActionOptions',
         delay: 1000,
@@ -1304,10 +1266,10 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'FinalFeedback',
       response_type: 'user',
-      question_asked: 'Did I answer your question?',
+      question_asked: 'Da fatan na amsa tambayarki?',
       user_response: feedback,
       widget_used: 'feedbackOptions',
-      available_options: ['Yes', 'No', 'Skip'],
+      available_options: ['Ee', "A'a", 'Tsallake'],
       step_in_flow: 'feedback',
     }).catch(err => console.error('Failed to save response data:', err));
 
@@ -1315,22 +1277,22 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createFpmInteraction({
       fpm_flow_type: 'session_feedback_complete',
       provided_information: 'Session completed with user feedback',
-      next_action: feedback === 'Yes' ? 'satisfied' : 'needs_follow_up',
+      next_action: feedback === 'Ee' ? 'Angamsu' : 'Ana buƙatar ƙarin kulawa',
     }).catch(err => console.error('Failed to save FPM interaction:', err));
 
-    if (feedback === 'Yes') {
+    if (feedback === 'Ee') {
       const thankYou = this.createChatBotMessage(
-        "Thank you for your feedback👍! I am happy that I was of great service to you. Your input helps us improve our service. If you need any additional information on family planning and contraception, I'm available 24/7! I look forward to chatting with you again soon.",
+        "Na gode da jin ra’ayinki! Ina farin ciki cewa na taimaka miki yadda ya kamata. Ra’ayinki yana taimaka mana wajen inganta ayyukanmu. Idan kina buƙatar ƙarin bayani game da Tsarin Iyali (family planning) da hanyoyin hana ɗaukar ciki (contraception), za ki iya samuna a kowane lokaci (24/7)! Ina sa ran yin magana da ke nan gaba. 👍",
         { delay: 500 },
       );
 
       const callInfo = this.createChatBotMessage(
-        'If you want to speak to an agent for further enquiries and discussion, please call 7790.\n\nIf you want to be connected to a medical professional agent here in chat, just type the word "human".',
+        "Idan kina son yin magana da jami’in lafiya don ƙarin tambayoyi da tattaunawa, da fatan za ki kira 7790. Idan kina son a haɗa ki da ƙwararren ma’aikacin lafiya a cikin wannan tattaunawa (chat), kawai rubuta kalmar 'human'.",
         { delay: 1000 },
       );
 
       const moreHelp = this.createChatBotMessage(
-        'Can I help you with anything else?',
+        'Shin zan iya taimaka miki da wani abu kuma?',
         {
           widget: 'moreHelpOptions',
           delay: 1500,
@@ -1368,14 +1330,14 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         widget_name: "moreHelpOptions",
         message_delay_ms: 1500
       }).catch(err => console.error('Failed to save more help:', err));
-    } else if (feedback === 'No') {
+    } else if (feedback === "A'a") {
       const sorryMessage = this.createChatBotMessage(
-        "I'm sorry I couldn't fully address your concerns. For more personalized assistance, please call 7790 to speak with a healthcare professional.",
+        "Banji dadi ba cewa ban samu damar magance duk damuwarki ba. Don samun taimako na musamman, da fatan za ki kira 7790 don yin magana da ƙwararren ma’aikacin lafiya.",
         { delay: 500 },
       );
 
       const moreHelp = this.createChatBotMessage(
-        'Can I help you with anything else?',
+        'Shin zan iya taimaka miki da wani abu kuma?',
         {
           widget: 'moreHelpOptions',
           delay: 1000,
@@ -1407,7 +1369,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       }).catch(err => console.error('Failed to save more help:', err));
     } else {
       const goodbye = this.createChatBotMessage(
-        "Thanks for your time👍. I look forward to chatting with you again soon. If you need any additional information on family planning and contraception, I'm available 24/7!",
+        "Na gode da lokacinki. Ina sa ran yin magana da ke nan gaba. Idan kina buƙatar ƙarin bayani game da Tsarin Iyali (family planning) da hanyoyin hana ɗaukar ciki (contraception), za ki iya samuna a kowane lokaci (24/7)! 👍",
         { delay: 500 },
       );
 
@@ -1447,14 +1409,14 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     await this.api.createResponse({
       response_category: 'FPMNextAction',
       response_type: 'user',
-      question_asked: 'What would you like to do next?',
+      question_asked: 'Me kike son yi gaba?',
       user_response: action,
       widget_used: 'fmpNextActionOptions',
       available_options: [
-        'End this chat',
-        'Ask more questions',
-        'Talk to AI / Human',
-        'Find nearest clinic',
+        'Ƙare wannan tattaunawar',
+        'Yi wasu tambayoyin',
+        'Yi magana da AI / Jami’in lafiya',
+        'Nemo asibiti mafi kusa',
       ],
       step_in_flow: 'fmpNextAction',
     }).catch(err => console.error('Failed to save response data:', err));
@@ -1464,9 +1426,9 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
       fpm_flow_type: 'next_action_selection',
     }).catch(err => console.error('Failed to save FPM interaction:', err));
 
-    if (action === 'End this chat') {
+    if (action === 'Ƙare wannan tattaunawar') {
       const feedbackRequest = this.createChatBotMessage(
-        'Did I answer your question?',
+        'Shin na amsa tambayarki?',
         {
           widget: 'feedbackOptions',
           delay: 500,
@@ -1488,10 +1450,10 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         widget_name: "feedbackOptions",
         message_delay_ms: 500
       }).catch(err => console.error('Failed to save feedback request:', err));
-    } else if (action === 'Ask more questions') {
+    } else if (action === 'Yi wasu tambayoyin') {
       const response = this.createChatBotMessage('Okay!', { delay: 500 });
       const questionPrompt = this.createChatBotMessage(
-        'Please note that I am a family planning bot and can only respond to questions relating to family planning. What is your question?',
+        'Da fatan za a lura cewa ni chatbot ne na Tsarin Iyali (family planning bot) kuma zan iya amsa tambayoyi ne kawai da suka shafi tsarin iyali. Menene tambayarki?',
         { delay: 1000 },
       );
 
@@ -1517,9 +1479,9 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000
       }).catch(err => console.error('Failed to save question prompt:', err));
-    } else if (action === 'Talk to AI / Human') {
+    } else if (action === 'Yi magana da AI / Jami’in lafiya') {
       const agentQuestion = this.createChatBotMessage(
-        'Do you want to be connected to a human medical professional agent or AI chatbot?',
+        'Shin kina son a haɗa ki da ƙwararren ma’aikacin lafiya ko AI chatbot?',
         {
           widget: 'humanAIOptions',
           delay: 500,
@@ -1541,9 +1503,9 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
         widget_name: "humanAIOptions",
         message_delay_ms: 500
       }).catch(err => console.error('Failed to save agent question:', err));
-    } else if (action === 'Find nearest clinic') {
+    } else if (action === 'Nemo asibiti mafi kusa') {
       const clinicMessage = this.createChatBotMessage(
-        'I can help you find the nearest clinic, please confirm your location or your city/area name.',
+        'Zan iya taimaka miki wajen nemo asibitin mafi kusa dake, da fatan ki tabbatar da wurinki ko sunan garinku / yankinku.',
         { delay: 500 },
       );
 

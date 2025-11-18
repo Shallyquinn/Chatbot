@@ -15,8 +15,8 @@ export {
   comparisonActionsWidget, // Phase 3.3: Comparison widget
 } from "./preventPregnancyWidgetsConfig";
 
-export { default as PreventPregnancyActionProvider } from './preventPregnancyActionProvider';
-export type { PreventPregnancyProviderInterface } from './preventPregnancyTypes';
+export { default as PreventPregnancyActionProvider } from "./preventPregnancyActionProvider";
+export type { PreventPregnancyProviderInterface } from "./preventPregnancyTypes";
 
 export {
   CONTRACEPTION_TYPE_OPTIONS,
@@ -27,4 +27,4 @@ export {
   LONG_TERM_METHODS,
   PERMANENT_METHODS,
   getMethodOptionsForDuration,
-} from './preventPregnancyTypes';
+} from "./preventPregnancyTypes";

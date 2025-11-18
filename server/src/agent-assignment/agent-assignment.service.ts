@@ -67,18 +67,18 @@ export class AgentAssignmentService {
       },
     });
 
-    // TODO: Uncomment after migration - Log the assignment
-    // await this.prisma.conversationLog.create({
-    //   data: {
-    //     conversationId: conversation.conversation_id,
-    //     action: 'ASSIGNED',
-    //     performedById: agentWithLowestWorkload.id,
-    //     details: {
-    //       assignmentType: 'AUTOMATIC',
-    //       agentWorkload: agentWithLowestWorkload.currentChats,
-    //     },
-    //   },
-    // });
+    // Log the assignment
+    await this.prisma.conversationLog.create({
+      data: {
+        conversationId: conversation.conversation_id,
+        action: 'ASSIGNED',
+        performedById: agentWithLowestWorkload.id,
+        details: JSON.stringify({
+          assignmentType: 'AUTOMATIC',
+          agentWorkload: agentWithLowestWorkload.currentChats,
+        }),
+      },
+    });
 
     // Update agent's current chat count
     await this.prisma.agent.update({
@@ -153,19 +153,19 @@ export class AgentAssignmentService {
       },
     });
 
-    // TODO: Uncomment after migration - Log the assignment
-    // await this.prisma.conversationLog.create({
-    //   data: {
-    //     conversationId: conversation.conversation_id,
-    //     action: 'ASSIGNED',
-    //     performedById: assignedBy,
-    //     details: {
-    //       assignmentType: 'MANUAL',
-    //       targetAgentId: agentId,
-    //       agentWorkload: agent.currentChats,
-    //     },
-    //   },
-    // });
+    // Log the assignment
+    await this.prisma.conversationLog.create({
+      data: {
+        conversationId: conversation.conversation_id,
+        action: 'ASSIGNED',
+        performedById: assignedBy,
+        details: JSON.stringify({
+          assignmentType: 'MANUAL',
+          targetAgentId: agentId,
+          agentWorkload: agent.currentChats,
+        }),
+      },
+    });
 
     // Update agent's current chat count
     await this.prisma.agent.update({

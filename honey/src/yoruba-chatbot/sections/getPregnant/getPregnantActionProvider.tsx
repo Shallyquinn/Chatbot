@@ -145,8 +145,8 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     // Use the original messages from getPregnantConfig
     const introMessage = this.createChatBotMessage(
-      'This is great! I am happy to give you advice on family planning.',
-      { delay: 500 },
+      "Eleyi jẹ nla! Inu mi dun lati fun ọ ni imọran lori eto idile.",
+      { delay: 500 }
     );
 
     const questionMessage = this.createChatBotMessage(
@@ -409,17 +409,17 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
       },
       'Female sterilisation': {
         message:
-          "Female sterilisation is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: 'What would you like to do next?',
-        followUpWidget: 'getPregnantNextAction',
-        nextStep: 'getPregnantNextAction',
+          "Nigba miiran ìlànà adena ọmọ bíbí ti obìnrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.",
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
+        followUpWidget: "getPregnantNextAction",
+        nextStep: "getPregnantNextAction",
       },
       'Male sterilisation': {
         message:
-          "Male sterilisation (vasectomy) is designed to be permanent. While reversal procedures exist, they are complex and don't guarantee restored fertility. I recommend consulting with a specialist about your options.",
-        followUpQuestion: 'What would you like to do next?',
-        followUpWidget: 'getPregnantNextAction',
-        nextStep: 'getPregnantNextAction',
+          "Nigba miiran ìlànà adena ọmọ bíbí ti okunrin se e yipada.O le jẹ lẹsẹkẹsẹ lẹhin tabi paapaa ọpọlọpọ ọdun nigba mii.Jọwọ ṣe abẹwo si olupese ilera rẹ fun imọran.",
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
+        followUpWidget: "getPregnantNextAction",
+        nextStep: "getPregnantNextAction",
       },
     };
 
@@ -428,50 +428,11 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
     return (
       foundResponse || {
         message: `I understand you're using ${method}. For specific guidance about conception while using this method, I recommend consulting with a healthcare provider. Please call 7790 for personalized assistance.`,
-        followUpQuestion: 'What would you like to do next?',
-        followUpWidget: 'getPregnantNextAction',
-        nextStep: 'getPregnantNextAction',
+        followUpQuestion: "Kí ni o fẹ́ ṣe ní tẹ̀síwájú?",
+        followUpWidget: "getPregnantNextAction",
+        nextStep: "getPregnantNextAction",
       }
     );
-  }
-
-  // Helper method to get widget options for conversation tracking
-  private getWidgetOptions(widgetName: string): string[] {
-    const optionsMap: Record<string, string[]> = {
-      getPregnantTryingDuration: [
-        'Less than 6 months',
-        '6-12 months',
-        'More than 1 year',
-      ],
-      getPregnantIUDRemoval: [
-        'Yes, more than 1 year',
-        'Yes, less than 1 year',
-        "No, I didn't remove",
-      ],
-      getPregnantImplantRemoval: [
-        'Longer than 3 months',
-        'Less than 3 months',
-        "No, I didn't remove",
-      ],
-      getPregnantInjectionStop: ['Yes', 'No'],
-      getPregnantPillsStop: ['Yes', 'No'],
-      getPregnantNextAction: [
-        'Ask more questions',
-        'Find nearest clinic',
-        'Back to main menu',
-      ],
-    };
-    return optionsMap[widgetName] || [];
-  }
-
-  // Get next message sequence number
-  private getNextSequenceNumber(): number {
-    return ++this.messageSequenceNumber;
-  }
-
-  // Reset message sequence for new conversation
-  private resetSequenceNumber(): void {
-    this.messageSequenceNumber = 0;
   }
 
   // Handle trying duration selection (No FPM branch)
@@ -699,7 +660,7 @@ class GetPregnantActionProvider implements GetPregnantActionProviderInterface {
 
     return (
       responses[status] ||
-      'Please consult with a healthcare provider about your IUD and conception plans. Call 7790 for personalized assistance.'
+      "Jọwọ kan si alagbawo pẹlu olupese ilera nipa IUD rẹ ati awọn ero inu. Pe 7790 fun iranlọwọ ti ara ẹni."
     );
   }
 

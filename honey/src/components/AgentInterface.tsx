@@ -7,6 +7,9 @@ import { ConversationSidebar } from './agent/ConversationSidebar';
 import { ChatArea } from './agent/ChatArea';
 import { MessageInput } from './agent/MessageInput';
 import { UserInfoPanel } from './agent/UserInfoPanel';
+import { TypingIndicator } from './agent/TypingIndicator';
+import { AgentStatusIndicator } from './agent/AgentStatusIndicator';
+import { FileUpload } from './agent/FileUpload';
 
 interface AssignedUser {
   id: string;
@@ -43,6 +46,10 @@ const AgentInterface: React.FC = () => {
     'channels' | 'agents' | 'admin'
   >('channels');
   const [loading, setLoading] = useState(false);
+  const [userTyping, setUserTyping] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'away' | 'busy'>('online');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
 
   useEffect(() => {
     // Get agent info from localStorage
@@ -99,6 +106,16 @@ const AgentInterface: React.FC = () => {
       fetchAssignedUsers(); // Refresh the list
     };
     
+    const handleUserTyping = (data: any) => {
+      if (data.conversationId === selectedConversation?.conversationId) {
+        setUserTyping(data.isTyping);
+        if (data.isTyping) {
+          // Auto-hide after 3 seconds
+          setTimeout(() => setUserTyping(false), 3000);
+        }
+      }
+    };
+    
     const handleConversationUpdate = (data: any) => {
       console.log('Conversation updated:', data);
       fetchAssignedUsers(); // Refresh the list
@@ -108,6 +125,7 @@ const AgentInterface: React.FC = () => {
     WebSocketService.on('NEW_MESSAGE', handleNewMessage);
     WebSocketService.on('NEW_ASSIGNMENT', handleNewAssignment);
     WebSocketService.on('CONVERSATION_UPDATE', handleConversationUpdate);
+    WebSocketService.on('user_typing', handleUserTyping);
     
     // Set up periodic refresh every 30 seconds
     const refreshInterval = setInterval(() => {

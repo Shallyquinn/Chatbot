@@ -4,17 +4,15 @@ import {
   Get,
   Body,
   Param,
-  // UseGuards, // TODO: Enable after creating auth guards
-  // Request, // TODO: Enable after creating auth guards
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AgentAssignmentService } from './agent-assignment.service';
-// TODO: Create these auth guards
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-// import { RolesGuard } from '../auth/guards/roles.guard';
-// import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 
 @Controller('agent-assignment')
-// @UseGuards(JwtAuthGuard, RolesGuard) // TODO: Enable after creating auth guards
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AgentAssignmentController {
   constructor(
     private readonly agentAssignmentService: AgentAssignmentService,

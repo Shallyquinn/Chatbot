@@ -68,6 +68,9 @@ class MessageParser {
   /**
    * Check if input matches any intent patterns
    */
+  // FUTURE ENHANCEMENT: Fuzzy matching methods for typo tolerance
+  // Uncomment these methods if you want to add intelligent input matching
+  /*
   private matchIntent(
     input: string,
     intent: keyof typeof this.INTENT_MAPPINGS
@@ -78,9 +81,6 @@ class MessageParser {
     );
   }
 
-  /**
-   * Fuzzy match input against available options
-   */
   private fuzzyMatch(input: string, options: string[]): string | null {
     const normalized = this.normalizeInput(input);
 
@@ -110,9 +110,6 @@ class MessageParser {
     return null;
   }
 
-  /**
-   * Calculate Levenshtein distance for typo tolerance
-   */
   private levenshteinDistance(a: string, b: string): number {
     const matrix: number[][] = [];
 
@@ -130,9 +127,9 @@ class MessageParser {
           matrix[i][j] = matrix[i - 1][j - 1];
         } else {
           matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
           );
         }
       }
@@ -140,6 +137,7 @@ class MessageParser {
 
     return matrix[b.length][a.length];
   }
+  */
 
   /**
    * Save user message with detected intent to server
@@ -633,7 +631,8 @@ class MessageParser {
           lowerCase === "menu" ||
           lowerCase === "honey" ||
           lowerCase === "human" ||
-          lowerCase === "language"
+          lowerCase === "language" ||
+          lowerCase === "ede" // Yoruba word for "language"
         ) {
           // Handle other keyword navigation
           this.actionProvider.handleKeywordNavigation(message);

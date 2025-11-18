@@ -77,12 +77,11 @@ export type ContraceptionType = "Emergency" | "Prevent in future";
 
 // Duration options - Using display labels as actual type values (matches WhatsApp)
 export type PreventionDuration =
-  | "Up to 1 year"
-  | "1 - 2 years"
-  | "3 - 4 years"
-  | "5 - 10 years"
-  | "Permanently"
-  | "Not sure";
+  | 'Titi di ọdun kan'
+  | 'Odun kan si meji'
+  | 'Mẹta si mẹrin ọdun'
+  | 'ọdun marun si mẹwa'
+  | 'Titilai';
 
 // Natural language normalization function is defined below after array constants
 
@@ -101,7 +100,7 @@ export type ContraceptiveMethod =
   | "Vasectomy";
 
 // Product types
-export type EmergencyProduct = "Postpill" | "Postinor2";
+export type EmergencyProduct = "Postpill" | "Postinor-2";
 
 // Duration-based method categories
 export const SHORT_TERM_METHODS: ContraceptiveMethod[] = [
@@ -132,15 +131,15 @@ export const getMethodOptionsForDuration = (
   duration: PreventionDuration
 ): ContraceptiveMethod[] => {
   switch (duration) {
-    case "Up to 1 year":
+    case 'Titi di ọdun kan':
       return SHORT_TERM_METHODS;
-    case "1 - 2 years":
-      return [...SHORT_TERM_METHODS, "Injectables", "Implants"];
-    case "3 - 4 years":
-      return MEDIUM_TERM_METHODS;
-    case "5 - 10 years":
+    case 'Odun kan si meji':
+      return [...SHORT_TERM_METHODS, 'Injectables'];
+    case 'Mẹta si mẹrin ọdun':
+      return [...MEDIUM_TERM_METHODS, 'Implants'];
+    case 'ọdun marun si mẹwa':
       return LONG_TERM_METHODS;
-    case "Permanently":
+    case 'Titilai':
       return PERMANENT_METHODS;
     case "Not sure":
       // When not sure, return all methods grouped by category
@@ -163,16 +162,16 @@ export const CONTRACEPTION_TYPE_OPTIONS: ContraceptionType[] = [
 
 export const EMERGENCY_PRODUCT_OPTIONS: EmergencyProduct[] = [
   "Postpill",
-  "Postinor2",
+  "Postinor-2",
 ];
 
 // Duration options for display (using WhatsApp labels - these ARE the type values now)
 export const PREVENTION_DURATION_OPTIONS: PreventionDuration[] = [
-  "Up to 1 year",
-  "1 - 2 years",
-  "3 - 4 years",
-  "5 - 10 years",
-  "Permanently",
+  "Titi di ọdun kan",
+  "Odun kan si meji",
+  "Mẹta si mẹrin ọdun",
+  "ọdun marun si mẹwa",
+  "Titilai",
   "Not sure",
 ];
 
@@ -189,11 +188,11 @@ export function normalizeDurationInput(
 
   // Direct matches (case-insensitive)
   const directMatches: Record<string, PreventionDuration> = {
-    "up to 1 year": "Up to 1 year",
-    "1 - 2 years": "1 - 2 years",
-    "3 - 4 years": "3 - 4 years",
-    "5 - 10 years": "5 - 10 years",
-    permanently: "Permanently",
+    "up to 1 year": "Titi di ọdun kan",
+    "odun kan si meji": "Odun kan si meji",
+    "mẹta si mẹrin ọdun": "Mẹta si mẹrin ọdun",
+    "ọdun marun si mẹwa": "Odun marun si mẹwa",
+    "titilai": "Titilai",
     "not sure": "Not sure",
     "don't know": "Not sure",
     unsure: "Not sure",

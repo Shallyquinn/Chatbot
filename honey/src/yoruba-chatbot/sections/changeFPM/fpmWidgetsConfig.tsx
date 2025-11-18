@@ -81,17 +81,17 @@ export const FPM_CONCERN_TYPES = [
  * Initial FPM Concerns - The three main paths users can take
  */
 export const FPM_INITIAL_CONCERNS = [
-  'Concerned about FP',
-  'Want to switch FP',
-  'Want to stop FP',
+  'Àníyàn nípa ètò ìdílé',
+  'Mo fe yipada eto idile',
+  'Mo fe da eto idile duro',
 ] as const;
 
 /**
  * Satisfaction Assessment Options
  */
 export const SATISFACTION_OPTIONS = [
-  'Somewhat satisfied',
-  'Not satisfied',
+  'inu mi kun die',
+  'Emi ko ni itelorun',
 ] as const;
 
 /**
@@ -128,37 +128,40 @@ export const STOP_REASON_OPTIONS = [
 /**
  * Method Recommendation Options
  */
-export const METHOD_RECOMMENDATION_OPTIONS = ['Yes', 'No'] as const;
+export const METHOD_RECOMMENDATION_OPTIONS = ['Beeni', 'Beeko'] as const;
 
 /**
  * Kids in Future Options
  */
-export const KIDS_IN_FUTURE_OPTIONS = ['Yes, I want more kids', 'No'] as const;
+export const KIDS_IN_FUTURE_OPTIONS = [
+  'Beeni,Mo fẹ bímọ síi.',
+  'Beeko',
+] as const;
 
 /**
  * Timing Options
  */
 export const TIMING_OPTIONS = [
-  'Less than 1 year',
-  '1-2 years',
-  '3-5 years',
-  'More than 5 years',
+  'Kò tó ọdún kan',
+  'Ọdún kan sí méj',
+  'Ọdún mẹta sí mẹrin',
+  'ju ọdún márùn-ún lọ',
 ] as const;
 
 /**
  * Important Factors Options
  */
 export const IMPORTANT_FACTORS_OPTIONS = [
-  'Efficiency in prevention',
-  'Should be safe to use',
-  'Be easy and convenient',
-  'Discreet from others',
-  'No pain/cramp/vomit',
-  'No weight gain',
-  'No effect on sex life',
-  'Be able have kids after',
-  'Stop without clinic',
-  'No effect on menstrual🩸',
+  'Mo fẹ ìlànà tí yóò dènà oyún dáadáa',
+  'Àwọn ìlànà tí lílo wọn kò léwu rárá',
+  'Àwọn ìlànà ti kò nira tó sì rọrùn láti lo',
+  'Kò sí ẹnikẹni tó mọ pé mo ń lo o',
+  'N kò fẹ́ ní iriri ìnira kankan (kò ma sì èébì, orí-fífọ àti inú rirun)',
+  'Kò mú èèyàn sànrá síi',
+  'Kò ní ipa lori ìgbádùn ibalopọ',
+  'Nígbà tí mo bá dá lílo rẹ̀ dúró, mo le bí ọmọ síi',
+  'Lè dáwọ́ lílo rẹ̀ láì lọ sí ilé-iwòsàn',
+  'Kìí dín nnkan oṣù ku tàbí dá a duro🩸',
 ] as const;
 
 /**
@@ -177,20 +180,20 @@ export const MENSTRUAL_FLOW_OPTIONS = [
  */
 export const FPM_NEXT_ACTIONS = [
   'Talk to AI / Human',
-  'Ask more questions',
-  'Find nearest clinic',
-  'End this chat',
+  'Beere awọn ibeere diẹ sii',
+  'Wa ile-iwosan to sunmọ',
+  'Pari iwiregbe yii',
 ] as const;
 
 /**
  * Feedback Options - Simple yes/no feedback
  */
-export const FEEDBACK_OPTIONS = ['Yes', 'No'] as const;
+export const FEEDBACK_OPTIONS = ['Beeni', 'Beeko'] as const;
 
 /**
  * More Help Options - Continue or end conversation
  */
-export const MORE_HELP_OPTIONS = ['Yes, I want to ask', 'No'] as const;
+export const MORE_HELP_OPTIONS = ['Beeni, Mo fe bere', 'Beeko'] as const;
 
 /**
  * Human/AI Selection Options

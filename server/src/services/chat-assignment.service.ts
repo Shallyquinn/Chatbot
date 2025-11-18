@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WebSocketService } from './websocket.service';
 import {
   AgentStatus,
   Priority,
@@ -38,7 +39,10 @@ type AgentWithShifts = Agent & {
 export class ChatAssignmentService {
   private readonly logger = new Logger(ChatAssignmentService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private websocketService: WebSocketService,
+  ) {}
 
   /**
    * Request agent escalation - Main entry point
@@ -460,6 +464,7 @@ export class ChatAssignmentService {
     userId: string,
     userLocation?: LocationData,
   ): Promise<void> {
+    // Create database notification
     await this.prisma.agentNotification.create({
       data: {
         agentId,
@@ -470,6 +475,24 @@ export class ChatAssignmentService {
         conversationId,
       },
     });
+
+    // Send real-time WebSocket notification
+    try {
+      this.websocketService.notifyAgent(agentId, {
+        type: 'NEW_ASSIGNMENT',
+        conversationId,
+        userId,
+        userLocation,
+        priority: 'HIGH',
+        message: 'New conversation assigned to you',
+      });
+      this.logger.log(`Real-time notification sent to agent ${agentId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send WebSocket notification to agent ${agentId}:`,
+        error,
+      );
+    }
 
     this.logger.log(`Notified agent ${agentId} about new assignment`);
 

@@ -147,21 +147,45 @@ export class WebSocketService {
 
   // Agent-specific notifications
   notifyAgent(agentId: string, data: any) {
+    if (!this.server) {
+      console.warn(
+        'WebSocket server not initialized, skipping agent notification',
+      );
+      return;
+    }
     this.server.to(`agent_${agentId}`).emit('agent_notification', data);
   }
 
   // Admin-specific notifications
   notifyAdmins(data: any) {
+    if (!this.server) {
+      console.warn(
+        'WebSocket server not initialized, skipping admin notification',
+      );
+      return;
+    }
     this.server.to('admins').emit('admin_notification', data);
   }
 
   // User-specific notifications
   notifyUser(userId: string, data: any) {
+    if (!this.server) {
+      console.warn(
+        'WebSocket server not initialized, skipping user notification',
+      );
+      return;
+    }
     this.server.to(`user_${userId}`).emit('user_notification', data);
   }
 
   // Broadcast to specific conversation
   notifyConversation(conversationId: string, data: any) {
+    if (!this.server) {
+      console.warn(
+        'WebSocket server not initialized, skipping conversation notification',
+      );
+      return;
+    }
     this.server
       .to(`conversation_${conversationId}`)
       .emit('conversation_update', data);

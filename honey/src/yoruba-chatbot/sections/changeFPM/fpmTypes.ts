@@ -1,8 +1,8 @@
-import { ChatMessage, ChatbotState } from '../../types';
+import { ChatMessage, ChatbotState } from "../../types";
 
 export type CreateChatBotMessage = (
   message: string,
-  options?: Partial<ChatMessage>,
+  options?: Partial<ChatMessage>
 ) => ChatMessage;
 export type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
 

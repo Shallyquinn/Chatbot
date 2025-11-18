@@ -1,4 +1,6 @@
 import React, { useRef, useEffect } from 'react';
+import { TypingIndicator } from './TypingIndicator';
+import { MessageReceipt } from './MessageReceipt';
 
 interface Message {
   id: string;
@@ -6,13 +8,16 @@ interface Message {
   timestamp: Date;
   sender: 'agent' | 'user' | 'bot';
   conversationId: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
 }
 
 interface ChatAreaProps {
   messages: Message[];
+  isUserTyping?: boolean;
+  userName?: string;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
+export const ChatArea: React.FC<ChatAreaProps> = ({ messages, isUserTyping = false, userName = 'User' }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -21,7 +26,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isUserTyping]);
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -50,18 +55,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
               }`}
             >
               <p className="text-sm leading-relaxed">{message.text}</p>
-              <span
-                className={`text-xs mt-1 block ${
-                  message.sender === 'agent'
-                    ? 'text-emerald-100'
-                    : 'text-slate-500'
-                }`}
-              >
-                {formatTime(message.timestamp)}
-              </span>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <span
+                  className={`text-xs ${
+                    message.sender === 'agent'
+                      ? 'text-emerald-100'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {formatTime(message.timestamp)}
+                </span>
+                {message.sender === 'agent' && message.status && (
+                  <MessageReceipt status={message.status} />
+                )}
+              </div>
             </div>
           </div>
         ))}
+        {isUserTyping && <TypingIndicator userName={userName} />}
         <div ref={messagesEndRef} />
       </div>
     </div>

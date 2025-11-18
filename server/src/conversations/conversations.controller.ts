@@ -68,15 +68,48 @@ export class ConversationsController {
   async escalateToHuman(
     @Body() body: { conversationId: string; userId: string },
   ) {
-    return this.conversationsService.escalateToHuman(
+    console.log('🎯 POST /conversations/escalate received:', body);
+    const result = await this.conversationsService.escalateToHuman(
       body.conversationId,
       body.userId,
     );
+    console.log('🎯 Escalation result:', result);
+    return result;
   }
 
   // Get queue status for conversation
   @Get('queue-status/:conversationId')
   async getQueueStatus(@Param('conversationId') conversationId: string) {
     return this.conversationsService.getQueueStatus(conversationId);
+  }
+
+  // Get messages for a conversation
+  @Get(':conversationId/messages')
+  async getConversationMessages(
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
+    @Query('limit') limit = 100,
+  ) {
+    return this.conversationsService.getConversationMessages(
+      conversationId,
+      Number(limit),
+    );
+  }
+
+  // Handle queue timeout
+  @Post('queue-timeout')
+  async handleQueueTimeout(
+    @Body()
+    body: {
+      conversationId: string;
+      queueDuration: number;
+      userId: string;
+    },
+  ) {
+    console.log('⏰ POST /conversations/queue-timeout received:', body);
+    return this.conversationsService.handleQueueTimeout(
+      body.conversationId,
+      body.queueDuration,
+      body.userId,
+    );
   }
 }

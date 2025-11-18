@@ -1,23 +1,139 @@
 // src/services/websocket.service.ts
+import { io, Socket } from "socket.io-client";
 
 type WebSocketCallback = (data: unknown) => void;
 
 class WebSocketService {
-  private socket: unknown = null;
+  private socket: Socket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private listeners: Map<string, WebSocketCallback[]> = new Map();
+  private isConnected = false;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    // Initialize socket connection if socket.io is available
-    this.connect();
+    // Don't auto-connect on construction, wait for explicit registration
   }
 
   private connect(): void {
-    // Mock WebSocket implementation for now
-    // When socket.io is installed, replace with actual implementation
-    this.socket = null; // Placeholder for real socket connection
-    console.log("WebSocket service initialized (mock mode)");
+    const token = localStorage.getItem("token");
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+
+    console.log("🔌 Connecting to WebSocket server:", backendUrl);
+
+    this.socket = io(backendUrl, {
+      auth: {
+        token: token,
+      },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    if (!this.socket) return;
+
+    this.socket.on("connect", () => {
+      console.log("✅ WebSocket connected");
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
+      }
+    });
+
+    this.socket.on("disconnect", (reason) => {
+      console.log("❌ WebSocket disconnected:", reason);
+      this.isConnected = false;
+      if (reason === "io server disconnect") {
+        // Server initiated disconnect, try to reconnect
+        this.reconnect();
+      }
+    });
+
+    this.socket.on("connect_error", (error) => {
+      console.error("🔥 WebSocket connection error:", error);
+      this.isConnected = false;
+    });
+
+    this.socket.on("auth_error", (data) => {
+      console.error("🔒 Authentication error:", data);
+      this.disconnect();
+    });
+
+    // Agent-specific events
+    this.socket.on("agent_notification", (data) => {
+      console.log("📬 Agent notification received:", data);
+      this.triggerListeners("agent_notification", data);
+
+      // Map notification types to specific events
+      if (data.type === "NEW_ASSIGNMENT") {
+        this.triggerListeners("NEW_ASSIGNMENT", data);
+      } else if (data.type === "BULK_ASSIGNMENT") {
+        this.triggerListeners("BULK_ASSIGNMENT", data);
+      }
+    });
+
+    // Message events
+    this.socket.on("new_message", (data) => {
+      console.log("💬 New message received:", data);
+      this.triggerListeners("NEW_MESSAGE", data);
+      this.triggerListeners("new_message", data);
+    });
+
+    // Conversation updates
+    this.socket.on("conversation_update", (data) => {
+      console.log("🔄 Conversation update:", data);
+      this.triggerListeners("CONVERSATION_UPDATE", data);
+      this.triggerListeners("conversation_update", data);
+    });
+
+    // Typing indicators
+    this.socket.on("user_typing", (data) => {
+      this.triggerListeners("user_typing", data);
+    });
+
+    // Admin notifications
+    this.socket.on("admin_notification", (data) => {
+      console.log("📬 Admin notification received:", data);
+      this.triggerListeners("admin_notification", data);
+
+      if (data.type === "QUEUE_ALERT") {
+        this.triggerListeners("QUEUE_ALERT", data);
+      }
+    });
+
+    // Queue updates
+    this.socket.on("queue_updated", (data) => {
+      console.log("📊 Queue updated:", data);
+      this.triggerListeners("queue_updated", data);
+    });
+
+    // Agent status updates
+    this.socket.on("agent_status_updated", (data) => {
+      console.log("👤 Agent status updated:", data);
+      this.triggerListeners("agent_status_updated", data);
+    });
+  }
+
+  private triggerListeners(event: string, data: unknown): void {
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      listeners.forEach((callback) => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in listener for ${event}:`, error);
+        }
+      });
+    }
   }
 
   // =============================================================================
@@ -25,15 +141,28 @@ class WebSocketService {
   // =============================================================================
 
   disconnect(): void {
-    // Mock implementation
-    console.log("WebSocket disconnected");
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    this.isConnected = false;
+    console.log("🔌 WebSocket disconnected");
   }
 
   reconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
-      setTimeout(() => this.connect(), 1000 * this.reconnectAttempts);
+      console.log(`🔄 Reconnecting... Attempt ${this.reconnectAttempts}`);
+
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+      }
+
+      this.reconnectTimeout = setTimeout(() => {
+        this.connect();
+      }, 1000 * this.reconnectAttempts);
+    } else {
+      console.error("❌ Max reconnection attempts reached");
     }
   }
 
@@ -42,18 +171,49 @@ class WebSocketService {
   // =============================================================================
 
   registerAsUser(userId: string, userData: Record<string, unknown>): void {
-    // Mock implementation
-    console.log("Registered as user:", userId, userData);
+    if (!this.socket || !this.isConnected) {
+      this.connect();
+    }
+
+    // Wait for connection before registering
+    setTimeout(() => {
+      if (this.socket && this.isConnected) {
+        this.socket.emit("register_user", { userId, ...userData });
+        console.log("✅ Registered as user:", userId);
+      }
+    }, 100);
   }
 
   registerAsAgent(agentId: string, agentData: Record<string, unknown>): void {
-    // Mock implementation
-    console.log("Registered as agent:", agentId, agentData);
+    if (!this.socket || !this.isConnected) {
+      this.connect();
+    }
+
+    const token = localStorage.getItem("token");
+
+    // Wait for connection before registering
+    setTimeout(() => {
+      if (this.socket && this.isConnected) {
+        this.socket.emit("register_agent", { agentId, token, ...agentData });
+        console.log("✅ Registered as agent:", agentId);
+      }
+    }, 100);
   }
 
   registerAsAdmin(adminId: string, adminData: Record<string, unknown>): void {
-    // Mock implementation
-    console.log("Registered as admin:", adminId, adminData);
+    if (!this.socket || !this.isConnected) {
+      this.connect();
+    }
+
+    const token = localStorage.getItem("token");
+
+    // Wait for connection before registering
+    setTimeout(() => {
+      if (this.socket && this.isConnected) {
+        this.socket.emit("register_admin", { adminId, token, ...adminData });
+        console.log("✅ Registered as admin:", adminId);
+      }
+    }, 100);
   }
 
   // =============================================================================
@@ -66,17 +226,31 @@ class WebSocketService {
     recipientId: string,
     senderType: "user" | "agent"
   ): void {
-    console.log(
-      `Sending message to conversation ${conversationId}: ${message} (to: ${recipientId}, from: ${senderType})`
-    );
+    if (this.socket && this.isConnected) {
+      this.socket.emit("send_message", {
+        conversationId,
+        message,
+        recipientId,
+        senderType,
+      });
+      console.log(`📤 Sent message to conversation ${conversationId}`);
+    } else {
+      console.error("❌ Cannot send message: Socket not connected");
+    }
   }
 
   joinConversation(conversationId: string): void {
-    console.log(`Joining conversation: ${conversationId}`);
+    if (this.socket && this.isConnected) {
+      this.socket.emit("join_conversation", { conversationId });
+      console.log(`✅ Joined conversation: ${conversationId}`);
+    }
   }
 
   leaveConversation(conversationId: string): void {
-    console.log(`Leaving conversation: ${conversationId}`);
+    if (this.socket && this.isConnected) {
+      this.socket.emit("leave_conversation", { conversationId });
+      console.log(`👋 Left conversation: ${conversationId}`);
+    }
   }
 
   // =============================================================================
@@ -84,11 +258,15 @@ class WebSocketService {
   // =============================================================================
 
   startTyping(conversationId: string): void {
-    console.log(`Started typing in conversation: ${conversationId}`);
+    if (this.socket && this.isConnected) {
+      this.socket.emit("typing_start", { conversationId });
+    }
   }
 
   stopTyping(conversationId: string): void {
-    console.log(`Stopped typing in conversation: ${conversationId}`);
+    if (this.socket && this.isConnected) {
+      this.socket.emit("typing_stop", { conversationId });
+    }
   }
 
   // =============================================================================
@@ -96,7 +274,10 @@ class WebSocketService {
   // =============================================================================
 
   updateAgentStatus(status: string): void {
-    console.log(`Agent status updated to: ${status}`);
+    if (this.socket && this.isConnected) {
+      this.socket.emit("agent_status_change", { status });
+      console.log(`✅ Agent status updated to: ${status}`);
+    }
   }
 
   // =============================================================================
@@ -152,20 +333,21 @@ class WebSocketService {
 
   // Broadcast to all connected clients
   broadcast(event: string, data: unknown): void {
-    this.emit("BROADCAST", { event, data });
+    if (this.socket && this.isConnected) {
+      this.socket.emit("BROADCAST", { event, data });
+    }
   }
 
   // =============================================================================
   // UTILITY METHODS
   // =============================================================================
 
-  isConnected(): boolean {
-    // Mock implementation - always return true in mock mode
-    return true;
+  getConnectionStatus(): boolean {
+    return this.isConnected;
   }
 
-  getConnectionStatus(): string {
-    return this.isConnected() ? "connected" : "disconnected";
+  getSocket(): Socket | null {
+    return this.socket;
   }
 }
 

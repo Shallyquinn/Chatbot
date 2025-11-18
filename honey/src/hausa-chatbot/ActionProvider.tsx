@@ -148,6 +148,13 @@ class ActionProvider implements ActionProviderInterface {
   private static globalChatSessionInitialized: boolean = false;
   private static initializationPromise: Promise<void> | null = null;
   private static constructionCount: number = 0; // Track total constructions for debugging
+  
+  // Static navigation callback for language switching (set by App component)
+  private static navigationCallback: ((path: string) => void) | null = null;
+  
+  static setNavigationCallback(callback: (path: string) => void) {
+    ActionProvider.navigationCallback = callback;
+  }
 
   createChatBotMessage: CreateChatBotMessage;
   setState: SetStateFunc;
@@ -375,7 +382,7 @@ class ActionProvider implements ActionProviderInterface {
         // If user has completed demographics, show returning user flow
         if (state.currentStep === 'fpm' || state.greetingStep === 'complete') {
           const welcomeBackMsg = this.createChatBotMessage(
-            `Welcome back! 👋\n\nI'm here to help you with your family planning questions.\n\nWhat would you like me to help you with today?`,
+            `Barka da dawowa!👋\n\n Ina nan don taimaka muku kan tambayoyinku na tsarin iyali (family planning).\n\nMe kuke son in taimaka muku a kai a yau?`,
             {
               delay: 1000,
               widget: 'fpmOptions',
@@ -405,16 +412,16 @@ class ActionProvider implements ActionProviderInterface {
 
     const messages = [
       this.createChatBotMessage(
-        'Hey! My name is Honey. I am a family planning and pregnancy prevention chatbot. I am here to help with information on family planning knowledge and sexual health.',
+        "Sunana Honey. Ni abokiyar hira ce na tsarin iyali da rigakafin ciki. Ina nan don taimakawa da bayanai kan ilimin tsarin iyali da lafiyar jima'i.",
       ),
       this.createChatBotMessage(
-        'Before we continue, I would like to ask you a few questions to assist you better.',
+        'Kafin mu ci gaba, Ina so in yi muku ƴan tambayoyi don taimaka muku da kyau.',
       ),
       this.createChatBotMessage(
-        'I can answer your family planning questions, refer you to a medical professional to talk to, and also refer you to a family planning clinic.',
+        'Zan iya amsa tambayoyin tsarin iyalin ku, in tura ku zuwa ga ƙwararren likita don yin magana da ku, sannan kuma in tura ku asibitin kayyade iyali.',
       ),
       this.createChatBotMessage(
-        'Any communication happening in this chat is strictly confidential, so you can feel safe sharing personal information.',
+        'Duk wata hanyar sadarwa da ke faruwa a cikin wannan taɗi na sirri ne, don haka ki kwantar da hankalin ki bazaki samu matsala ba karkiji kunyar yin bayani.',
       ),
     ];
 
@@ -426,10 +433,10 @@ class ActionProvider implements ActionProviderInterface {
       this.setDemographicsStep('gender');
     }
 
-    const genderQuestion = this.createChatBotMessage('What is your gender?', {
+    const genderQuestion = this.createChatBotMessage('Menene jinsinku?', {
       widget: 'genderOptions',
       payload: {
-        options: ['Male', 'Female', 'Prefer not to say'],
+        options: ['Namiji', 'Mace', 'Na fi son kada in faɗi'],
       },
     });
     this.addMessageToState(genderQuestion);
@@ -441,7 +448,7 @@ class ActionProvider implements ActionProviderInterface {
       case 'gender': {
         this.setDemographicsStep('location');
         const locationQuestion = this.createChatBotMessage(
-          'What Local Government Area (LGA) are you chatting from?',
+          'Wace Karamar Hukuma (LGA) kike hira?',
           {
             widget: 'lgaInput',
           },
@@ -453,7 +460,7 @@ class ActionProvider implements ActionProviderInterface {
       case 'location': {
         this.setDemographicsStep('location_confirmation');
         const confirmationMsg = this.createChatBotMessage(
-          'Please confirm your local government area.',
+          'Da fatan zaki ƙara tabbatar mana da karamar hukumar ku.',
           {
             widget: 'lgaConfirmation',
           },
@@ -465,7 +472,7 @@ class ActionProvider implements ActionProviderInterface {
       case 'location_retry': {
         this.setDemographicsStep('location');
         const retryMsg = this.createChatBotMessage(
-          "Okay, I'm sorry, let's try again",
+          "To, yi hakuri, mu sake dubawa",
         );
         this.addMessageToState(retryMsg);
         break;
@@ -473,10 +480,10 @@ class ActionProvider implements ActionProviderInterface {
 
       case 'age': {
         this.setDemographicsStep('marital_status');
-        const ageQuestion = this.createChatBotMessage('How old are you', {
+        const ageQuestion = this.createChatBotMessage('Shekarar ki nawa​?', {
           widget: 'ageOptions',
           payload: {
-            options: ['< 25', '25-34', '35-44', '45-54', '55 and older'],
+            options: ['< 25', '25-34', '35-44', '45-54', '55 da sama da haka'],
           },
         });
         this.addMessageToState(ageQuestion);
@@ -486,17 +493,17 @@ class ActionProvider implements ActionProviderInterface {
       case 'marital_status':
         {
           const maritalQuestion = this.createChatBotMessage(
-            'What is your current marital status',
+            'Mene ne matsayin aurenki ahalin yanzu',
             {
               widget: 'maritalOptions',
               payload: {
                 options: [
-                  'Single',
-                  'In a relationship',
-                  'Married',
-                  'Divorced',
-                  'Widowed',
-                  'Prefer not to say',
+                  'Bani da aure',
+                  'Na kusa yin aure',
+                  '​Ina da aure',
+                  'Bazawara (gwauruwa)',
+                  'Bazawara',
+                  '​​​Na fi son kar na ce komai',
                 ],
               },
             },
@@ -524,7 +531,7 @@ class ActionProvider implements ActionProviderInterface {
 
     const messages = [
       this.createChatBotMessage(
-        'Thank you for sharing! Now I can assist you better.',
+        'Na gode da amsoshin (bayanan) da kika ba ni!! Yanzu zan iya taimakonki da kyau',
       ),
       this.createChatBotMessage(
         'I can provide you with information about Family Planning Methods (FPM) or other sex-related questions. What do you want to know?',
@@ -532,10 +539,10 @@ class ActionProvider implements ActionProviderInterface {
           widget: 'mainNavigationOptions',
           payload: {
             options: [
-              'How to get pregnant',
-              'How to prevent pregnancy',
-              'Change/Stop current FPM',
-              'How to improve sex life',
+              'Yadda ake ɗaukar ciki',
+              'Yadda rigakafin ɗaukar ciki',
+              'Sauya/tsayar da hanyar Tsara Iyali da ake amfani dashi a yanzu',
+              "Yadda za a inganta rayuwar jima'i",
             ],
           },
         },
@@ -562,14 +569,14 @@ class ActionProvider implements ActionProviderInterface {
       case 'menu': {
         // Show main menu options - PRESERVE CONVERSATION BUT UPDATE STEP
         const menuMessage = this.createChatBotMessage(
-          'Here are the main options available:\n\n' +
-            '1. Get information about family planning methods\n' +
-            '2. Find a clinic near you\n' +
-            '3. Talk to a medical professional\n' +
-            '4. Change or stop your current family planning method\n' +
-            '5. Get help with getting pregnant\n' +
-            '6. Improve your sex life\n' +
-            '7. Ask general questions',
+          'Ga muhimman zaɓuɓɓukan da ake da su:\n\n' +
+            '1. Nemi bayanai kan hanyoyin tsara iyali (family planning)\n' +
+            '2. Nemi cibiyar kiwon lafiya mafi kusa da kai\n' +
+            "3. Yi magana da ƙwararren ma'aikacin lafiya\n" +
+            '4. Sauya, ko daina hanyar tsara iyali [family planning] da kuke amfani da ita a halin yanzu\n' +
+            '5. Nemi taimako wajen ɗaukar ciki\n' +
+            "6. Inganta rayuwar jima'i \n" +
+            '7. Yi tambaya game da duk abunda kake da buƙata',
           {
             widget: 'planningMethodOptions',
           },
@@ -599,7 +606,7 @@ class ActionProvider implements ActionProviderInterface {
         // Use existing state info to show nearby clinics
         if (this.state.selectedState && this.state.selectedLGA) {
           const clinicMessage = this.createChatBotMessage(
-            `I'll help you find clinics in ${this.state.selectedLGA}, ${this.state.selectedState}.`,
+            `Zan taimaka wajen nemo cibiyoyin lafiya a ${this.state.selectedLGA}, ${this.state.selectedState}.`,
             { delay: 500 },
           );
           this.addMessageToState(clinicMessage);
@@ -613,10 +620,10 @@ class ActionProvider implements ActionProviderInterface {
 
       case 'honey': {
         const aiMessage = this.createChatBotMessage(
-          "I'm Honey, your AI chatbot assistant. How can I help you today? You can:\n" +
-            '1. Ask me questions about family planning\n' +
-            '2. Get information about our services\n' +
-            "3. Connect with a human agent by typing 'human'",
+          "Suna na Honey, mataimakin ku na chatbot na AI. Ta yaya zan iya taimaka muku a yau? Za ku iya:\n" +
+            '1. Ku yi mini tambayoyi kan tsarin iyali \n' +
+            '2. Samu bayanai kan ayyukanmu\n' +
+            "3. Tuntuɓi wakilin lafiya ta hanyar rubuta 'human'",
           { delay: 500 },
         );
         this.addMessageToState(aiMessage);
@@ -625,7 +632,7 @@ class ActionProvider implements ActionProviderInterface {
 
       case 'human': {
         const humanMessage = this.createChatBotMessage(
-          "I'll connect you with a medical professional right away. Please wait a moment while I transfer you.",
+          "Zan haɗa ku da ƙwararren ma’aikacin kiwon lafiya nan take. Da fatan za ku jira ɗan lokaci yayin da nake tura ku.",
           { delay: 500 },
         );
         this.addMessageToState(humanMessage);
@@ -634,10 +641,11 @@ class ActionProvider implements ActionProviderInterface {
       }
 
       case 'language': {
+        // Hausa chatbot - show only English and Yoruba options (smart switching)
         const languageMessage = this.createChatBotMessage(
-          'Please select your preferred language:',
+          'Wane yare kake so ka canza zuwa? (Which language would you like to switch to?)',
           {
-            widget: 'languageOptions',
+            widget: 'smartLanguageSwitch',
             delay: 500,
           },
         );
@@ -652,13 +660,13 @@ class ActionProvider implements ActionProviderInterface {
 
       default: {
         const unknownMessage = this.createChatBotMessage(
-          "I didn't recognize that keyword. Here are the available keywords:\n" +
-            '- Menu: View main menu options\n' +
-            '- Clinic: Find clinics near you\n' +
-            '- Honey: Chat with AI assistant\n' +
-            '- Human: Talk to a medical professional\n' +
-            '- Language: Change chat language\n' +
-            '- Demographics: Update your personal information',
+          "Ban gane wannan kalmar ba. Ga kalmomin da ake da su:\n" +
+            '- Menu: Duba jerin zaɓuɓɓuka na babban menu\n' +
+            '- Cibiyar lafiya: Nemo cibiyoyin lafiya kusa da kai\n' +
+            '- Honey: Yi tattaunawa da mataimakin basirar wucin gadi (AI)\n' +
+            '- Mutum: Tuntubi ƙwararren ma’aikacin lafiya\n' +
+            '- Harshe: Sauya harshen tattaunawa\n' +
+            "- Bayanan ƙididdigar jama'a (Demographics): Sabunta bayanan ka",
           { delay: 500 },
         );
         this.addMessageToState(unknownMessage);
@@ -724,7 +732,7 @@ class ActionProvider implements ActionProviderInterface {
         message_text: language,
         message_type: 'user',
         chat_step: 'language',
-        widget_name: 'languageOptions',
+        widget_name: 'smartLanguageSwitch',
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
@@ -735,54 +743,70 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
 
-    // Redirect to language-specific chatbot if Yoruba or Hausa is selected
+    // Smart language switching - redirect only if switching to a different language
+    if (language === 'English') {
+      const redirectMessage = this.createChatBotMessage(
+        'Ana canzawa zuwa Turanci... (Switching to English...)',
+        { delay: 500 },
+      );
+      this.addMessageToState(redirectMessage);
+      
+      setTimeout(() => {
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
+      return;
+    }
+
     if (language === 'Yoruba') {
       const redirectMessage = this.createChatBotMessage(
-        'E kaabo! (Welcome!) Redirecting you to Yoruba chatbot...',
+        'Ana canzawa zuwa Yarbanci... (Switching to Yoruba...)',
         { delay: 500 },
       );
       this.addMessageToState(redirectMessage);
       
-      // Redirect after a short delay
       setTimeout(() => {
-        window.location.href = '/chat/yoruba';
-      }, 1500);
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat/yoruba');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
       return;
     }
 
+    // If user selected Hausa (current language), just acknowledge
     if (language === 'Hausa') {
-      const redirectMessage = this.createChatBotMessage(
-        'Sannu! (Welcome!) Redirecting you to Hausa chatbot...',
+      const stayMessage = this.createChatBotMessage(
+        'Kuna cikin Hausa tuni. (You are already in Hausa language.)',
         { delay: 500 },
       );
-      this.addMessageToState(redirectMessage);
-      
-      // Redirect after a short delay
-      setTimeout(() => {
-        window.location.href = '/chat/hausa';
-      }, 1500);
+      this.addMessageToState(stayMessage);
       return;
     }
 
-    // For English, continue with normal onboarding
+    // For initial setup or other cases, continue with normal Hausa onboarding
     // Check if this is a returning user first
     const isReturningUser = await this.checkForReturningUser();
 
     // Only proceed with onboarding if this is a new user
     if (!isReturningUser) {
       const greeting = this.createChatBotMessage(
-        'Hey! My name is Honey. I am a family planning and pregnancy prevention chatbot. I am here to help with information on family planning, sexual health, and intimacy.\n\n I can answer your family planning questions, refer you to a medical professional to talk to, and also refer you to a family planning clinic\n\n If you want to be connected to a medical professional agent, just type the word "human" at any time. \n\n Any communication happening in this chat is strictly confidential, so you can feel safe sharing personal information',
+        'Sannu! Sunana Honey. Ni manhajar tattaunawa ce kan tsarin iyali da rigakafin ɗaukar ciki. Ina nan don taimaka maka/miki da bayanai game da tsarin iyali, lafiyar jima’i, da kusancin iyali (intimacy).\n\n Zan iya amsa tambayoyinka/ki game da tsarin iyali, in tura ka/ki ga ƙwararren ma’aikacin lafiya don ku yi magana, kuma in tura ka/ki zuwa cibiyar tsarin iyali (family planning clinic).\n\n  Idan kana/kina son a haɗa ka/ki da ƙwararren ma’aikacin lafiya, kawai rubuta kalmar “human” a kowane lokaci. \n\n  Duk sadarwar da ake yi a wannan tattaunawa ana kiyaye ta cikin tsananin sirri, don haka za ku ki iya jin aminci wajen raba bayanan ku na sirri.',
         { delay: 500 },
       );
       const followup1 = this.createChatBotMessage(
-        'For easy navigation of my features, use the following keywords to access different features.\nMenu: To navigate to the main chatbot paths/menu.\nClinic: Get the address of the clinic in your town\nHoney: Connect with the AI chatbot or a human agent to ask your questions.\nHuman: Request to be connected to a medical professional agent\nLanguage: Choose the language to chat with the bot (English, Hausa, or Yoruba).',
+        'Domin sauƙaƙa kewaya cikin fasalolina, yi amfani da waɗannan kalmomin don samun damar fasaloli daban-daban\nMenu: Don zuwa babban menu na chatbot.\nClinic: Samu adireshin asibiti a garinku.\nHoney: A haɗa ku da AI chatbot ko wakilin lafiya don ku yi tambayoyinku.\nHuman: Nemi a haɗa ku da ƙwararren jami’in lafiya.\nLanguage: Zaɓi harshen da za ku yi hira da bot (English, Hausa, ko Yoruba).',
         { delay: 1000 },
       );
       const followUp2 = this.createChatBotMessage(
-        'Before we continue, I would like to ask you a few questions to assist you better.',
+        'Kafin mu ci gaba, ina so in yi muku wasu tambayoyi kaɗan domin mu taimaka muku yadda ya kamata.',
         { delay: 1000 },
       );
-      const genderQuestion = this.createChatBotMessage('What is your gender?', {
+      const genderQuestion = this.createChatBotMessage('Menene jinsinku?', {
         widget: 'genderOptions',
         delay: 1500,
       });
@@ -839,7 +863,7 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
     const stateQuestion = this.createChatBotMessage(
-      'What state are you chatting from? Please search below and select your state.',
+      'Daga wace jiha kuke hira? Da fatan za ku nema a ƙasa sannan ku zaɓi jiharku.',
       {
         widget: 'stateOptions',
         delay: 500,
@@ -885,7 +909,7 @@ class ActionProvider implements ActionProviderInterface {
       });
 
     const lgaQuestion = this.createChatBotMessage(
-      `Great! What LGA (Local Government Area) are you in within ${state} state?`,
+      `Madalla! Wane LGA (Ƙaramar Hukumar Gwamnati) kuke ciki a cikin jihar ${state}?`,
       {
         widget: 'lgaOptions',
         delay: 500,
@@ -930,11 +954,11 @@ class ActionProvider implements ActionProviderInterface {
       });
 
     const confirmMessage = this.createChatBotMessage(
-      `Perfect! You're chatting from ${lga}, ${this.userState}.`,
+      `Da kyau! Kuna tattaunawa daga ${lga}, ${this.userState}.`,
       { delay: 500 },
     );
 
-    const ageQuestion = this.createChatBotMessage('What is your age group?', {
+    const ageQuestion = this.createChatBotMessage('Wane rukunin shekaru kuke ciki?', {
       widget: 'ageOptions',
       delay: 500,
     });
@@ -951,7 +975,7 @@ class ActionProvider implements ActionProviderInterface {
     const userMessage = this.createUserMessage(location, 'location_input');
 
     const confirmLocation = this.createChatBotMessage(
-      `Please confirm your local government area is ${location}`,
+      `Da fatan za ku tabbatar da cewa ƙaramar hukumar ku ita ce: ${location}`,
       {
         widget: 'locationConfirmation',
         delay: 500,
@@ -967,8 +991,8 @@ class ActionProvider implements ActionProviderInterface {
   handleLocationConfirmation = (locationOption: string): void => {
     const userMessage = this.createUserMessage(locationOption);
 
-    if (locationOption === "Yes, that's correct") {
-      const ageQuestion = this.createChatBotMessage('How old are you?', {
+    if (locationOption === "Ee, haka yake") {
+      const ageQuestion = this.createChatBotMessage('Shekarunku nawa?', {
         widget: 'ageOptions',
         delay: 500,
       });
@@ -977,9 +1001,9 @@ class ActionProvider implements ActionProviderInterface {
         messages: [...prev.messages, userMessage, ageQuestion],
         currentStep: 'age',
       }));
-    } else if (locationOption === 'Change Location') {
+    } else if (locationOption === 'Canza wuri') {
       const stateQuestion = this.createChatBotMessage(
-        "Let's start over. What state are you chatting from?",
+        "Bari mu fara daga farko. Daga wace jiha kake/kike tattaunawa?",
         {
           widget: 'stateOptions',
           delay: 500,
@@ -1024,7 +1048,7 @@ class ActionProvider implements ActionProviderInterface {
       });
 
     const maritalQuestion = this.createChatBotMessage(
-      "What's your marital status?",
+      "Menene matsayin auren ku a yanzu?",
       {
         widget: 'maritalStatusOptions',
         delay: 500,
@@ -1070,15 +1094,15 @@ class ActionProvider implements ActionProviderInterface {
         );
       });
 
-    const thankYou = this.createChatBotMessage('Thank you for sharing!', {
+    const thankYou = this.createChatBotMessage('Mun gode da bayanan ku!', {
       delay: 500,
     });
     const assistMsg = this.createChatBotMessage(
-      'Now I can assist you better.',
+      'Yanzu zan iya taimaka muku yadda ya kamata.',
       { delay: 500 },
     );
     const fpmQuestion = this.createChatBotMessage(
-      'I can provide you with information about Family Planning Methods (FPM) or other sex-related questions. \n If you want to be connected to a human agent, just type the word "human" at any time. \n To see all the family planning clinics available, type "clinic". \n What do you want to know? \n\nFPM = Family Planning Method',
+      "Zan iya ba ku bayanai game da Hanyoyin Tsara Iyali ko kuma sauran tambayoyin da suka shafi jima'i. \n Idan kuna son a haɗa ku da ma'aikacin kiwon lafiya, ku rubuta kalmar 'human' a kowane lokaci. \n Don ganin dukkan cibiyoyin tsarin iyali da ake da su, rubuta 'clinic'. \n Me kuke son sani? \n\n FPM = Hanyar Tsarin Iyali (Family Planning Method)",
       { widget: 'fpmOptions', delay: 500 },
     );
     this.setState((prev: ChatbotState) => ({
@@ -1117,11 +1141,11 @@ class ActionProvider implements ActionProviderInterface {
         message_sequence_number: this.getNextSequenceNumber(),
         widget_name: 'planningMethodSelection',
         widget_options: [
-          'How to get pregnant',
-          'How to prevent pregnancy',
-          'How to improve sex life',
-          'Change/stop current FPM',
-          'Ask a general question',
+          'Yadda ake ɗaukar ciki',
+          'Yadda ake rigakafin ɗaukar ciki',
+          "Yadda za a inganta rayuwar jima'i",
+          'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu',
+          'Yi tambaya game da duk abunda kake da buƙata',
         ],
         selected_option: method,
         message_delay_ms: 500,
@@ -1136,7 +1160,7 @@ class ActionProvider implements ActionProviderInterface {
     let responseMessage: ChatMessage;
 
     switch (method) {
-      case 'How to get pregnant':
+      case 'Yadda ake ɗaukar ciki':
         this.handleGetPregnantInitiation();
         return;
 
@@ -1144,11 +1168,11 @@ class ActionProvider implements ActionProviderInterface {
         this.preventPregnancyActionProvider.handlePreventPregnancyInitiation();
         return;
 
-      case 'How to improve sex life':
+      case 'Yadda za a inganta rayuwar jima\'i':
         this.sexEnhancementActionProvider.handleSexEnhancementInitiation();
         return;
 
-      case 'Change/stop current FPM':
+      case 'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu':
         this.setState((prev: ChatbotState) => ({
           ...prev,
           messages: [...prev.messages, userMessage],
@@ -1156,13 +1180,13 @@ class ActionProvider implements ActionProviderInterface {
         this.handleFPMChangeSelection(method);
         return;
 
-      case 'Ask a general question':
+      case 'Yi tambaya game da duk abunda kake da buƙata':
         this.handleGeneralQuestion();
         return;
 
       default:
         responseMessage = this.createChatBotMessage(
-          "I'm sorry, I didn't understand that option. Please select from the available choices.",
+          "Yi haƙuri, ban fahimci wannan zaɓin ba. Don Allah zaɓi daga cikin zaɓuɓɓukan da ke akwai.",
           { delay: 500 },
         );
         break;
@@ -1171,7 +1195,7 @@ class ActionProvider implements ActionProviderInterface {
       ...prev,
       messages: [...prev.messages, userMessage, responseMessage],
       currentStep:
-        method === 'How to prevent pregnancy'
+        method === 'Yadda ake rigakafin ɗaukar ciki'
           ? 'contraception'
           : 'sexEnhancement',
     }));
@@ -1205,6 +1229,11 @@ class ActionProvider implements ActionProviderInterface {
     }
   };
 
+  // Medical conditions screening handler (delegated to preventPregnancyActionProvider)
+  handleMedicalConditionsResponse = (option: string): void => {
+    this.preventPregnancyActionProvider.handleMedicalConditionsResponse(option);
+  };
+
   // Task 5: Product detail selection handler
   handleProductDetailSelection = (choice: string): void => {
     if ('handleProductDetailSelection' in this.preventPregnancyActionProvider) {
@@ -1233,7 +1262,7 @@ class ActionProvider implements ActionProviderInterface {
 
   handleSexLifeImprovement = async (): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
-      'I can help improve your sexual experience. What would you like to focus on?',
+      "Zan iya taimaka muku wajen inganta gogewarku a fannin jima'i. Wane ɓangare kuke son in mai da hankali a kai?",
       {
         widget: 'sexEnhancementOptions',
         delay: 500,
@@ -1273,7 +1302,7 @@ class ActionProvider implements ActionProviderInterface {
 
     if (option === 'Gels and Lubricants') {
       responseMessage = this.createChatBotMessage(
-        'Here are some recommended lubricant options:',
+        'Ga wasu zaɓuɓɓukan man shafawa (lubricant) da za ku iya amfani dasu:',
         {
           widget: 'lubricantOptions',
           delay: 500,
@@ -1296,7 +1325,7 @@ class ActionProvider implements ActionProviderInterface {
       }).catch(err => console.error('Failed to save lubricant message:', err));
     } else {
       responseMessage = this.createChatBotMessage(
-        'For erectile dysfunction concerns, I recommend consulting with a healthcare provider for proper evaluation and treatment options.',
+        'Game da damuwar rashin miƙewar azzakari (erectile dysfunction), ina ba da shawarar a tuntuɓi ƙwararren mai ba da kulawar lafiya domin a gudanar da ingantaccen binciken da ya kamata tare da tattauna zaɓuɓɓukan magani.',
         { delay: 500 },
       );
       this.setState((prev: ChatbotState) => ({
@@ -1317,10 +1346,10 @@ class ActionProvider implements ActionProviderInterface {
       await this.api.createResponse({
         response_category: 'SexEnhancement',
         response_type: 'user',
-        question_asked: 'What would you like to focus on?',
+        question_asked: 'A kan me kuke son mayar da hankali?',
         user_response: option,
         widget_used: 'sexEnhancementOptions',
-        available_options: ['Gels and Lubricants', 'Erectile Dysfunction'],
+        available_options: ['Gels da Man shafawa (Lubricants)', 'Matsalar rashin tsayuwar azzakari'],
         step_in_flow: 'sexEnhancementOptions',
       }).catch(err => console.error('Failed to save response data:', err));
     }
@@ -1346,7 +1375,7 @@ class ActionProvider implements ActionProviderInterface {
     });
 
     const nextActionMessage = this.createChatBotMessage(
-      'What would you like to do next?',
+      'Me kike son yi a gaba?',
       {
         widget: 'nextActionOptions',
         delay: 1000,
@@ -1385,10 +1414,10 @@ class ActionProvider implements ActionProviderInterface {
     await this.api.createResponse({
       response_category: 'LubricantType',
       response_type: 'user',
-      question_asked: 'What kind of lubricant do you want to know about?',
+      question_asked: 'Wane irin man shafawa (lubricant) kake/kike son sanin bayani a kai?',
       user_response: lubricant,
       widget_used: 'lubricantOptions',
-      available_options: ['Water-based', 'Oil-based', 'Silicone-based'],
+      available_options: ['Na ruwa (Water-based)','Na mai (Oil-based)', 'Na silicone (Silicone-based)'],
       step_in_flow: 'lubricantOptions',
     }).catch(err => console.error('Failed to save response data:', err));
   };
@@ -2422,13 +2451,13 @@ class ActionProvider implements ActionProviderInterface {
     }).catch(err => console.error('Failed to save next action:', err));
 
     switch (action) {
-      case 'Chat with AI /Human':
+      case 'Yi hira da AI ko Mutum':
         await this.handleGeneralQuestion();
         return;
 
       case 'Learn other methods': {
         const methodsMessage = this.createChatBotMessage(
-          'What would you like me to help you with?',
+          'A kan me kuke so in taimaka muku?',
           {
             widget: 'fpmOptions',
             delay: 500,
@@ -2452,9 +2481,9 @@ class ActionProvider implements ActionProviderInterface {
         return;
       }
 
-      case 'Back to main menu': {
+      case 'Koma zuwa babban menu': {
         const mainMenuMessage = this.createChatBotMessage(
-          'What would you like me to help you with?',
+          'Me za ku so in taimaka muku a kai?',
           {
             widget: 'fpmOptions',
             delay: 500,
@@ -2480,7 +2509,7 @@ class ActionProvider implements ActionProviderInterface {
 
       default: {
         const responseMessage = this.createChatBotMessage(
-          'Thank you for using our family planning assistant!',
+          'Mun gode da amfani da mataimakinmu na tsarin iyali (family planning)!',
           { delay: 500 },
         );
         this.setState((prev: ChatbotState) => ({
@@ -2515,7 +2544,7 @@ class ActionProvider implements ActionProviderInterface {
     }).catch(err => console.error('Failed to save ED option:', err));
 
     const responseMessage = this.createChatBotMessage(
-      'For erectile dysfunction concerns, I recommend consulting with a healthcare provider for proper evaluation and treatment options.',
+      'Idan akwai damuwa game da matsalar rashin tsayuwar azzakari (erectile dysfunction), ana ba da shawarar a tuntuɓi ƙwararren ma’aikacin kiwon lafiya don cikakkiyar tantancewa da zaɓuɓɓukan magani da suka dace.',
       { delay: 500 },
     );
 
@@ -2550,7 +2579,7 @@ class ActionProvider implements ActionProviderInterface {
     }).catch(err => console.error('Failed to save sex enhancement next action:', err));
 
     const responseMessage = this.createChatBotMessage(
-      'Thank you for your interest in sexual health. Is there anything else I can help you with?',
+      'Na gode da sha’awarku kan lafiyar jima’i (sexual health). Shin akwai wani abun da zan iya taimaka muku?',
       {
         widget: 'moreHelpOptions',
         delay: 500,
@@ -2578,7 +2607,7 @@ class ActionProvider implements ActionProviderInterface {
 
   handleGeneralQuestion = async (): Promise<void> => {
     const responseMessage = this.createChatBotMessage(
-      "I'd be happy to help with your questions! ",
+      "Zan yi farin cikin taimaka muku game da tambayoyinku!",
       { delay: 500 },
     );
     const agentMessage = this.createChatBotMessage(
@@ -2621,8 +2650,8 @@ class ActionProvider implements ActionProviderInterface {
 
   handleAgentTypeSelection = async (type: string): Promise<void> => {
     const userMessage = this.createUserMessage(type, 'agent_type_selection');
-
-    if (type === 'Human Agent') {
+    
+    if (type === 'Wakilin Kiwon lafiya') {
       try {
         // Use the agent escalation service to escalate to human
         const escalationResult = await this.escalateToHuman();
@@ -2631,7 +2660,7 @@ class ActionProvider implements ActionProviderInterface {
 
         if (escalationResult?.status === 'ASSIGNED') {
           responseMessage = this.createChatBotMessage(
-            `Great! I've connected you with ${escalationResult.agentName || 'a human agent'}. They'll be with you shortly.`,
+            `Madalla! Na haɗa ku da wani ${escalationResult.agentName || 'wakilin kiwon lafiya'}. Zai kasance tare da ku nan ba da jimawa ba.`,
             { delay: 500 },
           );
 
@@ -2640,7 +2669,7 @@ class ActionProvider implements ActionProviderInterface {
             this.setupAgentCommunication(escalationResult.agentId);
           }
         } else if (escalationResult?.status === 'QUEUED') {
-          const queueMessage = `I'm adding you to the queue for a human agent. You're position ${escalationResult.position} with an estimated wait time of ${escalationResult.estimatedWaitTime}.`;
+          const queueMessage = `Ina ƙara ku a cikin jerin jiran wakilin kiwon lafiya. Matsayinku na yanzu shine ${escalationResult.position} tare da kimanin lokacin jira na ${escalationResult.estimatedWaitTime}.`;
 
           responseMessage = this.createChatBotMessage(queueMessage, {
             delay: 500,
@@ -2652,7 +2681,7 @@ class ActionProvider implements ActionProviderInterface {
         } else {
           // Fallback message if escalation service is not available
           responseMessage = this.createChatBotMessage(
-            "I'm connecting you with a human agent. Please wait a moment while I transfer your chat.",
+            "Ina haɗa ku da wakilin kiwon lafiya. Don Allah ku jira na ɗan lokaci yayin da nake tura sakwannin ku",
             { delay: 500 },
           );
         }
@@ -2684,7 +2713,7 @@ class ActionProvider implements ActionProviderInterface {
 
         // Fallback error handling
         const errorMessage = this.createChatBotMessage(
-          "I'm sorry, there was an issue connecting you to a human agent. Let me try to help you myself, or you can try again later.",
+          "Ina ba ku haƙuri, an sami matsala wajen haɗa ku da jami'in kiwon lafiya. Bari in yi ƙoƙarin taimaka muku da kaina, ko kuma za ku iya sake gwadawa daga baya.",
           { delay: 500 },
         );
 
@@ -2696,7 +2725,7 @@ class ActionProvider implements ActionProviderInterface {
       }
     } else if (type === 'AI Chatbot' || type === 'AI chatbot' || type === 'AI Agent') {
       const aiMessage = this.createChatBotMessage(
-        "Perfect! I'm here to help. Please ask your question and I'll do my best to provide accurate information.",
+        "Madalla! Ina nan don taimaka muku. Da fatan za ku gabatar da tambayoyin ku, zan yi iya ƙoƙarina in ba da sahihin bayani.",
         { delay: 500 },
       );
       this.setState((prev: ChatbotState) => ({
@@ -2718,7 +2747,7 @@ class ActionProvider implements ActionProviderInterface {
       }).catch(err => console.error('Failed to log AI selection:', err));
     } else {
       const errorMessage = this.createChatBotMessage(
-        "I'm sorry, I didn't understand that. Please choose either 'Human Agent' or 'AI Chatbot'.",
+        "Yi haƙuri, ban fahimci hakan ba. Da fatan za a zaɓi ɗaya: 'Wakilin Kiwon lafiya' ko 'AI Agent'.",
         { delay: 500 },
       );
 
@@ -2734,22 +2763,62 @@ class ActionProvider implements ActionProviderInterface {
 
   private async escalateToHuman(): Promise<EscalationResult | null> {
     try {
+      console.log('🚀 Frontend: Starting escalateToHuman');
+      
       // Get the current conversation ID
       const currentConversationId = this.getCurrentConversationId();
       
+      console.log('🔍 Frontend: Conversation ID:', currentConversationId);
+      
       if (!currentConversationId) {
-        console.error('No conversation ID available for escalation');
+        console.error('❌ Frontend: No conversation ID available for escalation');
+        // Try to create a conversation first if we don't have one
+        try {
+          console.log('🔄 Frontend: Attempting to create conversation first...');
+          const conversation = await this.api.createConversation({
+            message_text: 'User requested human agent',
+            message_type: 'bot',
+            chat_step: 'agent_escalation',
+            widget_name: 'agentTypeSelection',
+            selected_option: 'Human Agent',
+            widget_options: [],
+            message_sequence_number: this.getNextSequenceNumber(),
+          });
+          
+          if (conversation?.conversation_id) {
+            // Update state with the new conversation ID
+            this.setState((prev) => ({
+              ...prev,
+              conversationId: conversation.conversation_id,
+            }));
+            console.log('✅ Frontend: Created conversation:', conversation.conversation_id);
+          } else {
+            console.error('❌ Frontend: Failed to create conversation');
+            return null;
+          }
+        } catch (error) {
+          console.error('❌ Frontend: Error creating conversation:', error);
+          return null;
+        }
+      }
+
+      // Get the conversation ID again (might have been created)
+      const conversationId = this.getCurrentConversationId();
+      if (!conversationId) {
+        console.error('❌ Frontend: Still no conversation ID after creation attempt');
         return null;
       }
 
       // Use the API service to escalate
-      const response = await this.api.escalateToAgent(currentConversationId);
+      console.log('📤 Frontend: Calling api.escalateToAgent...');
+      const response = await this.api.escalateToAgent(conversationId);
       
+      console.log('✅ Frontend: Escalation response:', response);
       return response as EscalationResult | null;
     } catch (error) {
-      console.error('Error escalating to human:', error);
+      console.error('❌ Frontend: Error escalating to human:', error);
+      return null;
     }
-    return null;
   }
 
   private setupAgentCommunication(agentId: string) {
@@ -2817,7 +2886,7 @@ class ActionProvider implements ActionProviderInterface {
 
   private handleAgentJoined = (data: AgentMessageData) => {
     const agentJoinMessage = this.createChatBotMessage(
-      `${data.agentName} has joined the conversation and will assist you now.`,
+      `${data.agentName} Ya shiga tattaunawar kuma zai taimaka muku yanzu.`,
       {
         delay: 500,
         withAvatar: true,
@@ -2850,7 +2919,7 @@ class ActionProvider implements ActionProviderInterface {
 
   private handleAgentDisconnected = (data: AgentMessageData) => {
     const disconnectMessage = this.createChatBotMessage(
-      `${data.agentName} has left the conversation. I'm here to continue helping you.`,
+      `${data.agentName} ya bar tattaunawar. Ina nan don ci gaba da taimaka muku.`,
       { delay: 500 },
     );
 
@@ -2867,7 +2936,7 @@ class ActionProvider implements ActionProviderInterface {
   private handleQueueUpdate = (queueData: QueueUpdateData) => {
     if (this.state.escalationStatus === 'QUEUED') {
       const updateMessage = this.createChatBotMessage(
-        `Queue update: You're now position ${queueData.position} with an estimated wait time of ${queueData.estimatedWaitTime}.`,
+        `Bayani akan jerin masu jira: Yanzu kuna a matsayi na ${queueData.position} tare da kimantaccen lokacin jira na ${queueData.estimatedWaitTime}.`,
         { delay: 500 },
       );
 
@@ -2927,9 +2996,9 @@ class ActionProvider implements ActionProviderInterface {
   handleMoreHelp = (answer: string): void => {
     const userMessage = this.createUserMessage(answer, 'more_help_selection');
 
-    if (answer === 'Yes') {
+    if (answer === 'Ee') {
       const helpOptions = this.createChatBotMessage(
-        'What additional help would you like?',
+        'Wane ƙarin taimako kuke so?',
         {
           widget: 'moreHelpOptions',
           delay: 500,
@@ -2943,7 +3012,7 @@ class ActionProvider implements ActionProviderInterface {
       }));
     } else {
       const thankYou = this.createChatBotMessage(
-        'Thank you for using our service! Feel free to come back anytime you need help. Have a great day!',
+        'Mun gode da amfani da sabis ɗin mu! Za ku iya dawo a duk lokacin da kuke buƙatar taimako. Ku huta lafiya!',
         { delay: 500 },
       );
 
@@ -2995,7 +3064,7 @@ class ActionProvider implements ActionProviderInterface {
           .concat(responseMessage),
       }));
 
-      // 📊 SAVE AI CONVERSATION TO DATABASE
+      // SAVE AI CONVERSATION TO DATABASE
       await this.api
         .createConversation({
           message_type: 'user',
@@ -3018,7 +3087,7 @@ class ActionProvider implements ActionProviderInterface {
         })
         .catch((err) => console.error('Failed to save AI response:', err));
 
-      // 📝 SAVE USER RESPONSE TRACKING
+      // SAVE USER RESPONSE TRACKING
       await this.api
         .createResponse({
           response_category: 'AIAssistance',
@@ -3035,7 +3104,7 @@ class ActionProvider implements ActionProviderInterface {
 
       // Ask if user needs more help
       const helpMessage = this.createChatBotMessage(
-        'Is there anything else I can help you with?',
+        'Shin akwai wani abin da zan iya taimaka muku da shi?',
         {
           widget: 'moreHelpOptions',
           delay: 1000,
@@ -3052,14 +3121,14 @@ class ActionProvider implements ActionProviderInterface {
 
       // Provide a helpful fallback response when AI is unavailable
       const fallbackResponse =
-        "I apologize, but I'm having trouble connecting to my AI service at the moment. For family planning questions, I recommend speaking with one of our medical professionals. Would you like me to connect you with a human agent?";
+        "Ina ba ku haƙuri, amma a wannan lokaci ina samun matsala wajen haɗuwa da sabis na AI na. Dangane da tambayoyin tsarin iyali (family planning), ina ba da shawarar ku yi magana da ɗaya daga cikin ƙwararrun ma’aikatan lafiyarmu. Kuna so in haɗa ku da wakilin kiwon lafiya?";
 
       const errorMessage = this.createChatBotMessage(fallbackResponse, {
         delay: 500,
       });
 
       const helpOptions = this.createChatBotMessage(
-        'How would you like to proceed?',
+        'Ta wace hanya kuke son mu ci gaba?',
         {
           widget: 'agentTypeOptions',
           delay: 1000,
@@ -3200,28 +3269,28 @@ class ActionProvider implements ActionProviderInterface {
     > = {
       'Water-based': {
         description:
-          "Water-based lubricants are safe to use with condoms and are easy to clean up. They're compatible with all types of contraceptives.",
+          "Man shafawa na ruwa (water-based lubricants) suna da aminci a yi amfani da su tare da kwaroron roba (condoms), kuma suna da sauƙin tsabtacewa. Sun dace da dukkan nau'ikan hanyoyin hana haihuwa (contraceptives).",
         products: {
           'Fiesta Intim Gel':
-            'Fiesta Intim Gel is a water-based lubricant designed to enhance comfort and pleasure during intimate moments.',
+            'Fiesta Intim Gel man shafawa (lubricant) ne mai ruwa (water-based) da aka amfani dashi don haɓaka jin daɗi a lokutan kusanci na jima’i.',
           'KY Jelly':
-            "KY Jelly is a well-known water-based personal lubricant that's gentle and effective for reducing friction during intimacy.",
+            "KY Jelly sanannen man shafawa ne (water-based personal lubricant),wanda yake da tasiri wajen rage gogayya yayin saduwa da iyali.",
         },
       },
       'Silicone-based': {
         description:
-          "Silicone-based lubricants last longer than water-based ones and are good for longer sessions. They're also condom-compatible.",
+          "Man shafawa na silikoni (silicone-based lubricants) yana dadewa fiye da man shafawa na ruwa (water-based lubricants) kuma yana da kyau ga lokuta masu tsawo. Haka kuma ana iya amfani dashi da kwaroron roba (condom-compatible).",
       },
       'Natural options': {
         description:
-          'Natural options include coconut oil or aloe vera, but note that oil-based products can break down latex condoms.',
+          'Zaɓuɓɓukan halitta sun haɗa da man kwakwa ko aloe vera, amma a lura cewa samfuran mai na iya lalata kwaroron roba na latex.',
       },
     };
 
     const categoryData = lubricantData[category];
 
     if (!categoryData) {
-      return 'This lubricant can help enhance comfort during intimate moments. \nPlease consult with a healthcare provider about safe lubricant options.';
+      return 'Wannan man shafawa (lubricant) na iya taimakawa wajen inganta jin daɗi a lokutan jima’i. Da fatan za a tuntubi ma’aikacin kiwon lafiya don samun shawara kan zaɓuɓɓukan man shafawa (lubricant) masu aminci.';
     }
 
     if (product && categoryData.products && categoryData.products[product]) {
@@ -3239,20 +3308,20 @@ class ActionProvider implements ActionProviderInterface {
     const currentInfo = this.getDemographicSummary();
 
     const updateMessage = this.createChatBotMessage(
-      "I'll help you update your demographic information. Here's what I currently have:\n\n" +
+      "Zan taimaka muku wajen sabunta bayanan ƙididdigar jama’a (demographic information). Ga bayanan da nake da su a halin yanzu:\n\n" +
         currentInfo,
       { delay: 500 },
     );
 
     const confirmMessage = this.createChatBotMessage(
-      "Would you like to update any of this information? I'll walk you through each step:",
+      "Kuna son sabunta wani daga cikin waɗannan bayanan? Zan jagorance ku ta kowanne mataki:",
       { delay: 1000 },
     );
 
     const languageQuestion = this.createChatBotMessage(
-      'First, please select your preferred language:',
+      'Da farko, don Allah zaɓi yaren da kuke so:',
       {
-        widget: 'languageOptions',
+        widget: 'initialLanguageSelection',
         delay: 1500,
       },
     );
@@ -3282,15 +3351,15 @@ class ActionProvider implements ActionProviderInterface {
     } = this.state;
 
     let summary = '';
-    if (selectedLanguage) summary += `• Language: ${selectedLanguage}\n`;
-    if (selectedGender) summary += `• Gender: ${selectedGender}\n`;
-    if (selectedState) summary += `• State: ${selectedState}\n`;
-    if (selectedLGA) summary += `• LGA: ${selectedLGA}\n`;
-    if (selectedAge) summary += `• Age: ${selectedAge}\n`;
+    if (selectedLanguage) summary += `• Harshe: ${selectedLanguage}\n`;
+    if (selectedGender) summary += `• Jinsi: ${selectedGender}\n`;
+    if (selectedState) summary += `• Jiha:: ${selectedState}\n`;
+    if (selectedLGA) summary += `• Karamar Hukuma: ${selectedLGA}\n`;
+    if (selectedAge) summary += `• Shekaru: ${selectedAge}\n`;
     if (selectedMaritalStatus)
-      summary += `• Marital Status: ${selectedMaritalStatus}\n`;
+      summary += `• Matsayin Aure: ${selectedMaritalStatus}\n`;
 
-    return summary || '• No demographic information stored yet\n';
+    return summary || '• Har yanzu ba a adana bayanan ƙididdigar jama’a (demographic information) ba.\n';
   };
 }
 

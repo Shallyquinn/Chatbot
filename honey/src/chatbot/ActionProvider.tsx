@@ -70,6 +70,7 @@ export interface ActionProviderInterface {
   handleMoreHelp: (answer: string) => void;
   handleMoreHelpOptions: (option: string) => void;
   handleUserQuestion: (question: string) => void;
+  handleReturnToMainMenu: (option: string) => void;
 
   // Phase 3: CONFUSION DETECTION & HELP
   showHelpMessage: (message: string) => void;
@@ -148,6 +149,13 @@ class ActionProvider implements ActionProviderInterface {
   private static globalChatSessionInitialized: boolean = false;
   private static initializationPromise: Promise<void> | null = null;
   private static constructionCount: number = 0; // Track total constructions for debugging
+  
+  // Static navigation callback for language switching (set by App component)
+  private static navigationCallback: ((path: string) => void) | null = null;
+  
+  static setNavigationCallback(callback: (path: string) => void) {
+    ActionProvider.navigationCallback = callback;
+  }
 
   createChatBotMessage: CreateChatBotMessage;
   setState: SetStateFunc;
@@ -311,7 +319,9 @@ class ActionProvider implements ActionProviderInterface {
     }
   }
 
-  // Load chat state from server on initialization for cross-device sync
+  // DISABLED: Cross-device sync not currently used
+  // Uncomment if you need to load chat state from server
+  /*
   private async loadStateFromServer(): Promise<void> {
     try {
       await this.ensureChatSession();
@@ -360,6 +370,7 @@ class ActionProvider implements ActionProviderInterface {
       }
     }
   }
+  */
 
   // Get next message sequence number for tracking
   public getNextSequenceNumber(): number {
@@ -634,10 +645,11 @@ class ActionProvider implements ActionProviderInterface {
       }
 
       case 'language': {
+        // English chatbot - show all language options for initial selection
         const languageMessage = this.createChatBotMessage(
           'Please select your preferred language:',
           {
-            widget: 'languageOptions',
+            widget: 'initialLanguageSelection',
             delay: 500,
           },
         );
@@ -724,7 +736,7 @@ class ActionProvider implements ActionProviderInterface {
         message_text: language,
         message_type: 'user',
         chat_step: 'language',
-        widget_name: 'languageOptions',
+        widget_name: 'initialLanguageSelection',
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 0,
       })
@@ -738,29 +750,37 @@ class ActionProvider implements ActionProviderInterface {
     // Redirect to language-specific chatbot if Yoruba or Hausa is selected
     if (language === 'Yoruba') {
       const redirectMessage = this.createChatBotMessage(
-        'E kaabo! (Welcome!) Redirecting you to Yoruba chatbot...',
+        'E kaabo! (Welcome!) Switching to Yoruba...',
         { delay: 500 },
       );
       this.addMessageToState(redirectMessage);
       
-      // Redirect after a short delay
+      // Use React Router navigation for seamless language switching
       setTimeout(() => {
-        window.location.href = '/chat/yoruba';
-      }, 1500);
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat/yoruba');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
       return;
     }
 
     if (language === 'Hausa') {
       const redirectMessage = this.createChatBotMessage(
-        'Sannu! (Welcome!) Redirecting you to Hausa chatbot...',
+        'Sannu! (Welcome!) Switching to Hausa...',
         { delay: 500 },
       );
       this.addMessageToState(redirectMessage);
       
-      // Redirect after a short delay
+      // Use React Router navigation for seamless language switching
       setTimeout(() => {
-        window.location.href = '/chat/hausa';
-      }, 1500);
+        if (ActionProvider.navigationCallback) {
+          ActionProvider.navigationCallback('/chat/hausa');
+        } else {
+          console.error('Navigation callback not set. Please ensure the chatbot component calls ActionProvider.setNavigationCallback(navigate)');
+        }
+      }, 1000);
       return;
     }
 
@@ -1555,6 +1575,8 @@ class ActionProvider implements ActionProviderInterface {
   private readonly MAX_COMPARE_METHODS = 4;
 
   // Phase 3.4: Session Continuation
+  // DISABLED: Not currently in use
+  /*
   private readonly SESSION_TIMEOUT_MINUTES = 30;
   
   private saveConversationState = (): void => {
@@ -1628,6 +1650,7 @@ class ActionProvider implements ActionProviderInterface {
       return false;
     }
   };
+  */
 
   handleAddToComparison = async (method: string): Promise<void> => {
     await this.ensureChatSession();
@@ -1835,7 +1858,7 @@ class ActionProvider implements ActionProviderInterface {
     }
 
     // Extract key decisions from user selections
-    userMessages.forEach((msg, index) => {
+    userMessages.forEach((msg) => {
       const decision = msg.message;
       const timestamp = msg.timestamp;
       
@@ -1869,7 +1892,7 @@ class ActionProvider implements ActionProviderInterface {
     });
 
     // Determine if goal was completed
-    const lastBotMessage = botMessages[botMessages.length - 1]?.message.toLowerCase() || '';
+    // const lastBotMessage = botMessages[botMessages.length - 1]?.message.toLowerCase() || '';
     
     if (journey.primaryIntent === 'emergency') {
       // Goal complete if emergency product info was shown
@@ -1918,6 +1941,7 @@ class ActionProvider implements ActionProviderInterface {
       completedGoal: boolean;
       dropOffPoint?: string;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     MessageFormatter: any
   ): string => {
     let summaryText = MessageFormatter.formatInfo("📊 *Your Journey Summary*\n\n");
@@ -2629,7 +2653,27 @@ class ActionProvider implements ActionProviderInterface {
 
         let responseMessage: ChatMessage;
 
-        if (escalationResult?.status === 'ASSIGNED') {
+        if (escalationResult?.status === 'OUTSIDE_HOURS') {
+          // Outside business hours or no agents available
+          responseMessage = this.createChatBotMessage(
+            escalationResult.message || 
+            "Our human agents are currently unavailable. Would you like to continue with our AI assistant?",
+            { delay: 500 },
+          );
+
+          // Offer to switch to AI chatbot
+          const aiOfferMessage = this.createChatBotMessage(
+            "I'm still here to help! Please ask your question and I'll provide the best information I can.",
+            { delay: 1000, widget: 'aiChatbotOptions' },
+          );
+
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, userMessage, responseMessage, aiOfferMessage],
+            currentStep: 'userQuestion',
+            escalationStatus: 'outside_hours',
+          }));
+        } else if (escalationResult?.status === 'ASSIGNED') {
           responseMessage = this.createChatBotMessage(
             `Great! I've connected you with ${escalationResult.agentName || 'a human agent'}. They'll be with you shortly.`,
             { delay: 500 },
@@ -2639,6 +2683,15 @@ class ActionProvider implements ActionProviderInterface {
           if (escalationResult.agentId) {
             this.setupAgentCommunication(escalationResult.agentId);
           }
+
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, userMessage, responseMessage],
+            currentStep: 'agentActive',
+            escalationStatus: escalationResult?.status,
+            assignedAgent: escalationResult?.agentName,
+            agentId: escalationResult?.agentId,
+          }));
         } else if (escalationResult?.status === 'QUEUED') {
           const queueMessage = `I'm adding you to the queue for a human agent. You're position ${escalationResult.position} with an estimated wait time of ${escalationResult.estimatedWaitTime}.`;
 
@@ -2649,26 +2702,28 @@ class ActionProvider implements ActionProviderInterface {
 
           // Set up queue status updates
           this.setupQueueStatusUpdates();
+
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, userMessage, responseMessage],
+            currentStep: 'waitingForAgent',
+            escalationStatus: escalationResult?.status,
+            queuePosition: escalationResult?.position,
+          }));
         } else {
           // Fallback message if escalation service is not available
           responseMessage = this.createChatBotMessage(
             "I'm connecting you with a human agent. Please wait a moment while I transfer your chat.",
             { delay: 500 },
           );
-        }
 
-        this.setState((prev: ChatbotState) => ({
-          ...prev,
-          messages: [...prev.messages, userMessage, responseMessage],
-          currentStep:
-            escalationResult?.status === 'ASSIGNED'
-              ? 'agentActive'
-              : 'waitingForAgent',
-          escalationStatus: escalationResult?.status,
-          queuePosition: escalationResult?.position,
-          assignedAgent: escalationResult?.agentName,
-          agentId: escalationResult?.agentId,
-        }));
+          this.setState((prev: ChatbotState) => ({
+            ...prev,
+            messages: [...prev.messages, userMessage, responseMessage],
+            currentStep: 'waitingForAgent',
+            escalationStatus: escalationResult?.status,
+          }));
+        }
 
         // Save conversation step to backend
         // TODO: Enable when API method is available
@@ -2734,25 +2789,63 @@ class ActionProvider implements ActionProviderInterface {
 
   private async escalateToHuman(): Promise<EscalationResult | null> {
     try {
+      console.log('🚀 Frontend: Starting escalateToHuman');
+      
       // Get the current conversation ID
       const currentConversationId = this.getCurrentConversationId();
       
+      console.log('🔍 Frontend: Conversation ID:', currentConversationId);
+      console.log('🔍 Frontend: User Session ID:', this.userSessionId);
+      
       if (!currentConversationId) {
-        console.error('No conversation ID available for escalation');
+        console.error('❌ Frontend: No conversation ID available for escalation');
+        // Try to create a conversation first if we don't have one
+        try {
+          console.log('🔄 Frontend: Attempting to create conversation first...');
+          const conversation = await this.api.createConversation({
+            message_text: 'User requested human agent',
+            message_type: 'bot',
+            chat_step: 'agent_escalation',
+            widget_name: 'agentTypeSelection',
+            selected_option: 'Human Agent',
+            widget_options: [],
+            message_sequence_number: this.getNextSequenceNumber(),
+          });
+          
+          if (conversation?.conversation_id) {
+            // Update state with the new conversation ID
+            this.setState((prev) => ({
+              ...prev,
+              conversationId: conversation.conversation_id,
+            }));
+            console.log('✅ Frontend: Created conversation:', conversation.conversation_id);
+          } else {
+            console.error('❌ Frontend: Failed to create conversation');
+            return null;
+          }
+        } catch (error) {
+          console.error('❌ Frontend: Error creating conversation:', error);
+          return null;
+        }
+      }
+
+      // Get the conversation ID again (might have been created)
+      const conversationId = this.getCurrentConversationId();
+      if (!conversationId) {
+        console.error('❌ Frontend: Still no conversation ID after creation attempt');
         return null;
       }
 
       // Use the API service to escalate
-      const response = await this.api.escalateToAgent(
-        currentConversationId,
-        this.userSessionId  // Pass the user ID
-      );
+      console.log('📤 Frontend: Calling api.escalateToAgent...');
+      const response = await this.api.escalateToAgent(conversationId);
       
+      console.log('✅ Frontend: Escalation response:', response);
       return response as EscalationResult | null;
     } catch (error) {
-      console.error('Error escalating to human:', error);
+      console.error('❌ Frontend: Error escalating to human:', error);
+      return null;
     }
-    return null;
   }
 
   private setupAgentCommunication(agentId: string) {
@@ -2781,11 +2874,22 @@ class ActionProvider implements ActionProviderInterface {
   }
 
   private setupQueueStatusUpdates() {
+    const QUEUE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    const queueStartTime = Date.now();
+    
     // Set up periodic queue status updates
     const updateInterval = setInterval(async () => {
       try {
         const currentConversationId = this.getCurrentConversationId();
         if (!currentConversationId) return;
+
+        // Check if queue timeout exceeded (30 minutes)
+        const elapsedTime = Date.now() - queueStartTime;
+        if (elapsedTime >= QUEUE_TIMEOUT_MS) {
+          clearInterval(updateInterval);
+          await this.handleQueueTimeout(currentConversationId);
+          return;
+        }
 
         const queueData = await this.api.getQueueStatus(currentConversationId);
         if (queueData && queueData.status === 'QUEUED') {
@@ -2794,6 +2898,9 @@ class ActionProvider implements ActionProviderInterface {
             estimatedWaitTime: queueData.estimatedWaitTime || '15 minutes',
             status: queueData.status,
           });
+        } else if (queueData && queueData.status === 'ASSIGNED') {
+          // Queue completed successfully, clean up interval
+          clearInterval(updateInterval);
         }
       } catch (error) {
         console.error('Error fetching queue status:', error);
@@ -2802,6 +2909,46 @@ class ActionProvider implements ActionProviderInterface {
 
     // Store interval reference for cleanup
     this.setState((prev) => ({ ...prev, queueUpdateInterval: updateInterval }));
+  }
+
+  private async handleQueueTimeout(conversationId: string) {
+    console.warn('Queue timeout reached (30 minutes) for conversation:', conversationId);
+    
+    // Notify user
+    const timeoutMessage = this.createChatBotMessage(
+      "I apologize, but our agents are experiencing high volume and we've reached the maximum wait time. Would you like to try our AI assistant or return to the main menu?",
+      { delay: 500 }
+    );
+
+    const fallbackOptions = this.createChatBotMessage(
+      'How would you like to proceed?',
+      {
+        widget: 'agentTypeOptions',
+        delay: 1000,
+      }
+    );
+
+    this.setState((prev: ChatbotState) => ({
+      ...prev,
+      messages: [...prev.messages, timeoutMessage, fallbackOptions],
+      currentStep: 'agentTypeSelection',
+      escalationStatus: 'timeout',
+      queueUpdateInterval: undefined,
+    }));
+
+    // Send timeout alert to backend for admin notification
+    try {
+      await this.api.request(`${this.api.baseUrl}/conversations/queue-timeout`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          conversationId,
+          queueDuration: 30 * 60 * 1000, // 30 minutes in ms
+          userId: this.api.userId 
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to send queue timeout alert:', error);
+    }
   }
 
   private handleAgentMessage = (data: AgentMessageData) => {
@@ -2946,14 +3093,22 @@ class ActionProvider implements ActionProviderInterface {
       }));
     } else {
       const thankYou = this.createChatBotMessage(
-        'Thank you for using our service! Feel free to come back anytime you need help. Have a great day!',
+        'Thank you for chatting with me!',
         { delay: 500 },
+      );
+
+      const menuOptions = this.createChatBotMessage(
+        'Would you like to explore our family planning options or end the conversation?',
+        {
+          widget: 'returnToMainMenu',
+          delay: 1000,
+        },
       );
 
       this.setState((prev: ChatbotState) => ({
         ...prev,
-        messages: [...prev.messages, userMessage, thankYou],
-        currentStep: 'default',
+        messages: [...prev.messages, userMessage, thankYou, menuOptions],
+        currentStep: 'returnToMainMenu',
       }));
     }
   };
@@ -2961,6 +3116,52 @@ class ActionProvider implements ActionProviderInterface {
   handleMoreHelpOptions = (option: string): void => {
     console.log('More help option:', option);
     this.handleMoreHelp(option);
+  };
+
+  handleReturnToMainMenu = (option: string): void => {
+    const userMessage = this.createUserMessage(option, 'return_to_menu_selection');
+
+    if (option.includes('Main Menu')) {
+      // Clean up any active connections
+      this.cleanupAgentConnection();
+
+      const welcomeBack = this.createChatBotMessage(
+        "Great! Let's help you with your family planning needs.",
+        { delay: 500 },
+      );
+
+      const menuMessage = this.createChatBotMessage(
+        'What would you like to know about?',
+        {
+          widget: 'fpmOptions',
+          delay: 1000,
+        },
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, welcomeBack, menuMessage],
+        currentStep: 'fpmSelection',
+        // Reset conversation state
+        conversationId: null,
+        escalationStatus: null,
+      }));
+    } else {
+      // End conversation
+      const farewell = this.createChatBotMessage(
+        'Thank you for using our service! Feel free to come back anytime you need help. Have a great day! 👋',
+        { delay: 500 },
+      );
+
+      this.setState((prev: ChatbotState) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage, farewell],
+        currentStep: 'ended',
+      }));
+
+      // Clean up connections
+      this.cleanupAgentConnection();
+    }
   };
 
   handleUserQuestion = async (question: string): Promise<void> => {
@@ -3255,7 +3456,7 @@ class ActionProvider implements ActionProviderInterface {
     const languageQuestion = this.createChatBotMessage(
       'First, please select your preferred language:',
       {
-        widget: 'languageOptions',
+        widget: 'initialLanguageSelection',
         delay: 1500,
       },
     );

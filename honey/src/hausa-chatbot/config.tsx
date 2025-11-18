@@ -3,7 +3,7 @@ import React from 'react';
 import { createChatBotMessage } from 'react-chatbot-kit';
 import OptionButtons from '../components/OptionButtons';
 import ChatMessage from '../components/ChatMessage';
-import { ActionProviderInterface } from '../chatbot/ActionProvider';
+import { ActionProviderInterface } from './ActionProvider';
 import { ChatbotState, ChatMessage as ChatMessageType } from './types';
 import {
   fpmChangeStopWidgets,
@@ -113,16 +113,16 @@ const convertSavedMessages = (messages: ChatMessageType[]) => {
 };
 
 const config = {
-  // Use saved messages if they exist, otherwise show welcome messages
+  // Use saved messages if they exist, otherwise show welcome messages in Hausa
   initialMessages: initialState.messages.length > 0 
     ? convertSavedMessages(initialState.messages) // Convert and restore saved messages
     : [
-        createChatBotMessage(`Hello, my name is ${botName}.`, {
+        createChatBotMessage(`Sannu! Sunana ${botName}.`, {
           delay: 500,
         }),
-        createChatBotMessage('Please choose the language you want to chat with.', {
+        createChatBotMessage('Ina nan don taimaka muku game da tsarin haihuwa. Me kuke so mu tattauna?', {
           delay: 1000,
-          widget: 'languageOptions',
+          widget: 'purposeOptions', // Start directly with main menu in Hausa
         }),
       ].map(msg => ({ ...msg, timestamp: new Date().toISOString() })),
   botName: botName,
@@ -169,14 +169,29 @@ const config = {
   // FIXED: Widgets configuration with proper IWidget interface structure
   widgets: [
     {
-      widgetName: 'languageOptions',
+      widgetName: 'initialLanguageSelection',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={['English', 'Hausa', 'Yoruba']}
           actionProvider={props.actionProvider}
-          handleClick={(option: string) =>
-            props.actionProvider.handleLanguageSelection(option)
-          }
+          handleClick={(option: string) => {
+            props.actionProvider.handleLanguageSelection(option);
+          }}
+        />
+      ),
+      props: {},
+      mapStateToProps: ['messages', 'currentStep'],
+    },
+    {
+      widgetName: 'smartLanguageSwitch',
+      widgetFunc: (props: WidgetProps) => (
+        <OptionButtons
+          options={['Switch to English', 'Switch to Yoruba']}
+          actionProvider={props.actionProvider}
+          handleClick={(option: string) => {
+            const language = option.replace('Switch to ', '');
+            props.actionProvider.handleLanguageSelection(language);
+          }}
         />
       ),
       props: {},
@@ -186,7 +201,7 @@ const config = {
       widgetName: 'genderOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Male 👨", "Female 👩", "Prefer not to say"]}
+          options={["Namiji 👨", "Mace 👩", "Na fi son kada in faɗi"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleGenderSelection(option)
@@ -229,11 +244,11 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            "Below 18",
-            "18-24 years",
-            "25-34 years",
-            "35-44 years",
-            "45+ years",
+            "ƙasa da shekaru 18",
+            "Shekaru 18-24",
+            "Shekaru 25-34",
+            "Shekaru 35-44",
+            "Shekaru 45 da sama ",
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -248,7 +263,7 @@ const config = {
       widgetName: 'maritalStatusOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={["Single", "Married", "Divorced", "Widowed", "In a relationship"]}
+          options={["Bani da aure", "​​​Ina da aure", "Bazawara (gwauruwa)", "Bazawara", "Na kusa yin aure"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMaritalStatusSelection(option)
@@ -263,11 +278,11 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            'How to get pregnant',
-            'How to prevent pregnancy',
-            'How to improve sex life',
-            'Change/stop current FPM',
-            'Ask a general question',
+            'Yadda ake ɗaukar ciki',
+            'Yadda ake rigakafin ɗaukar ciki ',
+            'Yadda za a inganta rayuwar jima’i',
+            'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu ',
+            'Yi tambaya game da duk abunda kake da buƙata',
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -283,11 +298,11 @@ const config = {
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
           options={[
-            'How to get pregnant',
-            'How to prevent pregnancy',
-            'How to improve sex life',
-            'Change/stop current FPM',
-            'Ask a general question',
+            'Yadda ake ɗaukar ciki',
+            'Yadda ake rigakafin ɗaukar ciki ',
+            'Yadda za a inganta rayuwar jima’i',
+            'Sauya/dakatar da hanyar Tsarin Iyali da ake amfani dashi a yanzu ',
+            'Yi tambaya game da duk abunda kake da buƙata',
           ]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
@@ -360,7 +375,7 @@ const config = {
       widgetName: 'nextActionOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Ask another question', 'End conversation']}
+          options={['Yi wasu tambayoyin', 'Ƙare tattaunawa']}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleNextAction(option)
@@ -374,7 +389,7 @@ const config = {
       widgetName: 'sexEnhancementNextActions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Chat with AI /Human', 'Learn other methods', 'Back to main menu']}
+          options={['Yi wasu tambayoyin', 'Ƙare tattaunawa']}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.sexEnhancementActionProvider.handleSexEnhancementNextAction(option)
@@ -402,7 +417,7 @@ const config = {
       widgetName: 'moreHelpOptions',
       widgetFunc: (props: WidgetProps) => (
         <OptionButtons
-          options={['Yes', 'No']}
+          options={['Ee', "A'a"]}
           actionProvider={props.actionProvider}
           handleClick={(option: string) =>
             props.actionProvider.handleMoreHelpOptions(option)

@@ -1,0 +1,140 @@
+# INDIVIDUAL DIFF COMMANDS FOR YORUBA CHATBOT FILES
+# Copy and paste each command into your terminal
+
+# Navigate to Chatbot directory first:
+cd "/c/Users/Omotowa Shalom/Downloads/Chatbot-responses-api/Chatbot"
+
+# ============================================
+# ROOT LEVEL FILES
+# ============================================
+
+# 1. ActionProvider.tsx
+code --diff "yoruba-backup/yoruba-chatbot/ActionProvider.tsx" "honey/src/yoruba-chatbot/ActionProvider.tsx"
+
+# 2. ActionProviderWrapper.tsx
+code --diff "yoruba-backup/yoruba-chatbot/ActionProviderWrapper.tsx" "honey/src/yoruba-chatbot/ActionProviderWrapper.tsx"
+
+# 3. config.tsx
+code --diff "yoruba-backup/yoruba-chatbot/config.tsx" "honey/src/yoruba-chatbot/config.tsx"
+
+# 4. MessageParser.ts
+code --diff "yoruba-backup/yoruba-chatbot/MessageParser.ts" "honey/src/yoruba-chatbot/MessageParser.ts"
+
+# 5. MessageParser copy.ts
+code --diff "yoruba-backup/yoruba-chatbot/MessageParser copy.ts" "honey/src/yoruba-chatbot/MessageParser copy.ts"
+
+# 6. MessageParserWrapper.tsx
+code --diff "yoruba-backup/yoruba-chatbot/MessageParserWrapper.tsx" "honey/src/yoruba-chatbot/MessageParserWrapper.tsx"
+
+# 7. types.ts
+code --diff "yoruba-backup/yoruba-chatbot/types.ts" "honey/src/yoruba-chatbot/types.ts"
+
+# ============================================
+# CHANGE FPM SECTION
+# ============================================
+
+# 8. FPMChangeProvider.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/changeFPM/FPMChangeProvider.tsx" "honey/src/yoruba-chatbot/sections/changeFPM/FPMChangeProvider.tsx"
+
+# 9. FPMChangeProvider copy.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/changeFPM/FPMChangeProvider copy.tsx" "honey/src/yoruba-chatbot/sections/changeFPM/FPMChangeProvider copy.tsx"
+
+# 10. fpmResponses.ts
+code --diff "yoruba-backup/yoruba-chatbot/sections/changeFPM/fpmResponses.ts" "honey/src/yoruba-chatbot/sections/changeFPM/fpmResponses.ts"
+
+# 11. fpmTypes.ts
+code --diff "yoruba-backup/yoruba-chatbot/sections/changeFPM/fpmTypes.ts" "honey/src/yoruba-chatbot/sections/changeFPM/fpmTypes.ts"
+
+# 12. fpmWidgetsConfig.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/changeFPM/fpmWidgetsConfig.tsx" "honey/src/yoruba-chatbot/sections/changeFPM/fpmWidgetsConfig.tsx"
+
+# ============================================
+# GET PREGNANT SECTION
+# ============================================
+
+# 13. getPregnantActionProvider.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/getPregnant/getPregnantActionProvider.tsx" "honey/src/yoruba-chatbot/sections/getPregnant/getPregnantActionProvider.tsx"
+
+# 14. getPregnantConfig.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/getPregnant/getPregnantConfig.tsx" "honey/src/yoruba-chatbot/sections/getPregnant/getPregnantConfig.tsx"
+
+# 15. index.ts (getPregnant)
+code --diff "yoruba-backup/yoruba-chatbot/sections/getPregnant/index.ts" "honey/src/yoruba-chatbot/sections/getPregnant/index.ts"
+
+# ============================================
+# PREVENT PREGNANCY SECTION
+# ============================================
+
+# 16. contraceptiveMethods.ts
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/contraceptiveMethods.ts" "honey/src/yoruba-chatbot/sections/preventPregnancy/contraceptiveMethods.ts"
+
+# 17. index.ts (preventPregnancy)
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/index.ts" "honey/src/yoruba-chatbot/sections/preventPregnancy/index.ts"
+
+# 18. preventPregnancyActionProvider.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/preventPregnancyActionProvider.tsx" "honey/src/yoruba-chatbot/sections/preventPregnancy/preventPregnancyActionProvider.tsx"
+
+# 19. preventPregnancyTypes.ts
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/preventPregnancyTypes.ts" "honey/src/yoruba-chatbot/sections/preventPregnancy/preventPregnancyTypes.ts"
+
+# 20. preventPregnancyWidgetsConfig.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/preventPregnancyWidgetsConfig.tsx" "honey/src/yoruba-chatbot/sections/preventPregnancy/preventPregnancyWidgetsConfig.tsx"
+
+# 21. productData.ts
+code --diff "yoruba-backup/yoruba-chatbot/sections/preventPregnancy/productData.ts" "honey/src/yoruba-chatbot/sections/preventPregnancy/productData.ts"
+
+# ============================================
+# SEX ENHANCEMENT SECTION
+# ============================================
+
+# 22. sexEnhancementActionProvider.tsx
+code --diff "yoruba-backup/yoruba-chatbot/sections/sexEnhancement/sexEnhancementActionProvider.tsx" "honey/src/yoruba-chatbot/sections/sexEnhancement/sexEnhancementActionProvider.tsx"
+
+# ============================================
+# UTILS SECTION
+# ============================================
+
+# 23. ConfusionDetector.ts
+code --diff "yoruba-backup/yoruba-chatbot/utils/ConfusionDetector.ts" "honey/src/yoruba-chatbot/utils/ConfusionDetector.ts"
+
+# 24. MessageFormatter.ts
+code --diff "yoruba-backup/yoruba-chatbot/utils/MessageFormatter.ts" "honey/src/yoruba-chatbot/utils/MessageFormatter.ts"
+
+# 25. SmartMessageTimer.ts
+code --diff "yoruba-backup/yoruba-chatbot/utils/SmartMessageTimer.ts" "honey/src/yoruba-chatbot/utils/SmartMessageTimer.ts"
+
+# ============================================
+# NEW FILES IN HONEY (NOT IN BACKUP)
+# ============================================
+
+# 26. messages.ts (preventPregnancy) - NEW FILE
+code "honey/src/yoruba-chatbot/sections/preventPregnancy/messages.ts"
+
+# 27. types.ts (preventPregnancy) - NEW FILE
+code "honey/src/yoruba-chatbot/sections/preventPregnancy/types.ts"
+
+# ============================================
+# BATCH COMPARISON (ALL AT ONCE)
+# ============================================
+
+# Compare all files with one command using diff:
+diff -r "yoruba-backup/yoruba-chatbot" "honey/src/yoruba-chatbot" | less
+
+# Or generate a diff report file:
+diff -r "yoruba-backup/yoruba-chatbot" "honey/src/yoruba-chatbot" > YORUBA_DIFF_REPORT.txt
+
+# ============================================
+# SUMMARY STATISTICS
+# ============================================
+
+# Count total files in backup:
+find yoruba-backup/yoruba-chatbot -type f \( -name "*.tsx" -o -name "*.ts" \) | wc -l
+
+# Count total files in honey:
+find honey/src/yoruba-chatbot -type f \( -name "*.tsx" -o -name "*.ts" \) | wc -l
+
+# List files only in backup (not in honey):
+comm -23 <(find yoruba-backup/yoruba-chatbot -type f -name "*.ts*" | sed 's|yoruba-backup/yoruba-chatbot/||' | sort) <(find honey/src/yoruba-chatbot -type f -name "*.ts*" | sed 's|honey/src/yoruba-chatbot/||' | sort)
+
+# List files only in honey (not in backup):
+comm -13 <(find yoruba-backup/yoruba-chatbot -type f -name "*.ts*" | sed 's|yoruba-backup/yoruba-chatbot/||' | sort) <(find honey/src/yoruba-chatbot -type f -name "*.ts*" | sed 's|honey/src/yoruba-chatbot/||' | sort)

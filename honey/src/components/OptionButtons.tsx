@@ -1,11 +1,10 @@
 // src/components/OptionButtons.jsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ActionProviderInterface } from '../chatbot/ActionProvider';
 
 export interface OptionButtonsProps {
   options: string[];
-  actionProvider?: ActionProviderInterface;
+  actionProvider?: any; // Generic to support all chatbot variants
   handleClick?: (option: string) => void;
 }
 

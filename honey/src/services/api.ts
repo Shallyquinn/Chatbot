@@ -67,20 +67,21 @@ export class ApiService {
 
   async askAI(question: string): Promise<string> {
     try {
-      const response = await fetch(
-        "https://firsthand-composed-piracy-honeyandbananac.replit.app/answer/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+      const aiServiceUrl =
+        import.meta.env.VITE_AI_SERVICE_URL ||
+        "https://firsthand-composed-piracy-honeyandbananac.replit.app/answer/";
+
+      const response = await fetch(aiServiceUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          memory: {
+            user: question,
           },
-          body: JSON.stringify({
-            memory: {
-              user: question,
-            },
-          }),
-        }
-      );
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -119,64 +120,80 @@ export class ApiService {
       try {
         // Check localStorage first for existing user_id
         const existingUserId = localStorage.getItem("chat_user_id");
+        const existingUserSessionId = localStorage.getItem("user_session_id");
 
-        if (existingUserId) {
-          console.log(
-            "✅ Using existing user_id from localStorage:",
-            existingUserId
-          );
-          this.userId = existingUserId;
-          this.initialized = true;
-          return;
+        if (existingUserId && existingUserSessionId) {
+          try {
+            // Validate that the user still exists in the backend
+            const user = await this.getUser(existingUserSessionId);
+            if (user && user.id === existingUserId) {
+              console.log(
+                "✅ Validated existing user_id from localStorage:",
+                existingUserId
+              );
+              this.userId = existingUserId;
+              this.initialized = true;
+              return;
+            } else {
+              console.warn(
+                "⚠️ User in localStorage doesn't match backend, re-creating user"
+              );
+              // Clear stale data and fall through to create new user
+              localStorage.removeItem("chat_user_id");
+              localStorage.removeItem("user_session_id");
+              localStorage.removeItem("chat_session_id");
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ Could not validate user from localStorage, creating new user:",
+              error
+            );
+            // Clear stale data and fall through to create new user
+            localStorage.removeItem("chat_user_id");
+            localStorage.removeItem("user_session_id");
+            localStorage.removeItem("chat_session_id");
+          }
         }
 
         // Try to register with backend - backend generates the UUID
         try {
           const response = await this.createOrUpdateUser({});
 
-          // Backend returns { id: user_id, sessionId: user_session_id }
-          if (response && response.id && response.sessionId) {
-            this.userId = response.id;
-            localStorage.setItem("chat_user_id", response.id);
+          // Backend returns { success: true, data: { id, sessionId } } or { id, sessionId }
+          const userData = response?.data || response;
+
+          if (userData && userData.id && userData.sessionId) {
+            this.userId = userData.id;
+            localStorage.setItem("chat_user_id", userData.id);
             // Also store the user_session_id for API calls
-            localStorage.setItem("user_session_id", response.sessionId);
+            localStorage.setItem("user_session_id", userData.sessionId);
             console.log(
               "✅ User registered with backend:",
               this.userId,
               "Session:",
-              response.sessionId
+              userData.sessionId
             );
             this.initialized = true;
           } else {
-            // Backend responded but didn't return ID - generate fallback
-            const fallbackId = uuidv4();
-            this.userId = fallbackId;
-            localStorage.setItem("chat_user_id", this.userId);
-            console.warn(
-              "⚠️ Backend didn't return user_id, using generated UUID:",
-              this.userId
+            // Backend responded but didn't return ID - this shouldn't happen
+            console.error("❌ Backend didn't return user data:", response);
+            throw new Error(
+              "Backend registration failed - no user data returned"
             );
-            this.initialized = true;
           }
         } catch (apiError: unknown) {
-          // Backend unavailable - work offline with generated UUID
-          const fallbackId = uuidv4();
-          this.userId = fallbackId;
-          localStorage.setItem("chat_user_id", this.userId);
-          console.warn(
-            "⚠️ Backend unavailable, working offline with generated UUID:",
-            this.userId,
+          console.error(
+            "❌ Cannot create user - backend unavailable:",
             apiError
           );
-          this.initialized = true;
+          throw new Error("Backend unavailable - cannot create user");
         }
 
         this.initialized = true;
       } catch (error) {
         console.error("Failed to initialize user:", error);
-        // Final fallback - should never reach here
-        this.userId = uuidv4();
-        localStorage.setItem("chat_user_id", this.userId);
+        this.initialized = false;
+        throw error;
         this.initialized = true;
       }
     })();
@@ -207,10 +224,20 @@ export class ApiService {
   }
 
   async createOrUpdateUser(userData: Partial<ChatbotUserData> = {}) {
-    // Only send user_session_id if we already have a userId (for updates)
+    // Create a clean body object, filtering out undefined values
     const body: Partial<ChatbotUserData> & { user_session_id?: string } = {
       ...userData,
     };
+
+    // Remove undefined and null values to avoid validation errors
+    Object.keys(body).forEach((key) => {
+      if (
+        body[key as keyof typeof body] === undefined ||
+        body[key as keyof typeof body] === null
+      ) {
+        delete body[key as keyof typeof body];
+      }
+    });
 
     // Don't send user_session_id for new user creation
     // Backend will generate it
@@ -245,12 +272,36 @@ export class ApiService {
     const existingSessionId = localStorage.getItem("chat_session_id");
 
     if (existingSessionId) {
-      console.log(
-        "✅ Using existing chat_session_id from localStorage:",
-        existingSessionId
-      );
-      this.chatSessionId = existingSessionId;
-      return;
+      try {
+        // Validate that the session still exists in the backend
+        const session = await this.request(
+          `${this.baseUrl}/chat-sessions/${existingSessionId}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (session && session.session_id === existingSessionId) {
+          console.log(
+            "✅ Validated existing chat_session_id from localStorage:",
+            existingSessionId
+          );
+          this.chatSessionId = existingSessionId;
+          return;
+        } else {
+          console.warn(
+            "⚠️ Chat session in localStorage doesn't match backend, creating new session"
+          );
+          localStorage.removeItem("chat_session_id");
+        }
+      } catch (error) {
+        console.warn(
+          "⚠️ Could not validate chat session from localStorage, creating new session:",
+          error
+        );
+        localStorage.removeItem("chat_session_id");
+      }
     }
 
     // Generate session ID upfront
@@ -297,22 +348,15 @@ export class ApiService {
           this.chatSessionId
         );
       } else {
-        // Backend responded but didn't return ID - use our generated one
-        this.chatSessionId = newSessionId;
-        localStorage.setItem("chat_session_id", this.chatSessionId);
-        console.warn(
-          "⚠️ Backend didn't return session_id, using generated UUID:",
-          this.chatSessionId
+        // Backend responded but didn't return ID - this shouldn't happen
+        console.error("❌ Backend didn't return session_id:", chatSession);
+        throw new Error(
+          "Backend session creation failed - no session_id returned"
         );
       }
     } catch (error: unknown) {
-      console.warn(
-        "⚠️ Backend unavailable, working offline with generated session UUID:",
-        newSessionId,
-        error
-      );
-      this.chatSessionId = newSessionId;
-      localStorage.setItem("chat_session_id", this.chatSessionId);
+      console.error("❌ Failed to create chat session:", error);
+      throw error;
     }
   }
 
@@ -345,14 +389,23 @@ export class ApiService {
       // If foreign key constraint error (session doesn't exist), reset and retry once
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes("Invalid session_id or user_id")) {
-        console.warn("⚠️ Session expired or invalid, creating new session...");
-        // Clear stale session IDs
+        console.warn(
+          "⚠️ Session or user invalid, resetting and creating new..."
+        );
+        // Clear ALL stale data
         localStorage.removeItem("chat_session_id");
+        localStorage.removeItem("chat_user_id");
+        localStorage.removeItem("user_session_id");
+
         this.chatSessionId = undefined;
         this.chatSessionInitialized = false;
         this.chatSessionPromise = undefined;
+        this.userId = undefined;
+        this.initialized = false;
+        this.initializationPromise = undefined;
 
-        // Recreate session and retry
+        // Recreate user and session, then retry
+        await this.initializeUser();
         await this.ensureChatSession();
         return this.request(`${this.baseUrl}/conversations`, {
           method: "POST",
@@ -395,14 +448,26 @@ export class ApiService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (
         errorMessage.includes("Invalid session_id") ||
+        errorMessage.includes("Invalid user_id") ||
         errorMessage.includes("Internal server error")
       ) {
-        console.warn("⚠️ Session issue in createResponse, recreating...");
+        console.warn(
+          "⚠️ Session or user invalid in createResponse, resetting..."
+        );
+        // Clear ALL stale data
         localStorage.removeItem("chat_session_id");
+        localStorage.removeItem("chat_user_id");
+        localStorage.removeItem("user_session_id");
+
         this.chatSessionId = undefined;
         this.chatSessionInitialized = false;
         this.chatSessionPromise = undefined;
+        this.userId = undefined;
+        this.initialized = false;
+        this.initializationPromise = undefined;
 
+        // Recreate user and session, then retry
+        await this.initializeUser();
         await this.ensureChatSession();
         return this.request(`${this.baseUrl}/responses`, {
           method: "POST",
@@ -437,14 +502,26 @@ export class ApiService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (
         errorMessage.includes("Invalid session_id") ||
+        errorMessage.includes("Invalid user_id") ||
         errorMessage.includes("Internal server error")
       ) {
-        console.warn("⚠️ Session issue in createFpmInteraction, recreating...");
+        console.warn(
+          "⚠️ Session or user invalid in createFpmInteraction, resetting..."
+        );
+        // Clear ALL stale data
         localStorage.removeItem("chat_session_id");
+        localStorage.removeItem("chat_user_id");
+        localStorage.removeItem("user_session_id");
+
         this.chatSessionId = undefined;
         this.chatSessionInitialized = false;
         this.chatSessionPromise = undefined;
+        this.userId = undefined;
+        this.initialized = false;
+        this.initializationPromise = undefined;
 
+        // Recreate user and session, then retry
+        await this.initializeUser();
         await this.ensureChatSession();
         return this.request(`${this.baseUrl}/fpm-interactions`, {
           method: "POST",
@@ -560,18 +637,59 @@ export class ApiService {
       throw new Error("clinic_id is required for creating a referral");
     }
 
-    return this.request(`${this.baseUrl}/referrals`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: this.userId, // Required by backend DTO
-        session_id: this.chatSessionId, // Required by backend DTO
-        clinic_id: referralData.clinic_id, // Required by backend DTO
-        ...referralData,
-        user_session_id: this.sessionId, // Keep for backwards compatibility
-        chat_session_id: this.chatSessionId, // Keep for backwards compatibility
-      }),
-    });
+    try {
+      return await this.request(`${this.baseUrl}/referrals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: this.userId, // Required by backend DTO
+          session_id: this.chatSessionId, // Required by backend DTO
+          clinic_id: referralData.clinic_id, // Required by backend DTO
+          ...referralData,
+          user_session_id: this.sessionId, // Keep for backwards compatibility
+          chat_session_id: this.chatSessionId, // Keep for backwards compatibility
+        }),
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("Invalid session_id") ||
+        errorMessage.includes("Invalid user_id")
+      ) {
+        console.warn(
+          "⚠️ Session or user invalid in createReferral, resetting..."
+        );
+        // Clear ALL stale data
+        localStorage.removeItem("chat_session_id");
+        localStorage.removeItem("chat_user_id");
+        localStorage.removeItem("user_session_id");
+
+        this.chatSessionId = undefined;
+        this.chatSessionInitialized = false;
+        this.chatSessionPromise = undefined;
+        this.userId = undefined;
+        this.initialized = false;
+        this.initializationPromise = undefined;
+
+        // Recreate user and session, then retry
+        await this.initializeUser();
+        await this.ensureChatSession();
+        return this.request(`${this.baseUrl}/referrals`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: this.userId,
+            session_id: this.chatSessionId,
+            clinic_id: referralData.clinic_id,
+            ...referralData,
+            user_session_id: this.sessionId,
+            chat_session_id: this.chatSessionId,
+          }),
+        });
+      }
+      throw error;
+    }
   }
 
   async getReferrals(): Promise<ReferralData[]> {
@@ -676,6 +794,19 @@ export class ApiService {
     estimatedWaitTime?: string;
   } | null> {
     try {
+      // Ensure we have a valid userId
+      await this.initializeUser();
+
+      if (!this.userId) {
+        console.error("❌ Cannot escalate: userId is not available");
+        throw new Error("User session is not initialized");
+      }
+
+      console.log("🚀 Escalating conversation:", {
+        conversationId,
+        userId: this.userId,
+      });
+
       const response = await this.request(
         `${this.baseUrl}/conversations/escalate`,
         {
@@ -689,6 +820,8 @@ export class ApiService {
           }),
         }
       );
+
+      console.log("✅ Escalation successful:", response);
       return response;
     } catch (error) {
       console.error("Failed to escalate to agent:", error);

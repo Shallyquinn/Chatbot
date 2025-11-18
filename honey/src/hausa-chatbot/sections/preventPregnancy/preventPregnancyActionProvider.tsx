@@ -309,15 +309,15 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   handlePreventPregnancyInitiation = async(): Promise<void> => {
     await this.ensureChatSession();
     
-    const userMessage = this.createUserMessage("How to prevent pregnancy");
+    const userMessage = this.createUserMessage("Rigakafin daukar ciki");
     
     // Phase 2: Use MessageFormatter for professional greeting
-    const greetingText = MessageFormatter.formatSuccess("I see! 👍\n\nYou are at the right place, I can assist you with this.");
+    const greetingText = MessageFormatter.formatSuccess( "Na gane! 👍\n\nKina wurin da ya dace, zan iya taimaka miki a kan wannan.");
     const greetingTiming = SmartMessageTimer.createTimingConfig(greetingText, 'confirmation', 'medium');
     const responseMessage = this.createChatBotMessage(greetingText, { delay: greetingTiming.delay });
 
     // Phase 2: Add button guidance for clarity
-    const questionText = MessageFormatter.addButtonGuidance("What kind of contraception do you want to know about?\n\nEmergency = you had sex recently and want to avoid pregnancy");
+    const questionText = MessageFormatter.addButtonGuidance("Wane irin rigakafin daukar ciki kike son sani?\n\nGaggawa = kin yi jima'i kwanan nan kuma kina son kaucewa daukar ciki");
     const questionTiming = SmartMessageTimer.createTimingConfig(questionText, 'question', 'medium');
     const followUpMessage = this.createChatBotMessage(
       questionText,
@@ -408,10 +408,10 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     await this.api.createResponse({
       response_category:'ContraceptionType',
       response_type:'user',
-      question_asked:'What kind of contraception do you want to know about?',
+      question_asked:'Wace irin hanyar hana haihuwa kike son sani?',
       user_response:contraceptionType,
       widget_used:'contraceptiontypeoptions',
-      available_options:['Emergency', 'Prevent in future'],
+      available_options:['Ta  gaggawa', 'Don hana daukar ciki nan gaba'],
       step_in_flow:'contraceptionTypeOptions',
     }).catch(err => console.error('Failed to save response:', err));
   };
@@ -419,7 +419,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // New method to handle invalid contraception types
   private handleInvalidContraceptionType = (userMessage: ChatMessage): void => {
     const responseMessage = this.createChatBotMessage(
-      "I didn't recognize that option. Please choose either 'Emergency' or 'Prevent in future'.",
+      "Ban gane wannan zaɓin ba. Don Allah ki zaɓi ko 'Ta  gaggawa' ko 'Don hana daukar ciki nan gaba'",
       { 
         delay: 500,
         widget: "contraceptionTypeOptions"
@@ -439,32 +439,26 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
   // =============================================================================
 
   private handleEmergencyPath = async(userMessage: ChatMessage): Promise<void> => {
-    // Phase 2: Format emergency contraception info with warning
-    const emergencyInfoText = MessageFormatter.formatWarning(
-      "To avoid pregnancy after unprotected sex, you can take emergency contraceptive pills.\n\n" +
-      "Emergency pills are very effective when taken within 24 to 72 hours after unprotected sex. " +
-      "You are advised to not take it more than 3 times in a month. " +
-      "If you are ovulating, you should use an alternative contraceptive plan (condoms).\n\n" +
-      "Please note that they are not effective if you are already pregnant."
+    const responseMessage = this.createChatBotMessage(
+      "Don guje wa samun ciki bayan yin jima’i ba tare da kariya ba, za ki iya shan kwayar gaggawar hana haihuwa (emergency contraceptive pill).\n\nWadannan kwayoyi suna da matuƙar tasiri idan an sha su cikin awa 24 zuwa 72 bayan yin jima’i ba tare da kariya ba. Ana ba da shawarar kar a sha kwayar fiye da sau uku a wata guda. Idan kina lokacin yin ƙwai (ovulation), yana da kyau ki yi amfani da wata hanya ta daban kamar kwandom (condom).",
+      { delay: 500 }
     );
-    const emergencyTiming = SmartMessageTimer.createTimingConfig(emergencyInfoText, 'warning', 'high');
-    const responseMessage = this.createChatBotMessage(emergencyInfoText, { delay: emergencyTiming.delay });
 
     //use type-safe products list
-    const availableProducts: EmergencyProduct[] = ["postpill", "postinor2"];
+    const availableProducts: EmergencyProduct[] = ["Postpill", "Postinor-2"];
     
     // Phase 2: Format product list with info icon
     const productListText = MessageFormatter.formatInfo(
-      "Let me tell you some of the effective and available emergency contraceptive pills:\n\n" +
+      "Bari in gaya miki wasu daga cikin ingantattun nau’ikan kwayar gaggawar hana haihuwa da ake samu:\n\n" +
       "• Postpill can be taken within 5 days after sex\n" +
       "• Postinor-2 is effective within 3 days after sex\n\n" +
-      "Which product do you want to learn about?"
+      "Wane samfurin kake so ka koya game da shi?"
     );
     const productTiming = SmartMessageTimer.createTimingConfig(productListText, 'info', 'medium');
     const productMessage = this.createChatBotMessage(productListText, { delay: productTiming.delay });
 
     // Phase 2: Add button guidance
-    const selectionText = MessageFormatter.addButtonGuidance("Select one to learn more:");
+    const selectionText = MessageFormatter.addButtonGuidance("Wane samfurin kake so ka koya game da shi?");
     const selectionTiming = SmartMessageTimer.createTimingConfig(selectionText, 'question', 'medium');
     const selectionMessage = this.createChatBotMessage(
       selectionText,
@@ -521,14 +515,14 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Using type-safe constants instead of magic strings
     const productInfoMap: Record<EmergencyProduct, string > = {
-      "postpill": "Postpill is a one-dose emergency contraceptive pill by DKT. It contains 1.5 mg Levongestrel. It should be taken orally as soon as possible but can still be taken within 5 days (120 hours) of unprotected sex. It doesn’t work if you are already pregnant and will not harm an already established pregnancy.\n\n You can buy Postpill at any pharmacy or health store around you. It is 95% effective when taken within 24 hours of unprotected sex.\n\nIf more than 120 hours (5 days) have passed since unprotected sex, it won't be effective. In such a situation, kindly call 7790 and ask to speak to a nurse counsellor for further guidance.",
+      "Postpill": "Postpill kwayar gaggawar hana haihuwa ce da kamfanin DKT ke samarwa. Kwaya ce guda ɗaya, tana ɗauke da 1.5 mg Levonorgestrel. Ya kamata a sha ta cikin awa 72 (kwanaki 3) bayan yin jima’i ba tare da kariya ba.\n\nShan kwayar da wuri shi zai tai aka wurin yin aiki sosai. Ba ta aiki idan kina da ciki, kuma ba ta cutar da ciki da aka riga aka samu.\n\n Za ki iya samun Postpill a kowace pharmacy ko shagon lafiya da ke kusa da ke. Tana da tasiri har zuwa kashi 95% idan an sha ta cikin awa 24 bayan yin jima’i ba tare da kariya ba.\n\nIdan sama da awa 120 (kwanaki 5) sun wuce bayan yin jima’i, ba za ta yi aiki ba. A irin wannan yanayin, yana da kyau ki tuntuɓi ma’aikacin lafiya don karin shawara.",
       
-      "postinor2": "Postinor-2 is an emergency contraceptive containing levonorgestrel. Take it within 72 hours of unprotected sex for best results.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nIt should not be used as a regular contraceptive method.",
+      "Postinor-2": "Postinor-2 kwayar gaggawar hana haihuwa ce wadda ke ɗauke da levonorgestrel. Ya kamata a sha ta cikin awa 72 (kwanaki 3) bayan yin jima’i ba tare da kariya ba domin samun sakamako mai kyau.\n\nIt works by preventing or delaying ovulation. The sooner you take it after unprotected sex, the more effective it is.\n\nBa za a yi amfani da ita a matsayin hanyar hana haihuwa ta kullum ba.",
     };
     await this.api.createResponse({
     response_category: "EmergencyProduct",
     response_type: "user",
-    question_asked: "Which emergency contraception product do you want to know about?",
+    question_asked: "Wane irin kwayar gaggawar hana haihuwa kike son jin bayani akai?",
     user_response: emergencyProduct,
     widget_used: "emergencyProductOptions",
     available_options: ["Postpill", "Postinor-2"],
@@ -539,7 +533,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     
       // Handle unknown product case
       const errorMessage = this.createChatBotMessage(
-        "I don't have information about that product. Please choose Postpill or Postinor-2.",
+        "Ba ni da bayani game da wannan samfurin. Don Allah ki zaɓi Postpill ko Postinor-2.",
         { 
           delay: 500,
           widget: "emergencyProductOptions"
@@ -565,7 +559,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Smart image display with formatted intro
     if (widgets.hasImage && widgets.imageWidget) {
       const imageIntro = MessageFormatter.formatInfo(
-        `Here's what ${emergencyProduct} looks like:`
+        `Ga yanda ${emergencyProduct} yake:`,
       );
       const imageMessage = this.createChatBotMessage(
         imageIntro,
@@ -577,7 +571,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Smart audio display with formatted intro  
     if (widgets.hasAudio && widgets.audioWidget) {
       const audioIntro = MessageFormatter.formatTip(
-        `Click to listen to a short introduction of ${emergencyProduct} in Pidgin, if you want to.`
+        `Danna nan don sauraron taƙaitaccen bayani game da ${emergencyProduct} a cikin harshen Pidgin, idan kina so.`,
       );
       const audioDelay = widgets.hasImage ? timing.delay + 1500 : timing.delay + 800;
       const audioMessage = this.createChatBotMessage(
@@ -598,7 +592,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     // Add follow-up with button guidance
     const followUpText = MessageFormatter.addButtonGuidance(
-      "Do you want to find out about other family planning methods?"
+      "Kina son jin bayani game da sauran hanyoyin tsara iyali?"
     );
     const followUpDelay = timing.delay + 1500;
     const followUpMessage = this.createChatBotMessage(
@@ -647,12 +641,12 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
   private handlePreventFuturePath = async(userMessage: ChatMessage): Promise<void> => {
     // Format intro message to match WhatsApp transcript exactly
-    const introText = "Allright 👌\nI am happy to provide you with more information about family planning methods that are effective and safe for you.";
+    const introText = "Toh, madalla! 😄\n\nIna farin cikin ba ki ƙarin bayanai game da hanyoyin tsara iyali da suke da matukar tasiri wajen hana samun ciki.";
     const introTiming = SmartMessageTimer.createTimingConfig(introText, 'info', 'medium');
     const responseMessage = this.createChatBotMessage(introText, { delay: introTiming.delay });
 
     // Phase 2: Question exactly as in WhatsApp
-    const questionText = "For how long do you want to prevent pregnancy?";
+    const questionText = "Na tsawon wane lokaci kike son hana samun ciki?";
     const durationMessage = this.createChatBotMessage(
       questionText,
       { 
@@ -734,36 +728,27 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     // Phase 2: Enhanced duration config with proper formatting (using display labels as keys)
     const durationConfig: Record<PreventionDuration, { message: string; widget: string }> = {
       "Up to 1 year": {
-        message: "The short-term family planning methods are:\n\n" +
-          "1. Daily contraceptive pills\n" +
-          "2. The barrier contraceptives which are Diaphragms and Condoms\n" +
-          "3. Injectables.",
+        message: "Hanyoyin tsara iyali na ɗan gajeren lokaci sun haɗa da:\n\n" +
+          "1. Kwayoyin hana daukar ciki da ake sha kullum\n" +
+          "2. Hanyoyin kariya (diaphragm, kwaroron roba na mata, kwaroron roba na maza)\n" +
+          "3. Allurar hana daukar ciki.",
+                  
         widget: "shortTermMethods"
       },
       "1 - 2 years": {
-        message: "If you want to prevent pregnancy within 1-2 years, you can use any of the short-acting family planning methods, the Injectables or the Implants.",
+        message: "Idan kina son hana samun ciki na tsawon shekara 1 zuwa 2, za ki iya amfani da hanyoyi na ɗan lokaci kamar kwaya (pills) ko allurar hana haihuwa (injectables).",
         widget: "mediumTermMethods"
       },
       "3 - 4 years": {
-        message: "For 3-4 years, you can use:\n\n" +
-          "1. Injectables\n" +
-          "2. IUD (Intrauterine Device)\n" +
-          "3. IUS (Intrauterine System)\n" +
-          "4. Implants",
+        message: `Idan kuma kina son kariya na tsawon shekaru 3 zuwa 4, za ki iya amfani da hanyoyin matsakaici (medium-term) kamar allura, IUD (na’urar da ake saka a mahaifa), IUS, ko implants (na’urar da ake dasawa a hannu).${this.formatInlineMethodList(availableMethods)} `,
         widget: "longTermMethods"
       },
       "5 - 10 years": {
-        message: "For 5-10 years, the most effective long-lasting methods are:\n\n" +
-          "1. IUD (up to 10 years)\n" +
-          "2. IUS (up to 5 years)\n" +
-          "3. Implants (up to 5 years)",
+        message: `Don kariya na tsawon lokaci (shekaru 5 zuwa 10), hanyoyin da suka fi tasiri sune IUD, IUS, da implants (na’urar da ake dasawa a hannu).${this.formatInlineMethodList(availableMethods)} `,
         widget: "extendedLongTermMethods"
       },
       "Permanently": {
-        message: "For permanent prevention of pregnancy, these methods are available:\n\n" +
-          "1. Tubal ligation (for women)\n" +
-          "2. Vasectomy (for men)\n\n" +
-          "⚠️ Please note: These procedures are permanent and irreversible.",
+        message: "Don hana samun ciki har abada, za ki iya la’akari da hanyoyin dashen dindindin (sterilisation). Waɗannan hanyoyi na dindindin ne kuma ba sa dawowa bayan an yi su.",
         widget: "permanentMethods"
       },
       "Not sure": {
@@ -783,7 +768,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     if (!config) {
       // Handle invalid duration - user typed unrecognized input
       const errorMessage = this.createChatBotMessage(
-        "I didn't recognize that duration option. Let me show you the available prevention durations again.",
+        "Ban gane wannan zaɓin tsawon lokacin ba. Bari in sake nuna miki zaɓuɓɓukan tsawon lokacin kariya da ake da su.",
         { 
           delay: 500,
           widget: "preventionDurationOptions"
@@ -815,7 +800,8 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     const responseMessage = this.createChatBotMessage(config.message, { delay: responseTiming.delay });
 
     // Method selection prompt - match WhatsApp exactly
-    const selectionText = "Click on any of the methods to get more information about it.";
+    const selectionText = `Danna ɗaya daga cikin hanyoyi ${availableMethods.length} da ake da su domin samun ƙarin bayani:`;
+;
     const methodSelectionMessage = this.createChatBotMessage(
       selectionText,
       { 
@@ -856,7 +842,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
         this.api.createResponse({
           response_category: 'PreventionDuration',
           response_type: 'user',
-          question_asked: 'How long do you want to prevent pregnancy?',
+      question_asked: 'Na tsawon wane lokaci kike son hana samun ciki?',
           user_response: duration,
           widget_used: config.widget,
           available_options: Object.keys(durationConfig),
@@ -1111,7 +1097,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
 
     if (!productInfo) {
       const errorText = MessageFormatter.formatWarning(
-        "I don't have detailed information about that method. Please consult with a healthcare provider."
+              "Ba ni da cikakken bayani game da wannan hanya. Don Allah ki tuntubi ma’aikacin lafiya don karin shawara."
       );
       const errorMessage = this.createChatBotMessage(errorText, { delay: 500 });
       
@@ -1207,7 +1193,7 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
     await this.api.createResponse({
       response_category: "ContraceptionMethod",
       response_type: "user",
-      question_asked: "Which family planning method do you want to know about",
+      question_asked: "Wace hanya ta tsara iyali kike son jin bayani akai?",
       user_response: method,
       widget_used:"methodOptions",
       available_options: Object.keys(PRODUCT_DATA),
@@ -1538,62 +1524,62 @@ class PreventPregnancyActionProvider implements PreventPregnancyProviderInterfac
       audioWidget?: string;
       audioPrompt?: string;
     }> = {
-      "Daily pills": {
-        description: "Daily pills are combined oral contraceptive pills for pregnancy prevention, dermatological and gynecological benefits. They work by making the sperm difficult to enter the womb.\n\nDaily pills are either a 21-day pack (Dianofem and Desofem) or a 28-day pack (Levofem). One pill is taken each day at about the same time for 21 days. Depending on your pack, you will either have a 7-day break (as in the 21-day pack) or you will take the pill that contains Iron for 7 days (the 28-day pack).\n\nThey are very effective (99%) when used correctly. They must be taken daily at the same time. They can help regulate menstrual cycles and reduce menstrual cramps.",
+      "Kwayan sha na kullum": {
+        description: "Kwayar sha na kullum kwaya ce ta hana haihuwa da ake sha kowace rana don kare mace daga samun ciki, kuma tana da amfani ga fata da lafiyar mahaifa (gynecological benefits). Kwayar tana aiki ne ta hanyar hana maniyyi shiga mahaifa.\n\nAna samun ta a pack na kwanaki 21 (kamar Dianofem da Desofem) ko kuma kwanaki 28 (kamar Levofem). Ana shan kwaya ɗaya a kowace rana a lokaci guda na tsawon kwanaki 21. Idan kina amfani da pack na kwanaki 21, kina yin hutun kwanaki 7 kafin ki fara sabon pack.\n\nIdan kuma kina amfani da pack na kwanaki 28, kwayar kwanaki 7 na ƙarshe tana ƙunshe da iron (ba ta hana haihuwa, amma tana taimakawa lafiyar jini). Kwayoyin suna da inganci har zuwa kashi 99% idan ana amfani da su yadda ya kamata. Dole ne a sha su kowace rana a lokaci guda. Hakanan suna taimakawa wajen daidaita haila da rage ciwon mara yayin al’ada.",
         imageWidget: "dailyPillsAudio",
-        imagePrompt: "Here is what daily pills in Pidgin, if you want to.",
+        imagePrompt: "Ga abin da ake nufi da daily pills.",
         audioWidget: "dailyPillsAudio",
-        audioPrompt: "Click to listen to a short introduction of daily pills in Pidgin, if you want to."
+        audioPrompt: "Danna ka saurari taƙaitaccen bayani game da kwayoyin sha na kullum a Pidgin, idan kana so."
       },
       "Diaphragm": {
-        description: "A diaphragm or cap is a barrier contraceptive device inserted into the vagina before sex to cover the cervix so that sperm can't get into the womb (uterus). You need to use spermicide with it (spermicides kill sperm). \n\nThe diaphragm must be left in place for at least 6 hours after sex.  The diaphragm is a vaginal barrier contraceptive that is woman-controlled, nonhormonal, and appropriate for women who cannot or do not want to use hormonal contraceptive methods, intrauterine devices, or condoms.\n\nThe path has no partner clinic referral.",
+        description: "Diaphragm ko cap wata hanya ce ta hana haihuwa (barrier method) da ake saka a cikin farji kafin jima’i domin ta rufe bakin mahaifa, ta yadda maniyyi ba zai iya shiga mahaifa ba. Dole ne a yi amfani da maganin kashe maniyyi (spermicide) tare da ita, domin wannan magani yana kashe maniyyi kafin su isa mahaifa. \n\nAna buƙatar barin diaphragm a cikin farji na aƙalla awanni 6 bayan jima’i kafin a cire ta. Wannan hanya ce (vaginal barrier contraceptive) da mace ke sarrafawa da kanta, ba ta ɗauke da sinadarai na hormone, kuma tana da kyau ga mata da ba sa son ko ba za su iya amfani da hanyoyin da ke ɗauke da hormones ba, ko kuma na’urorin mahaifa (IUDs) ko kwandom (condoms).",
         audioWidget: "diaphragmAudio", 
-        audioPrompt: "Click to listen to more about the diaphragm."
+        audioPrompt: "Danna ka saurari ƙarin bayani game da diaphragm."
       },
-      "Female condom": {
-        description: "Female condoms are inserted into the vagina before sex. They provide protection against pregnancy and sexually transmitted infections.\n\nThey are 95% effective when used correctly and can be inserted up to 8 hours before sex.",
+      "Kwandom na mata": {
+        description: "Kwando na mata (female condom) ana saka shi cikin farji kafin jima'i. Yana kare mace daga ɗaukar ciki da kuma cututtukan da ake ɗauka ta jima'i (STIs)\n\nzuwa kashi 95% idan an yi amfani da shi yadda ya kamata, kuma ana iya saka shi har zuwa awanni 8 kafin jima'i.",
         audioWidget: "femaleCondomAudio",
-        audioPrompt: "Click to learn more about female condoms."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da kwandom na mata (female condom)."
       },
-      "Male condom": {
-        description: "Male condoms are worn on the penis during sex. They are 98% effective when used correctly and also protect against sexually transmitted infections.\n\nThey are widely available and have no side effects.",
+      "Kwandom na maza": {
+        description: "Kwandom na maza (male condom) ana sanya shi a kan azzakari yayin jima'i. Yana da tasiri har zuwa kashi 98% idan an yi amfani da shi yadda ya kamata, kuma yana kariya daga cututtukan da ake ɗauka ta jima'i.\n\nAna samun su ko’ina kuma babu wani illa da suke haifarwa.",
         audioWidget: "maleCondomAudio",
-        audioPrompt: "Click to learn more about male condoms."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da kwandom na maza (male condom)."
       },
-      "Injectables": {
-        description: "Injectable contraceptives are long-acting hormonal methods given as shots. They provide protection for 3 months (Sayana Press) or 3-4 months (Depo-Provera).\n\nThey are over 99% effective and don't require daily attention.",
+      "Allurai": {
+        description: "Allurar hana daukar ciki hanya ce ta maganin hormone mai ɗorewa wadda ake yi da allura. Tana bada kariya na tsawon watanni 3 (Sayana Press) ko watanni 3-4 (Depo-Provera).\n\nYana da tasiri fiye da kashi 99% kuma baya buƙatar kulawa kullum.",
         audioWidget: "injectablesAudio",
-        audioPrompt: "Click to learn more about injectables."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da allurai."
       },
-      "IUD": {
-        description: "The Intrauterine Device (IUD) is a small T-shaped device inserted into the uterus. It can prevent pregnancy for 5-10 years depending on the type.\n\nIt's over 99% effective and can be removed at any time if you want to get pregnant.",
+      "Na'urar IUD": {
+        description: "Na’urar Intrauterine (IUD) wata ƙaramar na’ura ce mai siffar T da ake sakawa cikin mahaifa. Tana iya hana daukar ciki na tsawon shekaru 5 zuwa 10 gwargwadon irin ta.\n\nYana da tasiri fiye da kashi 99% kuma ana iya cire shi a duk lokacin da kike son daukar ciki.",
         audioWidget: "iudAudio",
-        audioPrompt: "Click to learn more about IUD."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da na'urar IUD."
       },
-      "IUS": {
-        description: "The Intrauterine System (IUS) is similar to the IUD but releases hormones. It can prevent pregnancy for 3-5 years.\n\nIt's over 99% effective and may reduce menstrual bleeding.",
+      "Na'urar IUS": {
+        description: "Na’urar Intrauterine System (IUS) tana kama da IUD amma ita tana sakin hormone kadan. Tana iya hana daukar ciki na tsawon shekaru 3 zuwa 5.\n\nYana da tasiri fiye da kashi 99% kuma yana iya rage yawan jinin haila.",
         audioWidget: "hormonalIUSAudio",
-        audioPrompt: "Click to learn more about IUS."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da na'urar IUS."
       },
-      "Implants": {
-        description: "Contraceptive implants are small, flexible rods inserted under the skin, typically in the arm. They release hormones (usually progestin) to prevent pregnancy. \n\nThey are long-term birth control methods also called long-acting reversible contraception, or LARC. They provide contraception, lasting up to 3 - 5 years but can be removed at any time. \n\nThey work by preventing the release of egg and thickening the cervical mucus making it difficult for sperm to reach the egg.",
+      "Imflants": {
+        description: "Imflant wasu ƙananan sanduna ne masu laushi da ake sakawa ƙarƙashin fatar hannu. Suna sakin sinadarin hormone (yawanci progestin) don hana daukar ciki. \n\nWannan hanya ce ta hana daukar ciki na dogon lokaci, ana kiranta 'long-acting reversible contraception' (LARC). Tana iya hana daukar ciki har na tsawon shekaru 3 zuwa 5, amma ana iya cireta duk lokacin da ake so. \n\nYana aiki ta hanyar hana kwai fita daga mahaifa da kuma kaurin ruwan farji domin ya zama mai wuya ga maniyyi yahadu da kwai.",
         audioWidget: "implantsAudio",
-        audioPrompt: "Click to learn more about implants."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da imflants."
       },
-      "Female sterilisation": {
-        description: "Female sterilization (tubal ligation) is a permanent method where the fallopian tubes are blocked or cut.\n\nIt's over 99% effective but should be considered permanent. It requires surgery.",
+      "Cire mahaifa na mata": {
+        description: "Toshe bututun mahaifa (female sterilization) hanya ce ta dindindin da ake yanke ko toshe bututun da ke kai kwai daga mahaifa.\n\nYana da tasiri fiye da kashi 99%, amma hanya ce ta dindindin wadda ba za a iya juyawa ba. Ana bukatar tiyata don yin ta.",
         audioWidget: "sterilizationAudio",
-        audioPrompt: "Click to learn more about female sterilization."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da Toshe bututun mahaifa (female sterilization)."
       },
-      "Male sterilisation": {
-        description: "Male sterilization (vasectomy) is a permanent method where the vas deferens are cut or blocked.\n\nIt's over 99% effective but should be considered permanent. It's a simpler procedure than female sterilization.",
+      "Cire marainai na maza": {
+        description: "Toshe hanyar maniyyi ko cire marainai na maza (male sterilization ko vasectomy) hanya ce ta dindindin da ake yanke ko toshe bututun da ke ɗaukar maniyyi daga marainai.\n\nYana da tasiri fiye da kashi 99%, amma hanya ce ta dindindin wadda ba za a iya juyawa ba. Hanyar tana da sauƙi fiye da ta mata (female sterilization).",
         audioWidget: "vasectomyAudio", 
-        audioPrompt: "Click to learn more about vasectomy."
+        audioPrompt: "Danna nan don sauraron ƙarin bayani game da cire marainai na maza"
       }
     };
 
     return methodData[method] || {
-      description: "Please consult with a healthcare provider about this contraceptive method for detailed information."
+      description: "Don Allah ka tuntubi ma’aikacin lafiya don samun cikakken bayani game da wannan hanyar hana haihuwa."
     } || null;
   };
 }

@@ -90,7 +90,9 @@ const AdminDashboard: React.FC = () => {
   // Enhancement states
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<QueueItem | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [agentSortField, setAgentSortField] = useState<'name' | 'status' | 'chats' | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [agentSortDirection, setAgentSortDirection] = useState<'asc' | 'desc'>('asc');
   const [requestSortField, setRequestSortField] = useState<'waitTime' | 'position' | null>(null);
   const [requestSortDirection, setRequestSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -175,7 +177,17 @@ const AdminDashboard: React.FC = () => {
         showWarning(`${response.failed.length} agent(s) failed to onboard. Check the details.`);
       }
       
-      return response;
+      // Convert response to match BulkAgentResult type
+      return {
+        success: agents.filter(agent => 
+          response.success.some(s => s.email === agent.email)
+        ),
+        failed: response.failed.map(f => ({
+          row: f.row,
+          data: agents[f.row - 1] || { firstName: '', lastName: '', email: f.email },
+          error: f.error
+        }))
+      };
     } catch (error) {
       console.error('Error bulk uploading agents:', error);
       showError('Failed to process bulk upload', 'Upload Error');
@@ -801,16 +813,23 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button 
                     onClick={() => setShowOnboardModal(true)}
-                    className="bg-[#006045] flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-[#005038] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                    className="bg-[#006045] flex items-center px-9 py-4 rounded-lg hover:bg-[#005038] active:scale-95 transition-all shadow-sm hover:shadow-md"
                   >
-                    <UserPlus className="w-4 h-4 text-white" strokeWidth={2} />
+                    <UserPlus className="w-5 h-5 text-white" strokeWidth={2} />
                     <span className="font-semibold text-[14px] leading-normal text-white">Onboard Agent</span>
                   </button>
                   <button 
-                    onClick={exportAgentsToCSV}
-                    className="bg-white border-2 border-[#006045] flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-[#f5f5f5] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                    onClick={() => setShowBulkUploadModal(true)}
+                    className="bg-[#006045] flex items-center px-9 py-4 rounded-lg hover:bg-[#005038] active:scale-95 transition-all shadow-sm hover:shadow-md"
                   >
-                    <Download className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                    <Upload className="w-5 h-5 text-white" strokeWidth={2} />
+                    <span className="font-semibold text-[14px] leading-normal text-white">Bulk Upload</span>
+                  </button>
+                  <button 
+                    onClick={exportAgentsToCSV}
+                    className="bg-white border-2 border-[#006045] flex items-center px-9 py-5 rounded-lg hover:bg-[#f5f5f5] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <Download className="w-5 h-5 text-[#006045]" strokeWidth={2} />
                     <span className="font-semibold text-[14px] leading-normal text-[#006045]">Export</span>
                   </button>
                 </div>
@@ -838,7 +857,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
                   <div className="flex gap-3 items-start w-full">
                     <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
-                      <Users className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                      <Users className="w-9 h-9 text-[#006045]" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Requests</p>
@@ -854,7 +873,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
                   <div className="flex gap-3 items-start w-full">
                     <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
-                      <UserCheck className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                      <UserCheck className="w-5 h-5 text-[#006045]" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Total Agents</p>
@@ -863,14 +882,14 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex gap-1 items-center w-full">
                     <p className="font-light text-[#e7473b] text-[11px] leading-normal">-5% from yesterday</p>
-                    <ChevronRight className="w-4 h-4 text-[#e7473b] transform rotate-90" />
+                    <ChevronRight className="w-5 h-5 text-[#e7473b] transform rotate-90" />
                   </div>
                 </div>
 
                 <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
                   <div className="flex gap-3 items-start w-full">
                     <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
-                      <User className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                      <User className="w-5 h-5 text-[#006045]" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Active Chats</p>
@@ -879,14 +898,14 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex gap-1 items-center w-full">
                     <p className="font-light text-[#32bf4e] text-[11px] leading-normal">+12.7% from yesterday</p>
-                    <ChevronRight className="w-4 h-4 text-[#32bf4e] transform -rotate-90" />
+                    <ChevronRight className="w-5 h-5 text-[#32bf4e] transform -rotate-90" />
                   </div>
                 </div>
 
                 <div className="bg-white border border-[#e0e0e0] rounded-lg p-3 flex flex-col gap-2">
                   <div className="flex gap-3 items-start w-full">
                     <div className="bg-[#eaf3f1] border-[0.5px] border-[#006045] rounded-full p-1.5 shrink-0">
-                      <Clock className="w-4 h-4 text-[#006045]" strokeWidth={2} />
+                      <Clock className="w-5 h-5 text-[#006045]" strokeWidth={2} />
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <p className="font-normal text-[#7b7b7b] text-xs leading-normal">Response Time</p>
@@ -895,7 +914,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex gap-1 items-center w-full">
                     <p className="font-light text-[#e7473b] text-[11px] leading-normal">-3% from yesterday</p>
-                    <ChevronRight className="w-4 h-4 text-[#e7473b] transform rotate-90" />
+                    <ChevronRight className="w-5 h-5 text-[#e7473b] transform rotate-90" />
                   </div>
                 </div>
               </div>
@@ -959,7 +978,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-4">
                     {/* Search Input */}
                     <div className="relative w-full lg:w-[300px]">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#636363]" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#636363]" />
                       <input
                         type="text"
                         placeholder="Search Agents.."
@@ -1005,7 +1024,7 @@ const AdminDashboard: React.FC = () => {
                           aria-label="Filter agents"
                           title="Filter agents"
                         >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                             <path d="M5.4 2.1H18.6C19.7 2.1 20.6 3 20.6 4.1V6.3C20.6 7.1 20.2 8.1 19.7 8.6L15.3 12.4C14.7 12.9 14.3 13.9 14.3 14.7V19.1C14.3 19.7 13.9 20.5 13.4 20.8L12 21.7C10.7 22.5 8.9 21.6 8.9 20V14.6C8.9 13.9 8.5 13 8.1 12.5L4.3 8.5C3.8 8 3.5 7.1 3.5 6.5V4.2C3.4 3 4.3 2.1 5.4 2.1Z" stroke="#7b7b7b" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                           <p className="text-[#7b7b7b] text-sm font-medium leading-normal">Filter</p>
@@ -1018,7 +1037,7 @@ const AdminDashboard: React.FC = () => {
                           aria-label="Export agents to CSV"
                           title="Export agents to CSV"
                         >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                             <path d="M13 11L21.2 2.79999" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M22 6.8V2H17.2" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             <path d="M11 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22H15C20 22 22 20 22 15V13" stroke="#7b7b7b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1294,6 +1313,7 @@ const AdminDashboard: React.FC = () => {
                               checked={selectedRequests.has(request.conversationId)}
                               onChange={() => toggleRequestSelection(request.conversationId)}
                               className="mt-1 w-4 h-4 text-[#006045] border-gray-300 rounded focus:ring-[#006045]"
+                              aria-label={`Select request from ${request.user?.name || 'user'}`}
                             />
                             <div className="flex-1">
                               <h3 className="font-bold text-[#1e1e1e] text-base">
@@ -1454,7 +1474,16 @@ const AdminDashboard: React.FC = () => {
 
       {/* Assign Agent Modal */}
       {showAssignModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAssignModal(false);
+              setSelectedRequest(null);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1465,6 +1494,7 @@ const AdminDashboard: React.FC = () => {
                   setSelectedRequest(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1531,7 +1561,15 @@ const AdminDashboard: React.FC = () => {
 
       {/* Bulk Assign Modal */}
       {showBulkAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowBulkAssignModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1539,6 +1577,7 @@ const AdminDashboard: React.FC = () => {
               <button
                 onClick={() => setShowBulkAssignModal(false)}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1559,8 +1598,9 @@ const AdminDashboard: React.FC = () => {
                 </label>
                 <select
                   value={bulkAssignStrategy}
-                  onChange={(e) => setBulkAssignStrategy(e.target.value as any)}
+                  onChange={(e) => setBulkAssignStrategy(e.target.value as 'AUTO' | 'MANUAL' | 'ROUND_ROBIN' | 'LEAST_BUSY')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#006045]"
+                  aria-label="Assignment strategy"
                 >
                   <option value="AUTO">Auto (Smart - Location + Language)</option>
                   <option value="LEAST_BUSY">Least Busy Agent</option>
@@ -1621,7 +1661,15 @@ const AdminDashboard: React.FC = () => {
 
       {/* Edit Profile Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowProfileModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -1629,6 +1677,7 @@ const AdminDashboard: React.FC = () => {
               <button
                 onClick={() => setShowProfileModal(false)}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1662,6 +1711,7 @@ const AdminDashboard: React.FC = () => {
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
+                    aria-label="Upload profile image"
                   />
                 </div>
                 <p className="text-xs text-gray-500">Click to upload image (Max 2MB)</p>
@@ -1774,6 +1824,13 @@ const AdminDashboard: React.FC = () => {
           currentChats: agent._count?.assignedConversations || 0,
           maxChats: agent.maxChats || 5,
         }))}
+      />
+
+      {/* Bulk Agent Onboard Modal */}
+      <BulkAgentOnboardModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        onBulkUpload={handleBulkUpload}
       />
     </div>
   );

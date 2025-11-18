@@ -1,11 +1,26 @@
+import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
   ChatbotState,
-  CreateChatBotMessage,
-  SetStateFunc,
 } from '../../types';
-import { ApiService } from '../../../services/apiService';
+import { ApiService } from '@/services/api';
+
+// Local type definitions
+type CreateChatBotMessage = (
+  message: string,
+  options?: {
+    delay?: number;
+    widget?: string;
+    loading?: boolean;
+    payload?: unknown;
+    terminateLoading?: boolean;
+    withAvatar?: boolean;
+    tag?: string;
+  },
+) => ChatMessage;
+
+type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
 
 /**
  * SexEnhancementActionProvider
@@ -84,9 +99,11 @@ export class SexEnhancementActionProvider {
         return;
       }
 
-      await this.api.saveChatState(state, sessionId);
+      // Note: saveChatState method would need to be implemented in ApiService
+      // For now, we'll save to localStorage
+      localStorage.setItem('chat_state', JSON.stringify(state));
     } catch (error) {
-      console.error('Failed to save sex enhancement chat state to server:', error);
+      console.error('Failed to save sex enhancement chat state:', error);
       throw error;
     }
   }
@@ -149,7 +166,7 @@ export class SexEnhancementActionProvider {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, introMessage, optionsMessage],
-      currentStep: 'sexEnhancementChoice',
+      currentStep: 'sexEnhancement',
     }));
 
     // Save conversations to server
@@ -653,7 +670,7 @@ export class SexEnhancementActionProvider {
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, optionsMessage],
-        currentStep: 'sexEnhancementChoice',
+        currentStep: 'sexEnhancement',
       }));
 
       await this.api

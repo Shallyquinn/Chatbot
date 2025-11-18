@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ActionProviderInterface } from '../chatbot/ActionProvider';
 import { searchStates } from '../data/nigerianStates';
 
 interface StateSearchWidgetProps {
   states: string[];
-  actionProvider: ActionProviderInterface;
+  actionProvider: any; // Generic to support all chatbot variants
   onStateSelect: (state: string) => void;
 }
 

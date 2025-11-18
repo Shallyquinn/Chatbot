@@ -156,7 +156,15 @@ const BulkAgentOnboardModal: React.FC<BulkAgentOnboardModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !uploading) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -164,6 +172,7 @@ const BulkAgentOnboardModal: React.FC<BulkAgentOnboardModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close modal"
           >
             <X className="w-6 h-6" />
           </button>

@@ -18,15 +18,23 @@ const HausaChatbotApp: React.FC = () => {
   const chatContainerRef = useRef(null);
   const lastMessageCountRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
+  
+  // Set up navigation callback for ActionProvider
+  useEffect(() => {
+    ActionProvider.setNavigationCallback((path: string) => {
+      navigate(path);
+    });
+  }, [navigate]);
 
   // Memoize save handler to prevent infinite re-renders
   const handleSaveMessages = useCallback((messages: ChatMessage[]) => {
     if (messages.length !== lastMessageCountRef.current) {
       lastMessageCountRef.current = messages.length;
       try {
-        localStorage.setItem('hausa_chat_messages', JSON.stringify(messages));
-        const currentState = JSON.parse(localStorage.getItem('hausa_chat_state') || '{}');
-        localStorage.setItem('hausa_chat_state', JSON.stringify({ ...currentState, messages }));
+        // Save to unified chat_state (conversation continuity)
+        localStorage.setItem('chat_messages', JSON.stringify(messages));
+        const currentState = JSON.parse(localStorage.getItem('chat_state') || '{}');
+        localStorage.setItem('chat_state', JSON.stringify({ ...currentState, messages }));
       } catch (error) {
         console.error('Error saving Hausa messages:', error);
       }
@@ -52,14 +60,15 @@ const HausaChatbotApp: React.FC = () => {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
     
-    const savedState = localStorage.getItem('hausa_chat_state');
+    // Use unified chat_state for conversation continuity
+    const savedState = localStorage.getItem('chat_state');
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
         setChatState(parsed);
         lastMessageCountRef.current = parsed.messages?.length || 0;
       } catch (error) {
-        console.error('Failed to parse saved Hausa state:', error);
+        console.error('Failed to parse saved state:', error);
       }
     }
   }, []);

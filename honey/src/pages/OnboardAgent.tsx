@@ -113,7 +113,7 @@ const OnboardAgentPage: React.FC = () => {
         specializations: formData.specializations,
       };
 
-      await api.post('/agents/register', agentData);
+      await api.post('/admin/agents', agentData);
 
       setSuccess('Agent onboarded successfully! Redirecting to login...');
       

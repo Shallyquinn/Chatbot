@@ -1,10 +1,10 @@
 // src/chatbot/sections/preventPregnancy/preventPregnancyTypes.ts
-import { ChatMessage, ChatbotState } from '../../types';
-import React from 'react';
+import { ChatMessage, ChatbotState } from "../../types";
+import React from "react";
 
 export type CreateChatBotMessage = (
   message: string,
-  options?: Partial<ChatMessage>,
+  options?: Partial<ChatMessage>
 ) => ChatMessage;
 
 export type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
@@ -75,14 +75,14 @@ export interface PreventPregnancyProviderInterface {
 // Main types
 export type ContraceptionType = "Emergency" | "Prevent in future";
 
-// Duration options - Using display labels as actual type values (matches WhatsApp)
+// Duration options - Using Hausa display labels as actual type values
 export type PreventionDuration =
-  | "Up to 1 year"
-  | "1 - 2 years"
-  | "3 - 4 years"
-  | "5 - 10 years"
-  | "Permanently"
-  | "Not sure";
+  | "Har zuwa shekara 1"
+  | "Shekara 1 zuwa 2"
+  | "Shekara 3 zuwa 4"
+  | "Shekara 5 zuwa 10"
+  | "Na dindindin"
+  | "Ban sani ba";
 
 // Natural language normalization function is defined below after array constants
 
@@ -132,17 +132,17 @@ export const getMethodOptionsForDuration = (
   duration: PreventionDuration
 ): ContraceptiveMethod[] => {
   switch (duration) {
-    case "Up to 1 year":
+    case "Har zuwa shekara 1":
       return SHORT_TERM_METHODS;
-    case "1 - 2 years":
+    case "Shekara 1 zuwa 2":
       return [...SHORT_TERM_METHODS, "Injectables", "Implants"];
-    case "3 - 4 years":
+    case "Shekara 3 zuwa 4":
       return MEDIUM_TERM_METHODS;
-    case "5 - 10 years":
+    case "Shekara 5 zuwa 10":
       return LONG_TERM_METHODS;
-    case "Permanently":
+    case "Na dindindin":
       return PERMANENT_METHODS;
-    case "Not sure":
+    case "Ban sani ba":
       // When not sure, return all methods grouped by category
       return [];
     default:
@@ -166,19 +166,19 @@ export const EMERGENCY_PRODUCT_OPTIONS: EmergencyProduct[] = [
   "Postinor2",
 ];
 
-// Duration options for display (using WhatsApp labels - these ARE the type values now)
+// Duration options for display (using Hausa labels - these ARE the type values now)
 export const PREVENTION_DURATION_OPTIONS: PreventionDuration[] = [
-  "Up to 1 year",
-  "1 - 2 years",
-  "3 - 4 years",
-  "5 - 10 years",
-  "Permanently",
-  "Not sure",
+  "Har zuwa shekara 1",
+  "Shekara 1 zuwa 2",
+  "Shekara 3 zuwa 4",
+  "Shekara 5 zuwa 10",
+  "Na dindindin",
+  "Ban sani ba",
 ];
 
 /**
  * Natural language normalization function for duration input
- * Maps user-typed variations to standard PreventionDuration values
+ * Maps user-typed variations to standard PreventionDuration values (Hausa)
  * @param userInput - The raw user input string
  * @returns The normalized PreventionDuration value, or null if unrecognized
  */
@@ -189,14 +189,13 @@ export function normalizeDurationInput(
 
   // Direct matches (case-insensitive)
   const directMatches: Record<string, PreventionDuration> = {
-    "up to 1 year": "Up to 1 year",
-    "1 - 2 years": "1 - 2 years",
-    "3 - 4 years": "3 - 4 years",
-    "5 - 10 years": "5 - 10 years",
-    permanently: "Permanently",
-    "not sure": "Not sure",
-    "don't know": "Not sure",
-    unsure: "Not sure",
+    "har zuwa shekara 1": "Har zuwa shekara 1",
+    "shekara 1 zuwa 2": "Shekara 1 zuwa 2",
+    "shekara 3 zuwa 4": "Shekara 3 zuwa 4",
+    "shekara 5 zuwa 10": "Shekara 5 zuwa 10",
+    "na dindindin": "Na dindindin",
+    "ban sani ba": "Ban sani ba",
+    "ban sani": "Ban sani ba",
   };
 
   if (directMatches[normalized]) {
@@ -205,47 +204,46 @@ export function normalizeDurationInput(
 
   // Natural language variations for spontaneous typing
   if (
-    normalized.includes("short") ||
-    normalized.includes("1 year") ||
-    normalized.includes("less than 1")
+    normalized.includes("gajere") ||
+    normalized.includes("1 shekara") ||
+    normalized.includes("kadan")
   ) {
-    return "Up to 1 year";
+    return "Har zuwa shekara 1";
   }
   if (
     normalized.includes("1-2") ||
-    normalized.includes("couple") ||
-    normalized.includes("medium")
+    normalized.includes("shekara biyu") ||
+    normalized.includes("matsakaici")
   ) {
-    return "1 - 2 years";
+    return "Shekara 1 zuwa 2";
   }
   if (
     normalized.includes("3-4") ||
-    normalized.includes("long term") ||
-    normalized.includes("longer")
+    normalized.includes("dogon lokaci") ||
+    normalized.includes("shekara hudu")
   ) {
-    return "3 - 4 years";
+    return "Shekara 3 zuwa 4";
   }
   if (
     normalized.includes("5-10") ||
-    normalized.includes("very long") ||
-    normalized.includes("extended")
+    normalized.includes("sosai") ||
+    normalized.includes("shekara goma")
   ) {
-    return "5 - 10 years";
+    return "Shekara 5 zuwa 10";
   }
   if (
-    normalized.includes("permanent") ||
-    normalized.includes("forever") ||
-    normalized.includes("never")
+    normalized.includes("dindindin") ||
+    normalized.includes("har abada") ||
+    normalized.includes("kullum")
   ) {
-    return "Permanently";
+    return "Na dindindin";
   }
   if (
-    normalized.includes("not sure") ||
-    normalized.includes("unsure") ||
-    normalized.includes("don't know") ||
-    normalized.includes("uncertain")
+    normalized.includes("ban sani") ||
+    normalized.includes("ban san") ||
+    normalized.includes("shakka")
   ) {
-    return "Not sure";
+    return "Ban sani ba";
   }
 
   return null; // No match found

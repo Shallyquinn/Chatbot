@@ -1,11 +1,26 @@
+import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
   ChatbotState,
-  CreateChatBotMessage,
-  SetStateFunc,
 } from '../../types';
-import { ApiService } from '../../../services/apiService';
+import { ApiService } from '@/services/api';
+
+// Local type definitions
+type CreateChatBotMessage = (
+  message: string,
+  options?: {
+    delay?: number;
+    widget?: string;
+    loading?: boolean;
+    payload?: unknown;
+    terminateLoading?: boolean;
+    withAvatar?: boolean;
+    tag?: string;
+  },
+) => ChatMessage;
+
+type SetStateFunc = React.Dispatch<React.SetStateAction<ChatbotState>>;
 
 /**
  * SexEnhancementActionProvider
@@ -84,9 +99,11 @@ export class SexEnhancementActionProvider {
         return;
       }
 
-      await this.api.saveChatState(state, sessionId);
+      // Note: saveChatState method would need to be implemented in ApiService
+      // For now, we'll save to localStorage
+      localStorage.setItem('chat_state', JSON.stringify(state));
     } catch (error) {
-      console.error('Failed to save sex enhancement chat state to server:', error);
+      console.error('Failed to save sex enhancement chat state:', error);
       throw error;
     }
   }
@@ -149,7 +166,7 @@ export class SexEnhancementActionProvider {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, introMessage, optionsMessage],
-      currentStep: 'sexEnhancementChoice',
+      currentStep: 'sexEnhancement',
     }));
 
     // Save conversations to server
@@ -161,7 +178,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 500,
       })
-      .catch((err) => console.error('Failed to save intro message:', err));
+      . catch((err: unknown) => console.error('Failed to save intro message:', err));
 
     await this.api
       .createConversation({
@@ -172,7 +189,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
       })
-      .catch((err) => console.error('Failed to save options message:', err));
+      . catch((err: unknown) => console.error('Failed to save options message:', err));
   };
 
   /**
@@ -192,7 +209,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         widget_name: 'sexEnhancementOptions',
       })
-      .catch((err) => console.error('Failed to save user choice:', err));
+      . catch((err: unknown) => console.error('Failed to save user choice:', err));
 
     if (choice === 'Gels and Lubricants') {
       await this.handleLubricantIntroduction(userMessage);
@@ -241,7 +258,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 500,
       })
-      .catch((err) => console.error('Failed to save lubricant intro:', err));
+      . catch((err: unknown) => console.error('Failed to save lubricant intro:', err));
 
     await this.api
       .createConversation({
@@ -251,7 +268,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
       })
-      .catch((err) => console.error('Failed to save audio message:', err));
+      . catch((err: unknown) => console.error('Failed to save audio message:', err));
 
     await this.api
       .createConversation({
@@ -262,7 +279,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1500,
       })
-      .catch((err) => console.error('Failed to save product options:', err));
+      . catch((err: unknown) => console.error('Failed to save product options:', err));
   };
 
   /**
@@ -332,7 +349,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 500,
       })
-      .catch((err) => console.error('Failed to save ED intro:', err));
+      . catch((err: unknown) => console.error('Failed to save ED intro:', err));
 
     await this.api
       .createConversation({
@@ -342,7 +359,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
       })
-      .catch((err) => console.error('Failed to save Penegra details:', err));
+      . catch((err: unknown) => console.error('Failed to save Penegra details:', err));
 
     await this.api
       .createConversation({
@@ -352,7 +369,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1500,
       })
-      .catch((err) => console.error('Failed to save audio intro:', err));
+      . catch((err: unknown) => console.error('Failed to save audio intro:', err));
 
     await this.api
       .createConversation({
@@ -362,7 +379,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 2000,
       })
-      .catch((err) => console.error('Failed to save audio:', err));
+      . catch((err: unknown) => console.error('Failed to save audio:', err));
 
     await this.api
       .createConversation({
@@ -372,7 +389,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 2500,
       })
-      .catch((err) => console.error('Failed to save purchase info:', err));
+      . catch((err: unknown) => console.error('Failed to save purchase info:', err));
 
     await this.api
       .createConversation({
@@ -383,7 +400,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 3000,
       })
-      .catch((err) => console.error('Failed to save next actions:', err));
+      . catch((err: unknown) => console.error('Failed to save next actions:', err));
   };
 
   /**
@@ -403,7 +420,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         widget_name: 'lubricantOptions',
       })
-      .catch((err) => console.error('Failed to save lubricant selection:', err));
+      . catch((err: unknown) => console.error('Failed to save lubricant selection:', err));
 
     if (product === 'Fiesta Intim Gel') {
       await this.handleFiestaIntimGelDetails(userMessage);
@@ -479,7 +496,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 500,
       })
-      .catch((err) => console.error('Failed to save details:', err));
+      . catch((err: unknown) => console.error('Failed to save details:', err));
 
     await this.api
       .createConversation({
@@ -489,7 +506,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
       })
-      .catch((err) => console.error('Failed to save image:', err));
+      . catch((err: unknown) => console.error('Failed to save image:', err));
 
     await this.api
       .createConversation({
@@ -499,7 +516,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1500,
       })
-      .catch((err) => console.error('Failed to save video intro:', err));
+      . catch((err: unknown) => console.error('Failed to save video intro:', err));
 
     await this.api
       .createConversation({
@@ -509,7 +526,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 2000,
       })
-      .catch((err) => console.error('Failed to save video link:', err));
+      . catch((err: unknown) => console.error('Failed to save video link:', err));
 
     await this.api
       .createConversation({
@@ -519,7 +536,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 2500,
       })
-      .catch((err) => console.error('Failed to save purchase info:', err));
+      . catch((err: unknown) => console.error('Failed to save purchase info:', err));
 
     await this.api
       .createConversation({
@@ -530,7 +547,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 3000,
       })
-      .catch((err) => console.error('Failed to save next actions:', err));
+      . catch((err: unknown) => console.error('Failed to save next actions:', err));
   };
 
   /**
@@ -586,7 +603,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 500,
       })
-      .catch((err) => console.error('Failed to save details:', err));
+      . catch((err: unknown) => console.error('Failed to save details:', err));
 
     await this.api
       .createConversation({
@@ -596,7 +613,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1000,
       })
-      .catch((err) => console.error('Failed to save image:', err));
+      . catch((err: unknown) => console.error('Failed to save image:', err));
 
     await this.api
       .createConversation({
@@ -606,7 +623,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 1500,
       })
-      .catch((err) => console.error('Failed to save purchase info:', err));
+      . catch((err: unknown) => console.error('Failed to save purchase info:', err));
 
     await this.api
       .createConversation({
@@ -617,7 +634,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         message_delay_ms: 2000,
       })
-      .catch((err) => console.error('Failed to save next actions:', err));
+      . catch((err: unknown) => console.error('Failed to save next actions:', err));
   };
 
   /**
@@ -638,7 +655,7 @@ export class SexEnhancementActionProvider {
         message_sequence_number: this.getNextSequenceNumber(),
         widget_name: 'sexEnhancementNextActions',
       })
-      .catch((err) => console.error('Failed to save next action:', err));
+      . catch((err: unknown) => console.error('Failed to save next action:', err));
 
     if (action === 'Learn other methods') {
       // Loop back to sex enhancement options
@@ -653,7 +670,7 @@ export class SexEnhancementActionProvider {
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, optionsMessage],
-        currentStep: 'sexEnhancementChoice',
+        currentStep: 'sexEnhancement',
       }));
 
       await this.api
@@ -665,7 +682,7 @@ export class SexEnhancementActionProvider {
           message_sequence_number: this.getNextSequenceNumber(),
           message_delay_ms: 500,
         })
-        .catch((err) => console.error('Failed to save loop message:', err));
+        . catch((err: unknown) => console.error('Failed to save loop message:', err));
     } else if (action === 'Back to main menu') {
       // Return to main menu
       const mainMenuMessage = this.createChatBotMessage(
@@ -691,7 +708,7 @@ export class SexEnhancementActionProvider {
           message_sequence_number: this.getNextSequenceNumber(),
           message_delay_ms: 500,
         })
-        .catch((err) => console.error('Failed to save main menu:', err));
+        . catch((err: unknown) => console.error('Failed to save main menu:', err));
     } else if (action === 'Chat with AI /Human') {
       // Delegate to main ActionProvider's general question handler
       this.setState((prev: ChatbotState) => ({

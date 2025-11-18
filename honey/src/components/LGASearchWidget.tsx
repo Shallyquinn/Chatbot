@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ActionProviderInterface } from '../chatbot/ActionProvider';
 import { getLGAsByState } from '../data/nigerianStates';
 
 interface LGASearchWidgetProps {
   selectedState: string;
-  actionProvider: ActionProviderInterface;
+  actionProvider: any; // Generic to support all chatbot variants
   onLGASelect: (lga: string) => void;
 }
 

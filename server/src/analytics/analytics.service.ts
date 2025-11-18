@@ -89,4 +89,60 @@ export class AnalyticsService {
       .map(([flow, count]) => ({ flow, count }))
       .sort((a, b) => b.count - a.count);
   }
+
+  async getAgentDashboardStats() {
+    // Get total agents
+    const totalAgents = await this.prisma.agent.count();
+
+    // Get online agents
+    const onlineAgents = await this.prisma.agent.count({
+      where: { isOnline: true },
+    });
+
+    // Get waiting requests
+    const waitingRequests = await this.prisma.conversationQueue.count({
+      where: { status: 'WAITING' },
+    });
+
+    // Get active conversations
+    const activeConversations = await this.prisma.conversation.count({
+      where: { status: 'AGENT_ASSIGNED' },
+    });
+
+    // Get completed conversations (last 24 hours)
+    const completedToday = await this.prisma.conversation.count({
+      where: {
+        status: 'COMPLETED',
+        created_at: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
+      },
+    });
+
+    // Get average wait time for queue
+    const queueItems = await this.prisma.conversationQueue.findMany({
+      where: { status: 'WAITING' },
+      select: { queuedAt: true },
+    });
+
+    const avgWaitTime =
+      queueItems.length > 0
+        ? queueItems.reduce((sum, item) => {
+            const waitTime = Date.now() - item.queuedAt.getTime();
+            return sum + waitTime;
+          }, 0) / queueItems.length
+        : 0;
+
+    const avgWaitMinutes = Math.round(avgWaitTime / (1000 * 60));
+
+    return {
+      totalAgents,
+      onlineAgents,
+      offlineAgents: totalAgents - onlineAgents,
+      waitingRequests,
+      activeConversations,
+      completedToday,
+      avgWaitTime: avgWaitMinutes,
+    };
+  }
 }

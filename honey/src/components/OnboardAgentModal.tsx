@@ -201,7 +201,8 @@ const OnboardAgentModal: React.FC<OnboardAgentModalProps> = ({ isOpen, onClose, 
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20 p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
