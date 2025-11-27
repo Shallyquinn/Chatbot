@@ -2605,6 +2605,11 @@ class ActionProvider implements ActionProviderInterface {
   // GENERAL QUESTION HANDLER IMPLEMENTATIONS
 
   handleGeneralQuestion = async (): Promise<void> => {
+    logEscalation.conversationFlow('User selected: Ask a general question', {
+      currentStep: this.state.currentStep,
+      conversationId: this.state.conversationId,
+    });
+
     const responseMessage = this.createChatBotMessage(
       "I'd be happy to help with your questions! ",
       { delay: 500 },
@@ -2648,12 +2653,28 @@ class ActionProvider implements ActionProviderInterface {
   };
 
   handleAgentTypeSelection = async (type: string): Promise<void> => {
+    logEscalation.userSelection(type, { currentStep: this.state.currentStep });
+    
     const userMessage = this.createUserMessage(type, 'agent_type_selection');
 
     if (type === 'Human Agent') {
+      logEscalation.conversationFlow('User selected: Human Agent');
+      
       try {
+        const startTime = Date.now();
         // Use the agent escalation service to escalate to human
         const escalationResult = await this.escalateToHuman();
+        const duration = Date.now() - startTime;
+        
+        if (escalationResult) {
+          logEscalation.agentAssignment({
+            status: escalationResult.status,
+            agentId: escalationResult.agentId,
+            agentName: escalationResult.agentName,
+            position: escalationResult.position,
+            estimatedWaitTime: escalationResult.estimatedWaitTime,
+          });
+        }
 
         let responseMessage: ChatMessage;
 
@@ -2754,6 +2775,8 @@ class ActionProvider implements ActionProviderInterface {
         }));
       }
     } else if (type === 'AI Chatbot' || type === 'AI chatbot' || type === 'AI Agent') {
+      logEscalation.conversationFlow('User selected: AI Chatbot');
+      
       const aiMessage = this.createChatBotMessage(
         "Perfect! I'm here to help. Please ask your question and I'll do my best to provide accurate information.",
         { delay: 500 },
@@ -2855,21 +2878,45 @@ class ActionProvider implements ActionProviderInterface {
   private setupAgentCommunication(agentId: string) {
     // Set up WebSocket connection for real-time agent communication
     if (typeof WebSocket !== 'undefined') {
-      const ws = new WebSocket(
-        `ws://localhost:8080/chatbot-ws?userId=${this.userSessionId}&agentId=${agentId}`,
-      );
+      const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:3000';
+      const fullUrl = `${wsUrl}?userId=${this.userSessionId}&agentId=${agentId}`;
+      
+      logEscalation.websocketConnection('connecting', { 
+        url: fullUrl,
+        userId: this.userSessionId,
+        agentId 
+      });
+
+      const ws = new WebSocket(fullUrl);
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        logEscalation.websocketEvent('message_received', data);
         this.handleAgentMessage(data);
       };
 
       ws.onopen = () => {
-        console.log('Connected to agent communication channel');
+        logEscalation.websocketConnection('connected', {
+          readyState: ws.readyState,
+          url: ws.url,
+        });
+
+        // Register user with WebSocket backend
+        const registrationMessage = JSON.stringify({
+          event: 'register_user',
+          data: { userId: this.userSessionId }
+        });
+        
+        ws.send(registrationMessage);
+        logEscalation.websocketEvent('register_user_sent', { userId: this.userSessionId });
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logEscalation.websocketConnection('error', error);
+      };
+
+      ws.onclose = () => {
+        logEscalation.websocketConnection('closed', { agentId });
       };
 
       // Store WebSocket reference for cleanup
