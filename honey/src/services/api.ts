@@ -846,6 +846,47 @@ export class ApiService {
       return null;
     }
   }
+
+  async getAgentAvailability(): Promise<{
+    totalAgents: number;
+    onlineAgents: number;
+    availableAgents: number;
+    busyAgents: number;
+    queueLength: number;
+    estimatedWaitTime: number;
+    isWithinBusinessHours: boolean;
+    businessHours: {
+      start: string;
+      end: string;
+      timezone: string;
+    };
+  }> {
+    try {
+      const response = await this.request(
+        `${this.baseUrl}/agents/availability`,
+        { method: "GET" }
+      );
+      return response;
+    } catch (error) {
+      console.error("Failed to get agent availability:", error);
+      // Return default offline status
+      return {
+        totalAgents: 0,
+        onlineAgents: 0,
+        availableAgents: 0,
+        busyAgents: 0,
+        queueLength: 0,
+        estimatedWaitTime: 0,
+        isWithinBusinessHours: false,
+        businessHours: {
+          start: "09:00",
+          end: "17:00",
+          timezone: "UTC",
+        },
+      };
+    }
+  }
 }
+
 
 export const apiService = new ApiService('http://localhost:3000');

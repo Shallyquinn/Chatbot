@@ -180,9 +180,13 @@ class ActionProvider implements ActionProviderInterface {
     setStateFunc: SetStateFunc,
     state: ChatbotState,
   ) {
-    // Increment construction counter for debugging
-    ActionProvider.constructionCount++;
-    console.log(`🏗️ ActionProvider constructed (#${ActionProvider.constructionCount})`);
+    // Only log construction in development
+    if (process.env.NODE_ENV === 'development') {
+      ActionProvider.constructionCount++;
+      if (ActionProvider.constructionCount % 10 === 0) {
+        console.log(`🏗️ ActionProvider constructed (#${ActionProvider.constructionCount})`);
+      }
+    }
     
     // Wrap createChatBotMessage to automatically add timestamps
     const originalCreateChatBotMessage = createChatBotMessage;

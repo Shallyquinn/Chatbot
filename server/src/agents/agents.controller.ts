@@ -54,4 +54,9 @@ export class AgentsController {
   ) {
     return this.agentsService.updateAgentStatus(agentId, statusDto.isOnline);
   }
+
+  @Get('availability')
+  async getAvailability() {
+    return this.agentsService.getAgentAvailability();
+  }
 }

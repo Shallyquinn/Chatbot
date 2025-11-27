@@ -165,7 +165,7 @@ export class SexEnhancementActionProvider {
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
-      messages: [...prev.messages, introMessage, optionsMessage],
+      messages: [...(prev.messages || []), introMessage, optionsMessage],
       currentStep: 'sexEnhancement',
     }));
 

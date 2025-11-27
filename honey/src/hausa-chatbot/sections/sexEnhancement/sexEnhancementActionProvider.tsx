@@ -165,7 +165,7 @@ export class SexEnhancementActionProvider {
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
-      messages: [...prev.messages, introMessage, optionsMessage],
+      messages: [...(prev.messages || []), introMessage, optionsMessage],
       currentStep: 'sexEnhancement',
     }));
 
@@ -245,7 +245,7 @@ export class SexEnhancementActionProvider {
 
     this.setState((prev: ChatbotState) => ({
       ...prev,
-      messages: [...prev.messages, userMessage, lubricantIntro, audioMessage, productOptions],
+      messages: [...(prev.messages || []), userMessage, lubricantIntro, audioMessage, productOptions],
       currentStep: 'lubricantSelection',
     }));
 
@@ -328,7 +328,7 @@ export class SexEnhancementActionProvider {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [
-        ...prev.messages,
+        ...(prev.messages || []),
         userMessage,
         edIntro,
         penegrаDetails,
@@ -475,7 +475,7 @@ export class SexEnhancementActionProvider {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [
-        ...prev.messages,
+        ...(prev.messages || []),
         userMessage,
         details,
         imageMessage,
@@ -584,7 +584,7 @@ export class SexEnhancementActionProvider {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [
-        ...prev.messages,
+        ...(prev.messages || []),
         userMessage,
         details,
         imageMessage,
@@ -669,7 +669,7 @@ export class SexEnhancementActionProvider {
 
       this.setState((prev: ChatbotState) => ({
         ...prev,
-        messages: [...prev.messages, userMessage, optionsMessage],
+        messages: [...(prev.messages || []), userMessage, optionsMessage],
         currentStep: 'sexEnhancement',
       }));
 
@@ -695,7 +695,7 @@ export class SexEnhancementActionProvider {
 
       this.setState((prev: ChatbotState) => ({
         ...prev,
-        messages: [...prev.messages, userMessage, mainMenuMessage],
+        messages: [...(prev.messages || []), userMessage, mainMenuMessage],
         currentStep: 'fpm',
       }));
 
@@ -713,7 +713,7 @@ export class SexEnhancementActionProvider {
       // Delegate to main ActionProvider's general question handler
       this.setState((prev: ChatbotState) => ({
         ...prev,
-        messages: [...prev.messages, userMessage],
+        messages: [...(prev.messages || []), userMessage],
       }));
       
       if (this.handleGeneralQuestionCallback) {

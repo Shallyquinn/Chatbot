@@ -264,8 +264,19 @@ export class ConversationsService {
         throw new Error('conversationId and userId are required');
       }
 
-      // Check business hours and online agents
-      const businessHoursCheck = await this.checkBusinessHoursAndAgents();
+      // Check business hours and online agents (with fallback)
+      let businessHoursCheck;
+      try {
+        businessHoursCheck = await this.checkBusinessHoursAndAgents();
+      } catch (error) {
+        console.warn('⚠️ Error checking business hours, assuming available:', error);
+        businessHoursCheck = {
+          isWithinHours: true,
+          hasOnlineAgents: false,
+          message: 'Agents may be available',
+          businessHours: { start: '09:00', end: '17:00', timezone: 'UTC' },
+        };
+      }
 
       if (
         !businessHoursCheck.isWithinHours ||
@@ -383,27 +394,31 @@ export class ConversationsService {
 
         // Notify agent about new assignment via WebSocket
         try {
-          this.websocketService.notifyAgent(availableAgent.id, {
-            type: 'NEW_CONVERSATION_ASSIGNED',
-            conversationId,
-            userId,
-            userName: `User ${userId.slice(0, 8)}`,
-            priority: 'NORMAL',
-            timestamp: new Date(),
-          });
+          if (this.websocketService) {
+            this.websocketService.notifyAgent(availableAgent.id, {
+              type: 'NEW_CONVERSATION_ASSIGNED',
+              conversationId,
+              userId,
+              userName: `User ${userId.slice(0, 8)}`,
+              priority: 'NORMAL',
+              timestamp: new Date(),
+            });
+          }
         } catch (err) {
           console.error('Failed to notify agent via WebSocket:', err);
         }
 
         // Notify admins about assignment
         try {
-          this.websocketService.notifyAdmins({
-            type: 'CONVERSATION_ASSIGNED',
-            conversationId,
-            agentId: availableAgent.id,
-            agentName: availableAgent.name,
-            timestamp: new Date(),
-          });
+          if (this.websocketService) {
+            this.websocketService.notifyAdmins({
+              type: 'CONVERSATION_ASSIGNED',
+              conversationId,
+              agentId: availableAgent.id,
+              agentName: availableAgent.name,
+              timestamp: new Date(),
+            });
+          }
         } catch (err) {
           console.error('Failed to notify admins via WebSocket:', err);
         }
@@ -469,13 +484,15 @@ export class ConversationsService {
 
         // Notify admins about new queue entry
         try {
-          this.websocketService.notifyAdmins({
-            type: 'NEW_QUEUE_ENTRY',
-            conversationId,
-            userId,
-            position,
-            timestamp: new Date(),
-          });
+          if (this.websocketService) {
+            this.websocketService.notifyAdmins({
+              type: 'NEW_QUEUE_ENTRY',
+              conversationId,
+              userId,
+              position,
+              timestamp: new Date(),
+            });
+          }
         } catch (err) {
           console.error('Failed to notify admins about queue entry:', err);
         }

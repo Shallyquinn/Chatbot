@@ -363,4 +363,75 @@ export class AgentsService {
 
     return message;
   }
+
+  async getAgentAvailability() {
+    try {
+      // Get all agents
+      const agents = await this.prisma.agent.findMany({
+        select: {
+          id: true,
+          isOnline: true,
+          currentChats: true,
+          maxChats: true,
+        },
+      });
+
+      const totalAgents = agents.length;
+      const onlineAgents = agents.filter((a) => a.isOnline).length;
+      const availableAgents = agents.filter(
+        (a) => a.isOnline && a.currentChats < a.maxChats,
+      ).length;
+      const busyAgents = agents.filter(
+        (a) => a.isOnline && a.currentChats >= a.maxChats,
+      ).length;
+
+      // Get queue length
+      const queueLength = await this.prisma.conversationQueue.count({
+        where: { status: 'WAITING' },
+      });
+
+      // Calculate estimated wait time (basic formula: queueLength * 5 minutes / availableAgents)
+      const estimatedWaitTime =
+        availableAgents > 0
+          ? Math.ceil((queueLength * 5) / availableAgents)
+          : queueLength * 5;
+
+      // Check business hours (configurable via environment variables)
+      const businessHours = this.getBusinessHours();
+      const isWithinBusinessHours = this.isWithinBusinessHours();
+
+      return {
+        totalAgents,
+        onlineAgents,
+        availableAgents,
+        busyAgents,
+        queueLength,
+        estimatedWaitTime,
+        isWithinBusinessHours,
+        businessHours,
+      };
+    } catch (error) {
+      console.error('Error getting agent availability:', error);
+      throw error;
+    }
+  }
+
+  private getBusinessHours() {
+    return {
+      start: process.env.BUSINESS_HOURS_START || '09:00',
+      end: process.env.BUSINESS_HOURS_END || '17:00',
+      timezone: process.env.BUSINESS_HOURS_TIMEZONE || 'UTC',
+    };
+  }
+
+  private isWithinBusinessHours(): boolean {
+    const now = new Date();
+    const hours = now.getHours();
+    const businessHours = this.getBusinessHours();
+    
+    const startHour = parseInt(businessHours.start.split(':')[0]);
+    const endHour = parseInt(businessHours.end.split(':')[0]);
+    
+    return hours >= startHour && hours < endHour;
+  }
 }

@@ -23,6 +23,7 @@ import {
   PreventPregnancyWidgetProps,
 } from './sections/preventPregnancy/preventPregnancyWidgetsConfig';
 import { apiService } from '../services/api';
+import AgentAvailabilityWidget from '../components/AgentAvailabilityWidget';
 
 // Define prop types for your custom message components
 export interface MessageBoxProps {
@@ -387,12 +388,8 @@ const config = {
     {
       widgetName: 'agentTypeOptions',
       widgetFunc: (props: WidgetProps) => (
-        <OptionButtons
-          options={['Human Agent', 'AI Chatbot']}
+        <AgentAvailabilityWidget
           actionProvider={props.actionProvider}
-          handleClick={(option: string) =>
-            props.actionProvider.handleAgentTypeSelection(option)
-          }
         />
       ),
       props: {},

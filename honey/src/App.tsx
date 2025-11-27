@@ -43,29 +43,10 @@ const ChatbotApp: React.FC = () => {
     });
   }, [navigate]);
 
-  // Memoize save handler to prevent infinite re-renders
-  const handleSaveMessages = useCallback((messages: ChatMessage[]) => {
-    // Only save if message count actually changed
-    if (messages.length !== lastMessageCountRef.current) {
-      lastMessageCountRef.current = messages.length;
-      try {
-        localStorage.setItem('chat_messages', JSON.stringify(messages));
-        const currentState = JSON.parse(localStorage.getItem('chat_state') || '{}');
-        localStorage.setItem('chat_state', JSON.stringify({ ...currentState, messages }));
-      } catch (error) {
-        console.error('Error saving messages:', error);
-      }
-    }
-  }, []);
-
-  // Stable config object - memoized to prevent Chatbot re-instantiation
-  const stableConfig = useMemo(() => config, []);
-  
-  // Stable MessageParser - memoized to prevent Chatbot re-instantiation
-  const stableMessageParser = useMemo(() => MessageParser, []);
-  
-  // Stable ActionProvider - memoized to prevent Chatbot re-instantiation
-  const stableActionProvider = useMemo(() => ActionProvider, []);
+  // Stable references to prevent infinite re-renders
+  const stableConfig = useRef(config).current;
+  const stableMessageParser = useRef(MessageParser).current;
+  const stableActionProvider = useRef(ActionProvider).current;
 
   // Check if device is mobile
   useEffect(() => {
@@ -83,16 +64,16 @@ const ChatbotApp: React.FC = () => {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
-  // Force chatbot to re-render with saved state on mount - ONCE only
+  // Initialize once on mount
   useEffect(() => {
-    if (isInitializedRef.current) return; // Prevent re-initialization
+    if (isInitializedRef.current) return;
     isInitializedRef.current = true;
     
     const savedState = localStorage.getItem('chat_state');
     if (savedState) {
-      console.log('✅ Restored state from localStorage:', JSON.parse(savedState));
       try {
         const parsed = JSON.parse(savedState);
+        console.log('✅ Restored state from localStorage');
         setChatState(parsed);
         lastMessageCountRef.current = parsed.messages?.length || 0;
       } catch (error) {
