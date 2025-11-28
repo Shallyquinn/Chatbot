@@ -250,10 +250,10 @@ export class ConversationsService {
   // Escalate conversation to human agent
   async escalateToHuman(conversationId: string, userId: string) {
     try {
-      console.log('🔍 escalateToHuman called with:', {
-        conversationId,
-        userId,
-      });
+      console.log('🔍 Backend: Escalation request received');
+      console.log('  Conversation ID:', conversationId);
+      console.log('  User ID:', userId);
+      console.log('⏰ Timestamp:', new Date().toISOString());
 
       // Validate inputs
       if (!conversationId || !userId) {
@@ -264,10 +264,14 @@ export class ConversationsService {
         throw new Error('conversationId and userId are required');
       }
 
-      // Check business hours and online agents (with fallback)
+      // Check business hours and online agents (with fallback and logging)
+      console.log('⏰ Checking business hours and agent availability...');
       let businessHoursCheck;
       try {
         businessHoursCheck = await this.checkBusinessHoursAndAgents();
+        console.log('⏰ Business Hours Check Result:');
+        console.log('  Within Hours:', businessHoursCheck.isWithinHours);
+        console.log('  Online Agents:', businessHoursCheck.hasOnlineAgents);
       } catch (error) {
         console.warn('⚠️ Error checking business hours, assuming available:', error);
         businessHoursCheck = {
@@ -282,7 +286,7 @@ export class ConversationsService {
         !businessHoursCheck.isWithinHours ||
         !businessHoursCheck.hasOnlineAgents
       ) {
-        console.log('⏰ Outside business hours or no online agents');
+        console.log('⏰ Outside business hours or no online agents - cannot assign immediately');
 
         // Update conversation to show it was escalated but not assigned
         await this.prisma.conversation.update({
@@ -325,6 +329,7 @@ export class ConversationsService {
       // Find an available agent (where currentChats < maxChats)
       // Note: Prisma doesn't support field-to-field comparison in where clauses,
       // so we need to fetch agents and filter in memory
+      console.log('👥 Querying for online agents...');
       const agents = await this.prisma.agent.findMany({
         where: {
           isOnline: true,
@@ -340,15 +345,19 @@ export class ConversationsService {
         },
       });
 
-      console.log(
-        `📊 Found ${agents.length} online agents:`,
-        agents.map((a) => ({
-          name: a.name,
-          currentChats: a.currentChats,
-          maxChats: a.maxChats,
-          hasCapacity: a.currentChats < a.maxChats,
-        })),
-      );
+      const availableAgents = agents.filter(a => a.currentChats < a.maxChats);
+
+      console.log('👥 Agent Query Results:');
+      console.log('  Total Agents:', agents.length);
+      console.log('  Online Agents:', agents.length);
+      console.log('  Available Agents:', availableAgents.length);
+      console.log('  Agent Details:', agents.map((a) => ({
+        name: a.name,
+        currentChats: a.currentChats,
+        maxChats: a.maxChats,
+        hasCapacity: a.currentChats < a.maxChats,
+      })));
+      console.log('⏰ Timestamp:', new Date().toISOString());
 
       // Find first agent with available capacity
       const availableAgent = agents.find(
@@ -356,8 +365,14 @@ export class ConversationsService {
       );
 
       if (availableAgent) {
-        console.log('✅ Assigning to agent:', availableAgent.name);
+        console.log('✅ Agent Available - Assigning immediately');
+        console.log('  Agent ID:', availableAgent.id);
+        console.log('  Agent Name:', availableAgent.name);
+        console.log('  Current Chats:', availableAgent.currentChats);
+        console.log('  Max Chats:', availableAgent.maxChats);
+
         // Assign directly to available agent
+        console.log('💾 Database: Creating assignment transaction...');
         await this.prisma.$transaction([
           // Create assignment
           this.prisma.conversationAssignment.create({
@@ -390,9 +405,14 @@ export class ConversationsService {
           }),
         ]);
 
-        console.log('✅ Transaction completed - assignment created');
+        console.log('✅ Database: Transaction completed successfully');
+        console.log('💾 Updated Records:');
+        console.log('  - ConversationAssignment created');
+        console.log('  - Agent.currentChats incremented to', availableAgent.currentChats + 1);
+        console.log('  - Conversation.status updated to AGENT_ASSIGNED');
 
         // Notify agent about new assignment via WebSocket
+        console.log('📢 Sending notification to agent via WebSocket...');
         try {
           if (this.websocketService) {
             this.websocketService.notifyAgent(availableAgent.id, {
@@ -403,12 +423,14 @@ export class ConversationsService {
               priority: 'NORMAL',
               timestamp: new Date(),
             });
+            console.log('✅ Agent notification sent successfully to:', availableAgent.id);
           }
         } catch (err) {
-          console.error('Failed to notify agent via WebSocket:', err);
+          console.error('❌ Failed to notify agent via WebSocket:', err);
         }
 
         // Notify admins about assignment
+        console.log('📢 Sending notification to admins via WebSocket...');
         try {
           if (this.websocketService) {
             this.websocketService.notifyAdmins({
@@ -418,9 +440,10 @@ export class ConversationsService {
               agentName: availableAgent.name,
               timestamp: new Date(),
             });
+            console.log('✅ Admin notification sent successfully');
           }
         } catch (err) {
-          console.error('Failed to notify admins via WebSocket:', err);
+          console.error('❌ Failed to notify admins via WebSocket:', err);
         }
 
         // Send email notification to agent
@@ -449,7 +472,8 @@ export class ConversationsService {
           agentName: availableAgent.name,
         };
       } else {
-        console.log('⚠️ No available agents - adding to queue');
+        console.log('⏳ No available agents - adding to queue');
+        console.log('💾 Database: Creating queue entry...');
 
         // No available agents, add to queue
         const queueEntry = await this.prisma.conversationQueue.create({
@@ -462,7 +486,10 @@ export class ConversationsService {
           },
         });
 
+        console.log('✅ Queue entry created:', queueEntry.id);
+
         // Update conversation status
+        console.log('💾 Database: Updating conversation status to WAITING_FOR_AGENT...');
         await this.prisma.conversation.update({
           where: { conversation_id: conversationId },
           data: {
@@ -471,6 +498,8 @@ export class ConversationsService {
             escalationReason: 'User requested human agent',
           },
         });
+
+        console.log('✅ Conversation status updated to WAITING_FOR_AGENT');
 
         // Calculate queue position
         const position = await this.prisma.conversationQueue.count({
@@ -482,7 +511,13 @@ export class ConversationsService {
           },
         });
 
+        console.log('📊 Queue Status:');
+        console.log('  Position:', position);
+        console.log('  Estimated Wait:', queueEntry.estimatedWait, 'minutes');
+        console.log('⏰ Timestamp:', new Date().toISOString());
+
         // Notify admins about new queue entry
+        console.log('📢 Sending queue notification to admins...');
         try {
           if (this.websocketService) {
             this.websocketService.notifyAdmins({
@@ -492,9 +527,10 @@ export class ConversationsService {
               position,
               timestamp: new Date(),
             });
+            console.log('✅ Admin notification sent for queue entry');
           }
         } catch (err) {
-          console.error('Failed to notify admins about queue entry:', err);
+          console.error('❌ Failed to notify admins about queue entry:', err);
         }
 
         // Send queue overflow warning email if queue size exceeds threshold
