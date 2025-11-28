@@ -92,11 +92,15 @@ const AgentAvailabilityWidget: React.FC<AgentAvailabilityWidgetProps> = ({
 
   const getAvailabilityStatus = () => {
     if (!status.isWithinBusinessHours) {
+      const hoursMessage = status.businessHours 
+        ? `We're available ${status.businessHours.start} - ${status.businessHours.end} ${status.businessHours.timezone}`
+        : 'Please check back during business hours';
+      
       return {
         icon: '🌙',
         text: 'Outside Business Hours',
         color: '#666',
-        message: `We're available ${status.businessHours.start} - ${status.businessHours.end} ${status.businessHours.timezone}`,
+        message: hoursMessage,
       };
     }
 

@@ -428,10 +428,10 @@ export class AgentsService {
     const now = new Date();
     const hours = now.getHours();
     const businessHours = this.getBusinessHours();
-    
+
     const startHour = parseInt(businessHours.start.split(':')[0]);
     const endHour = parseInt(businessHours.end.split(':')[0]);
-    
+
     return hours >= startHour && hours < endHour;
   }
 }
