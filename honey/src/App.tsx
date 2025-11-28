@@ -143,7 +143,6 @@ const ChatbotApp: React.FC = () => {
                 config={stableConfig}
                 messageParser={stableMessageParser}
                 actionProvider={stableActionProvider}
-                saveMessages={handleSaveMessages}
               />
             </ChatbotWithDividers>
           </div>
