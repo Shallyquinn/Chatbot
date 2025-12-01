@@ -5,12 +5,14 @@ interface AgentStatusIndicatorProps {
   status: 'online' | 'offline' | 'away' | 'busy';
   showLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  onStatusChange?: (status: 'online' | 'offline' | 'away' | 'busy') => void;
 }
 
 export const AgentStatusIndicator: React.FC<AgentStatusIndicatorProps> = ({ 
   status, 
   showLabel = false,
-  size = 'md' 
+  size = 'md',
+  onStatusChange
 }) => {
   const sizeClasses = {
     sm: 'w-2 h-2',

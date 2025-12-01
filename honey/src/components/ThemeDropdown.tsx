@@ -170,7 +170,7 @@ const ThemeDropdown: React.FC = () => {
               onClick={handlePauseChat}
               className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2.5 border-b border-neutral-300 dark:border-gray-600"
             >
-              <Pause className="w-5 h-5 text-[#949494] dark:text-gray-400 flex-shrink-0" strokeWidth={2} />
+              <Pause className="w-5 h-5 text-[#949494] dark:text-gray-400 shrink-0" strokeWidth={2} />
               <span className="text-sm font-medium text-[#949494] dark:text-gray-300">
                 Pause Chat
               </span>
@@ -181,7 +181,7 @@ const ThemeDropdown: React.FC = () => {
               onClick={handleEndChat}
               className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2.5 rounded-b-[10px]"
             >
-              <XIcon className="w-5 h-5 text-[#949494] dark:text-gray-400 flex-shrink-0" strokeWidth={2} />
+              <XIcon className="w-5 h-5 text-[#949494] dark:text-gray-400 shrink-0" strokeWidth={2} />
               <span className="text-sm font-medium text-[#949494] dark:text-gray-300">
                 End Chat
               </span>
@@ -194,7 +194,7 @@ const ThemeDropdown: React.FC = () => {
       {showAgentModal && canAssignAgent && (
         <div 
           ref={agentModalRef}
-          className="absolute right-0 top-full mt-2 w-[320px] bg-white dark:bg-gray-800 rounded-[12px] shadow-2xl border border-[#dedede] dark:border-gray-700 z-50 overflow-hidden"
+          className="absolute right-0 top-full mt-2 w-[320px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-[#dedede] dark:border-gray-700 z-50 overflow-hidden"
         >
           <div className="flex flex-col">
             {loadingAgents ? (
@@ -211,13 +211,13 @@ const ThemeDropdown: React.FC = () => {
                   key={agent.id}
                   onClick={() => handleSelectAgent(agent)}
                   className={`w-full px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex gap-5 items-center ${
-                    index === 0 ? 'rounded-t-[12px]' : ''
+                    index === 0 ? 'rounded-t-xl' : ''
                   } ${
-                    index === agents.length - 1 ? 'rounded-b-[12px]' : 'border-b border-neutral-300 dark:border-gray-600'
+                    index === agents.length - 1 ? 'rounded-b-xl' : 'border-b border-neutral-300 dark:border-gray-600'
                   }`}
                 >
                   {/* Agent Avatar */}
-                  <div className="w-[42px] h-[42px] rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-[42px] h-[42px] rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center shrink-0">
                     <User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                   </div>
                   

@@ -20,7 +20,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, type, timestamp }) =
             : 'bg-[#dcf8c6] dark:bg-[#056162] text-gray-800 dark:text-white'
         }`}
       >
-        <div className="whitespace-pre-wrap break-words">
+        <div className="whitespace-pre-wrap wrap-break-word">
           {message}
         </div>
         {timestamp && (

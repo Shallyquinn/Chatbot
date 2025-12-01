@@ -48,7 +48,7 @@ export function AgentLogin({ onLoginSuccess }: AgentLoginProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#006045] to-[#00805d] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#006045] to-[#00805d] p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">

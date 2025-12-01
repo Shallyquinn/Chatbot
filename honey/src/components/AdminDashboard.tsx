@@ -588,7 +588,7 @@ const AdminDashboard: React.FC = () => {
         {/* Profile */}
         <div className="mt-8 px-5">
           <div className="relative w-20 h-20 mx-auto group">
-            <div className="bg-gradient-to-br from-[#006045] to-[#004d35] rounded-full w-full h-full shadow-md ring-2 ring-white flex items-center justify-center overflow-hidden">
+            <div className="bg-linear-to-br from-[#006045] to-[#004d35] rounded-full w-full h-full shadow-md ring-2 ring-white flex items-center justify-center overflow-hidden">
               {adminProfile.profileImage ? (
                 <img 
                   src={adminProfile.profileImage} 
