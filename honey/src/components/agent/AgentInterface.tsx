@@ -10,6 +10,8 @@ import {
   Send,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface Message {
@@ -39,6 +41,9 @@ interface AgentStats {
   averageResponseTime: number;
 }
 
+// Get API URL from environment variable with fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export function AgentInterface() {
   const [agentId, setAgentId] = useState<string>('');
   const [agentName, setAgentName] = useState<string>('Agent');
@@ -53,6 +58,10 @@ export function AgentInterface() {
     averageResponseTime: 0,
   });
   const [expandedSection, setExpandedSection] = useState<'assigned' | 'queued'>('assigned');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get agent from localStorage or authentication
@@ -62,8 +71,16 @@ export function AgentInterface() {
     if (storedAgentId) {
       setAgentId(storedAgentId);
       setAgentName(storedAgentName || 'Agent');
-      fetchDashboard(storedAgentId);
-      fetchConversations(storedAgentId);
+      setIsLoading(true);
+      
+      // Load both dashboard and conversations
+      Promise.all([
+        fetchDashboard(storedAgentId),
+        fetchConversations(storedAgentId)
+      ]).finally(() => {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      });
       
       // Poll for updates every 10 seconds
       const interval = setInterval(() => {
@@ -76,70 +93,101 @@ export function AgentInterface() {
 
   const fetchDashboard = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/agents/${id}/dashboard`);
+      const response = await fetch(`${API_BASE_URL}/agents/${id}/dashboard`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+        setError(null);
+      } else {
+        console.error('Failed to fetch dashboard: HTTP', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard:', error);
+      setError('Unable to load dashboard data');
     }
   };
 
   const fetchConversations = async (id: string) => {
     try {
       const [assignedResponse, queuedResponse] = await Promise.all([
-        fetch(`http://localhost:3000/agents/${id}/conversations/assigned`),
-        fetch(`http://localhost:3000/agents/${id}/conversations/queued`),
+        fetch(`${API_BASE_URL}/agents/${id}/conversations/assigned`),
+        fetch(`${API_BASE_URL}/agents/${id}/conversations/queued`),
       ]);
+
+      let hasError = false;
 
       if (assignedResponse.ok) {
         const assignedData = await assignedResponse.json();
         setConversations(assignedData);
+      } else {
+        console.error('Failed to fetch assigned conversations: HTTP', assignedResponse.status);
+        hasError = true;
       }
 
       if (queuedResponse.ok) {
         const queuedData = await queuedResponse.json();
         setQueuedConversations(queuedData);
+      } else {
+        console.error('Failed to fetch queued conversations: HTTP', queuedResponse.status);
+        hasError = true;
+      }
+
+      // Only clear error if both requests succeeded
+      if (!hasError) {
+        setError(null);
+      } else {
+        setError('Unable to load some conversations');
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
+      setError('Unable to load conversations');
     }
   };
 
   const handlePickConversation = async (conversation: Conversation) => {
     try {
+      setIsLoading(true);
       const response = await fetch(
-        `http://localhost:3000/agents/${agentId}/conversations/${conversation.conversationId}/assign`,
+        `${API_BASE_URL}/agents/${agentId}/conversations/${conversation.conversationId}/assign`,
         { method: 'POST' }
       );
 
       if (response.ok) {
-        fetchConversations(agentId);
+        await fetchConversations(agentId);
         setSelectedConversation(conversation);
+        setError(null);
+      } else {
+        setError('Failed to pick conversation');
       }
     } catch (error) {
       console.error('Failed to pick conversation:', error);
+      setError('Unable to pick conversation');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedConversation) return;
 
+    const messageToSend = messageInput;
+    setMessageInput('');
+    setIsSending(true);
+
     try {
       const response = await fetch(
-        `http://localhost:3000/agents/${agentId}/conversations/${selectedConversation.conversationId}/message`,
+        `${API_BASE_URL}/agents/${agentId}/conversations/${selectedConversation.conversationId}/message`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: messageInput }),
+          body: JSON.stringify({ content: messageToSend }),
         }
       );
 
       if (response.ok) {
         const newMessage: Message = {
           id: Date.now().toString(),
-          text: messageInput,
+          text: messageToSend,
           type: 'agent',
           timestamp: new Date(),
           sender: agentName,
@@ -149,11 +197,17 @@ export function AgentInterface() {
           ...selectedConversation,
           messages: [...(selectedConversation.messages || []), newMessage],
         });
-
-        setMessageInput('');
+        setError(null);
+      } else {
+        setError('Failed to send message');
+        setMessageInput(messageToSend); // Restore message on failure
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      setError('Unable to send message');
+      setMessageInput(messageToSend); // Restore message on failure
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -195,6 +249,22 @@ export function AgentInterface() {
           </div>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-red-800">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-xs text-red-600 hover:text-red-800 mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Channel Info */}
         <div className="p-6 border-b border-[#949494]">
           <div className="flex items-center justify-between">
@@ -227,31 +297,40 @@ export function AgentInterface() {
           </div>
 
           <ScrollArea className="flex-1">
-            {/* Assigned Conversations */}
-            {conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => setSelectedConversation(conv)}
-                className={`w-full px-9 py-3.5 flex flex-col gap-3.5 text-left hover:bg-[#f8f8f8] transition-colors ${
-                  selectedConversation?.id === conv.id ? 'bg-[#f8f8f8]' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="w-8 h-8 bg-[#ffdddd]">
-                      <AvatarFallback className="text-[#a13737] font-semibold">
-                        {getInitials(conv.userName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-[#383838] font-medium">{conv.userName}</span>
-                  </div>
-                  <span className="text-[#a2a2a2] text-sm">
-                    {formatTime(conv.lastMessageAt)}
-                  </span>
-                </div>
-                <p className="text-[#7b7b7b] text-sm truncate">{conv.lastMessage}</p>
-              </button>
-            ))}
+            {/* Loading State */}
+            {isLoading && isInitialLoad ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-[#006045] animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Assigned Conversations */}
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversation(conv)}
+                    className={`w-full px-9 py-3.5 flex flex-col gap-3.5 text-left hover:bg-[#f8f8f8] transition-colors ${
+                      selectedConversation?.id === conv.id ? 'bg-[#f8f8f8]' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-8 h-8 bg-[#ffdddd]">
+                          <AvatarFallback className="text-[#a13737] font-semibold">
+                            {getInitials(conv.userName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[#383838] font-medium">{conv.userName}</span>
+                      </div>
+                      <span className="text-[#a2a2a2] text-sm">
+                        {formatTime(conv.lastMessageAt)}
+                      </span>
+                    </div>
+                    <p className="text-[#7b7b7b] text-sm truncate">{conv.lastMessage}</p>
+                  </button>
+                ))}
+              </>
+            )}
 
             {/* Queued Conversations */}
             {expandedSection === 'queued' && queuedConversations.length > 0 && (
@@ -266,7 +345,8 @@ export function AgentInterface() {
                   <button
                     key={conv.id}
                     onClick={() => handlePickConversation(conv)}
-                    className="w-full px-9 py-3.5 flex flex-col gap-3.5 text-left hover:bg-[#f8f8f8] transition-colors"
+                    disabled={isLoading}
+                    className="w-full px-9 py-3.5 flex flex-col gap-3.5 text-left hover:bg-[#f8f8f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -277,9 +357,13 @@ export function AgentInterface() {
                         </Avatar>
                         <span className="text-[#383838] font-medium">{conv.userName}</span>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        Pick
-                      </Badge>
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 text-[#006045] animate-spin" />
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Pick
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-[#7b7b7b] text-sm truncate">{conv.lastMessage}</p>
                   </button>
@@ -389,15 +473,21 @@ export function AgentInterface() {
                   placeholder="Type your message..."
                   value={messageInput}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessageInput(e.target.value)}
-                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !isSending && handleSendMessage()}
                   className="flex-1"
+                  disabled={isSending}
                 />
                 <Button
                   onClick={handleSendMessage}
                   className="bg-[#006045] hover:bg-[#004d36]"
+                  disabled={isSending || !messageInput.trim()}
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Send
+                  {isSending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  {isSending ? 'Sending...' : 'Send'}
                 </Button>
               </div>
             </div>
