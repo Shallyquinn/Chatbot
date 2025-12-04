@@ -33,7 +33,7 @@ interface ConversationAssignment {
   conversationIds: string[];
   agentId: string;
 }
-
+ 
 interface MessageData {
   conversationId: string;
   content: string;
@@ -304,12 +304,17 @@ class ApiService {
 
   // CONVERSATION ESCALATION (for chatbot users requesting human agents)
 
-  async escalateToAgent(conversationId: string, userId: string) {
-    const response = await this.api.post("/conversations/escalate", {
-      conversationId,
-      userId,
-    });
-    return response.data;
+  async escalateToAgent(userId: string) {
+    try {
+      const response = await this.api.post("/conversations/escalate", {
+        userId
+      });
+      console.log("Escalation successful:", response);
+      return response.data;
+    } catch (error) {
+      console.error("Escalation failed:", error);
+      return null;
+    }
   }
 
   async getQueueStatus(conversationId: string) {

@@ -226,7 +226,7 @@ const AgentManagementDashboard: React.FC = () => {
                 Agents
               </button>
               {activeTab === 'agents' && (
-                <div className="w-[85px] h-[6px] bg-[#006045]" />
+                <div className="w-[85px] h-1.5 bg-[#006045]" />
               )}
             </div>
             <button
@@ -238,7 +238,7 @@ const AgentManagementDashboard: React.FC = () => {
               Admin
             </button>
           </div>
-          <div className="h-[1px] bg-[#e0e0e0]" />
+          <div className="h-px bg-[#e0e0e0]" />
         </div>
 
         {/* Channel/Platform Section */}
@@ -254,7 +254,7 @@ const AgentManagementDashboard: React.FC = () => {
             </div>
             <ChevronUp className="w-9 h-9 text-[#707070]" />
           </div>
-          <div className="h-[1px] bg-[#e0e0e0]" />
+          <div className="h-px bg-[#e0e0e0]" />
         </div>
 
         {/* Agents List */}
@@ -279,7 +279,7 @@ const AgentManagementDashboard: React.FC = () => {
                   )}
                 </button>
               </div>
-              <div className="h-[1px] bg-[#e8e8e8] mt-5" />
+              <div className="h-px bg-[#e8e8e8] mt-5" />
             </div>
           ))}
         </div>

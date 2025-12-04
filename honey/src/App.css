@@ -336,6 +336,7 @@
   align-items: center;
   justify-items: center;
   width: 100%;
+  bottom:10px;
   flex-shrink: 0; /* Don't allow input to shrink */
   background-color: var(--honey-background);
   border-radius: 12px !important;
@@ -345,6 +346,7 @@
   position: relative; /* Ensure it stays at bottom */
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+  bottom: 0%;
 }
 
 .react-chatbot-kit-chat-input-form {

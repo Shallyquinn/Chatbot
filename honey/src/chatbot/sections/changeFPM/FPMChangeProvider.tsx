@@ -210,7 +210,7 @@ class FPMChangeProvider implements FPMChangeProviderInterface {
     this.setState((prev: ChatbotState) => ({
       ...prev,
       messages: [...prev.messages, userMessage, responseMessage, concernQuestion],
-      currentStep: 'fpmConcernSelection',
+      currentStep: 'fpmConcern',
       currentConcernType: concernType,
     }));
     

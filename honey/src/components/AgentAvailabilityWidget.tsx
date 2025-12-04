@@ -58,7 +58,7 @@ const AgentAvailabilityWidget: React.FC<AgentAvailabilityWidgetProps> = ({
     };
   }, [autoRefresh]);
 
-  const handleAgentTypeSelection = (type: 'human' | 'ai') => {
+  const handleAgentTypeSelection = async(type: 'human' | 'ai') => {
     if (onAgentSelect) {
       onAgentSelect(type);
     } else {
@@ -66,6 +66,20 @@ const AgentAvailabilityWidget: React.FC<AgentAvailabilityWidgetProps> = ({
         type === 'human' ? 'Human Agent' : 'AI Chatbot'
       );
     }
+    try {
+  const userId = localStorage.getItem('chat_user_id') || 'default-user';
+  const response = await apiService.escalateToAgent(userId);
+  
+  if (response) {
+    console.log('✅ Escalation successful:', response);
+    // Handle successful escalation
+  } else {
+    console.warn('⚠️ Escalation returned null - may have failed');
+  }
+} catch (error) {
+  console.error('❌ Error handling agent type selection:', error);
+}
+
   };
 
   if (loading) {

@@ -126,7 +126,7 @@ export class ApiService {
           try {
             // Validate that the user still exists in the backend
             const user = await this.getUser(existingUserSessionId);
-            if (user && user.id === existingUserId) {
+            if (user && (user as any).id === existingUserId) {
               console.log(
                 "✅ Validated existing user_id from localStorage:",
                 existingUserId
@@ -786,7 +786,7 @@ export class ApiService {
   // AGENT ESCALATION METHODS
   // ============================================================================
 
-  async escalateToAgent(conversationId: string): Promise<{
+  async escalateToAgent(conversationId: string, userId?: string): Promise<{
     status: "ASSIGNED" | "QUEUED";
     agentId?: string;
     agentName?: string;
@@ -796,15 +796,14 @@ export class ApiService {
     try {
       // Ensure we have a valid userId
       await this.initializeUser();
-
+      
       if (!this.userId) {
         console.error("❌ Cannot escalate: userId is not available");
         throw new Error("User session is not initialized");
       }
 
       console.log("🚀 Escalating conversation:", {
-        conversationId,
-        userId: this.userId,
+        userId: this.userId
       });
 
       const response = await this.request(
@@ -815,7 +814,6 @@ export class ApiService {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            conversationId,
             userId: this.userId,
           }),
         }

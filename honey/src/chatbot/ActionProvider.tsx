@@ -15,6 +15,8 @@ import GetPregnantActionProvider from './sections/getPregnant/getPregnantActionP
 import PreventPregnancyActionProvider from './sections/preventPregnancy/preventPregnancyActionProvider';
 import { SexEnhancementActionProvider } from './sections/sexEnhancement/sexEnhancementActionProvider';
 import { apiService, ApiService } from '@/services/api';
+import { logEscalation } from './logging';
+import { ConversationPayload } from '@/types/ConversationPayload';
 
 // ACTION PROVIDER INTERFACE - Complete interface matching all widgets
 
@@ -269,6 +271,9 @@ class ActionProvider implements ActionProviderInterface {
     // DON'T load state in constructor - it causes infinite re-renders
     // State is already loaded by config.tsx from localStorage
     // Server sync will happen on first user interaction via ensureChatSession
+  }
+  handleMedicalConditionsResponse(option: string): void {
+    throw new Error('Method not implemented.');
   }
 
   // Session management for proper database storage
@@ -2636,7 +2641,7 @@ class ActionProvider implements ActionProviderInterface {
         message_text: responseMessage.message,
         message_type: 'bot',
         chat_step: 'agentTypeSelection',
-        message_sequence_number: 1,
+        message_sequence_number: 1 as number,
         widget_name: 'agentTypeOptions',
       });
       
@@ -2672,7 +2677,9 @@ class ActionProvider implements ActionProviderInterface {
             agentId: escalationResult.agentId,
             agentName: escalationResult.agentName,
             position: escalationResult.position,
-            estimatedWaitTime: escalationResult.estimatedWaitTime,
+            estimatedWaitTime: escalationResult.estimatedWaitTime
+          ? Number(escalationResult.estimatedWaitTime)
+          : undefined,
           });
         }
 
@@ -2983,18 +2990,24 @@ class ActionProvider implements ActionProviderInterface {
       ...prev,
       messages: [...prev.messages, timeoutMessage, fallbackOptions],
       currentStep: 'agentTypeSelection',
-      escalationStatus: 'timeout',
+      escalationStatus: 'OUTSIDE_HOURS',
       queueUpdateInterval: undefined,
     }));
 
     // Send timeout alert to backend for admin notification
     try {
-      await this.api.request(`${this.api.baseUrl}/conversations/queue-timeout`, {
+      // Send timeout alert to backend for admin notification
+      // Note: Using fetch directly since api.request is private
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+      await fetch(`${baseUrl}/conversations/queue-timeout`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ 
           conversationId,
           queueDuration: 30 * 60 * 1000, // 30 minutes in ms
-          userId: this.api.userId 
+          userId: this.userSessionId 
         }),
       });
     } catch (error) {
@@ -3159,7 +3172,7 @@ class ActionProvider implements ActionProviderInterface {
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, thankYou, menuOptions],
-        currentStep: 'returnToMainMenu',
+        currentStep: 'moreHelp',
       }));
     }
   };
@@ -3174,7 +3187,7 @@ class ActionProvider implements ActionProviderInterface {
 
     if (option.includes('Main Menu')) {
       // Clean up any active connections
-      this.cleanupAgentConnection();
+      this.cleanup();
 
       const welcomeBack = this.createChatBotMessage(
         "Great! Let's help you with your family planning needs.",
@@ -3192,9 +3205,9 @@ class ActionProvider implements ActionProviderInterface {
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, welcomeBack, menuMessage],
-        currentStep: 'fpmSelection',
+        currentStep: 'fpm',
         // Reset conversation state
-        conversationId: null,
+        conversationId: undefined,
         escalationStatus: null,
       }));
     } else {
@@ -3207,11 +3220,11 @@ class ActionProvider implements ActionProviderInterface {
       this.setState((prev: ChatbotState) => ({
         ...prev,
         messages: [...prev.messages, userMessage, farewell],
-        currentStep: 'ended',
+        currentStep: 'default',
       }));
 
       // Clean up connections
-      this.cleanupAgentConnection();
+      this.cleanup();
     }
   };
 

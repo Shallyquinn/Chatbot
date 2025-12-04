@@ -41,6 +41,7 @@ export class ConversationsService {
           has_widget: dto.has_widget ?? false,
           widget_options: dto.widget_options ?? [],
           message_sequence_number: dto.message_sequence_number,
+
         },
         include: {
           session: true,
@@ -245,6 +246,13 @@ export class ConversationsService {
         },
       },
     });
+  };
+
+  async findLatestConversationByUser(userId: string) {
+    return this.prisma.conversation.findFirst({
+      where: {user_id: userId},
+      orderBy: {created_at: 'desc'},
+    })
   }
 
   // Escalate conversation to human agent
@@ -324,8 +332,7 @@ export class ConversationsService {
         userId: conversation.user_id,
         status: conversation.status,
         createdAt: conversation.created_at,
-      });
-
+      });   
       // Find an available agent (where currentChats < maxChats)
       // Note: Prisma doesn't support field-to-field comparison in where clauses,
       // so we need to fetch agents and filter in memory

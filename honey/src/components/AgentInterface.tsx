@@ -371,7 +371,7 @@ const AgentInterface: React.FC = () => {
           </>
         ) : (
           /* No Conversation Selected */
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-slate-50 to-white">
+          <div className="flex-1 flex items-center justify-center bg-linear-to-b from-slate-50 to-white">
             <div className="text-center text-slate-500 max-w-md">
               <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <MessageCircle className="h-14 w-14 text-slate-400" />

@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { CreateConversationDto } from './create-conversation.dto';
@@ -69,12 +70,18 @@ export class ConversationsController {
     @Body() body: { conversationId: string; userId: string },
   ) {
     console.log('🎯 POST /conversations/escalate received:', body);
-    const result = await this.conversationsService.escalateToHuman(
-      body.conversationId,
+    if (!body.userId) {
+      throw new BadRequestException('userId is required');
+    }
+    const conversation = await this.conversationsService.findLatestConversationByUser(body.userId);
+    if (!conversation) {
+      throw new BadRequestException('No conversation found for this user');
+    }
+
+    return this.conversationsService.escalateToHuman(
+      conversation.conversation_id,
       body.userId,
     );
-    console.log('🎯 Escalation result:', result);
-    return result;
   }
 
   // Get queue status for conversation
