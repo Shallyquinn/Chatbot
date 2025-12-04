@@ -59,6 +59,7 @@ export function AgentInterface() {
   });
   const [expandedSection, setExpandedSection] = useState<'assigned' | 'queued'>('assigned');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,8 +72,15 @@ export function AgentInterface() {
       setAgentId(storedAgentId);
       setAgentName(storedAgentName || 'Agent');
       setIsLoading(true);
-      fetchDashboard(storedAgentId);
-      fetchConversations(storedAgentId).finally(() => setIsLoading(false));
+      
+      // Load both dashboard and conversations
+      Promise.all([
+        fetchDashboard(storedAgentId),
+        fetchConversations(storedAgentId)
+      ]).finally(() => {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      });
       
       // Poll for updates every 10 seconds
       const interval = setInterval(() => {
@@ -106,12 +114,14 @@ export function AgentInterface() {
         fetch(`${API_BASE_URL}/agents/${id}/conversations/queued`),
       ]);
 
+      let hasError = false;
+
       if (assignedResponse.ok) {
         const assignedData = await assignedResponse.json();
         setConversations(assignedData);
-        setError(null);
       } else {
         console.error('Failed to fetch assigned conversations: HTTP', assignedResponse.status);
+        hasError = true;
       }
 
       if (queuedResponse.ok) {
@@ -119,6 +129,14 @@ export function AgentInterface() {
         setQueuedConversations(queuedData);
       } else {
         console.error('Failed to fetch queued conversations: HTTP', queuedResponse.status);
+        hasError = true;
+      }
+
+      // Only clear error if both requests succeeded
+      if (!hasError) {
+        setError(null);
+      } else {
+        setError('Unable to load some conversations');
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
@@ -280,7 +298,7 @@ export function AgentInterface() {
 
           <ScrollArea className="flex-1">
             {/* Loading State */}
-            {isLoading && conversations.length === 0 ? (
+            {isLoading && isInitialLoad ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 text-[#006045] animate-spin" />
               </div>
